@@ -84,7 +84,7 @@ export class FrontendStack extends NestedStack {
     const distribution = new cloudfront.Distribution(this, 'dist', {
       comment: 'Gen Assess Distribution',
       defaultBehavior: {
-        origin: new origins.S3Origin(this.bucket),
+        origin: new origins.S3StaticWebsiteOrigin(this.bucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         responseHeadersPolicy: responseHeadersPolicy,
       },
