@@ -49,6 +49,7 @@ export class FrontendStack extends NestedStack {
       versioned: true,
     });
 
+    // 修复：S3存储桶保持私有，配合OAI使用
     this.bucket = new s3.Bucket(this, 'frontendBucket', {
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
@@ -67,58 +68,69 @@ export class FrontendStack extends NestedStack {
       versioned: true,
     });
 
-      // 生成唯一标识符（如时间戳）
-      const uniqueSuffix = Date.now().toString();
-      const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, `FrontResponsePolicy-${uniqueSuffix}`, {
-        securityHeadersBehavior: {
-          strictTransportSecurity: { accessControlMaxAge: Duration.seconds(47304000), includeSubdomains: true, preload: true, override: true },
-          contentSecurityPolicy: {
-            contentSecurityPolicy:
-              "default-src 'self' *.amazoncognito.com *.amazonaws.com; font-src 'self' data:; img-src 'self' data: https://internal-cdn.amazon.com; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests;",
-            override: true,
-          },
-          contentTypeOptions: { override: true },
-          frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
-          xssProtection: { protection: true, modeBlock: true, override: true },
+    // 生成唯一标识符（如时间戳）
+    const uniqueSuffix = Date.now().toString();
+    const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, `FrontResponsePolicy-${uniqueSuffix}`, {
+      securityHeadersBehavior: {
+        strictTransportSecurity: { accessControlMaxAge: Duration.seconds(47304000), includeSubdomains: true, preload: true, override: true },
+        contentSecurityPolicy: {
+          contentSecurityPolicy:
+            "default-src 'self' *.amazoncognito.com *.amazonaws.com; font-src 'self' data:; img-src 'self' data: https://internal-cdn.amazon.com; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests;",
+          override: true,
         },
-      });
+        contentTypeOptions: { override: true },
+        frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
+        xssProtection: { protection: true, modeBlock: true, override: true },
+      },
+    });
+
+    // 修复：创建OAI并配置权限
+    const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OAI', {
+      comment: 'OAI for Gen Assess Frontend',
+    });
+
+    // 授权OAI读取S3存储桶
+    this.bucket.grantRead(originAccessIdentity);
 
     const distribution = new cloudfront.Distribution(this, 'dist', {
       comment: 'Gen Assess Distribution',
       defaultBehavior: {
-        origin: new origins.S3StaticWebsiteOrigin(this.bucket),
+        // 修复：使用S3Origin而不是S3StaticWebsiteOrigin
+        origin: new origins.S3Origin(this.bucket, {
+          originAccessIdentity: originAccessIdentity,
+        }),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         responseHeadersPolicy: responseHeadersPolicy,
       },
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
       errorResponses: [
         { httpStatus: 403, responsePagePath: '/index.html', responseHttpStatus: 200 },
-        { httpStatus: 404, responseHttpStatus: 200, responsePagePath: '/' },
+        { httpStatus: 404, responseHttpStatus: 200, responsePagePath: '/index.html' }, // 修复：改为index.html
       ],
       defaultRootObject: 'index.html',
       enableLogging: true,
       logBucket: accessLogBucket,
     });
 
-      distribution.addBehavior('/graphql', new HttpOrigin(Fn.select(2, Fn.split('/', graphqlUrl))), {
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
-        allowedMethods: AllowedMethods.ALLOW_ALL, // allow POST for graphql
-        responseHeadersPolicy: new cloudfront.ResponseHeadersPolicy(this, `APIResponsePolicy-${uniqueSuffix}`, {
-          securityHeadersBehavior: {
-            strictTransportSecurity: { accessControlMaxAge: Duration.seconds(47304000), includeSubdomains: true, preload: true, override: true },
-            contentTypeOptions: { override: true },
-            xssProtection: { protection: true, modeBlock: true, override: true },
-            referrerPolicy: { referrerPolicy: HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN, override: true },
-          },
-          corsBehavior: {
-            accessControlAllowHeaders: ['*'],
-            accessControlAllowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-            accessControlAllowCredentials: false,
-            originOverride: true,
-            accessControlAllowOrigins: [domain ? `https://${domain}` : '*'], // '*' is for dev / localhost
-          },
-        }),
-      });
+    distribution.addBehavior('/graphql', new HttpOrigin(Fn.select(2, Fn.split('/', graphqlUrl))), {
+      viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
+      allowedMethods: AllowedMethods.ALLOW_ALL, // allow POST for graphql
+      responseHeadersPolicy: new cloudfront.ResponseHeadersPolicy(this, `APIResponsePolicy-${uniqueSuffix}`, {
+        securityHeadersBehavior: {
+          strictTransportSecurity: { accessControlMaxAge: Duration.seconds(47304000), includeSubdomains: true, preload: true, override: true },
+          contentTypeOptions: { override: true },
+          xssProtection: { protection: true, modeBlock: true, override: true },
+          referrerPolicy: { referrerPolicy: HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN, override: true },
+        },
+        corsBehavior: {
+          accessControlAllowHeaders: ['*'],
+          accessControlAllowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+          accessControlAllowCredentials: false,
+          originOverride: true,
+          accessControlAllowOrigins: [domain ? `https://${domain}` : '*'], // '*' is for dev / localhost
+        },
+      }),
+    });
 
     const execOptions: childProcess.ExecSyncOptions = { stdio: 'inherit' };
     this.assetDeployment = new s3deploy.BucketDeployment(this, 'frontendDeployment', {
