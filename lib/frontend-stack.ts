@@ -67,19 +67,21 @@ export class FrontendStack extends NestedStack {
       versioned: true,
     });
 
-    const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'FrontResponsePolicy', {
-      securityHeadersBehavior: {
-        strictTransportSecurity: { accessControlMaxAge: Duration.seconds(47304000), includeSubdomains: true, preload: true, override: true },
-        contentSecurityPolicy: {
-          contentSecurityPolicy:
-            "default-src 'self' *.amazoncognito.com *.amazonaws.com; font-src 'self' data:; img-src 'self' data: https://internal-cdn.amazon.com; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests;",
-          override: true,
+      // 生成唯一标识符（如时间戳）
+      const uniqueSuffix = Date.now().toString();
+      const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, `FrontResponsePolicy-${uniqueSuffix}`, {
+        securityHeadersBehavior: {
+          strictTransportSecurity: { accessControlMaxAge: Duration.seconds(47304000), includeSubdomains: true, preload: true, override: true },
+          contentSecurityPolicy: {
+            contentSecurityPolicy:
+              "default-src 'self' *.amazoncognito.com *.amazonaws.com; font-src 'self' data:; img-src 'self' data: https://internal-cdn.amazon.com; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests;",
+            override: true,
+          },
+          contentTypeOptions: { override: true },
+          frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
+          xssProtection: { protection: true, modeBlock: true, override: true },
         },
-        contentTypeOptions: { override: true },
-        frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
-        xssProtection: { protection: true, modeBlock: true, override: true },
-      },
-    });
+      });
 
     const distribution = new cloudfront.Distribution(this, 'dist', {
       comment: 'Gen Assess Distribution',
@@ -98,25 +100,25 @@ export class FrontendStack extends NestedStack {
       logBucket: accessLogBucket,
     });
 
-    distribution.addBehavior('/graphql', new HttpOrigin(Fn.select(2, Fn.split('/', graphqlUrl))), {
-      viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
-      allowedMethods: AllowedMethods.ALLOW_ALL, // allow POST for graphql
-      responseHeadersPolicy: new cloudfront.ResponseHeadersPolicy(this, `APIResponsePolicy${this.node.addr}`, {
-        securityHeadersBehavior: {
-          strictTransportSecurity: { accessControlMaxAge: Duration.seconds(47304000), includeSubdomains: true, preload: true, override: true },
-          contentTypeOptions: { override: true },
-          xssProtection: { protection: true, modeBlock: true, override: true },
-          referrerPolicy: { referrerPolicy: HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN, override: true },
-        },
-        corsBehavior: {
-          accessControlAllowHeaders: ['*'],
-          accessControlAllowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-          accessControlAllowCredentials: false,
-          originOverride: true,
-          accessControlAllowOrigins: [domain ? `https://${domain}` : '*'], // '*' is for dev / localhost
-        },
-      }),
-    });
+      distribution.addBehavior('/graphql', new HttpOrigin(Fn.select(2, Fn.split('/', graphqlUrl))), {
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
+        allowedMethods: AllowedMethods.ALLOW_ALL, // allow POST for graphql
+        responseHeadersPolicy: new cloudfront.ResponseHeadersPolicy(this, `APIResponsePolicy-${uniqueSuffix}`, {
+          securityHeadersBehavior: {
+            strictTransportSecurity: { accessControlMaxAge: Duration.seconds(47304000), includeSubdomains: true, preload: true, override: true },
+            contentTypeOptions: { override: true },
+            xssProtection: { protection: true, modeBlock: true, override: true },
+            referrerPolicy: { referrerPolicy: HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN, override: true },
+          },
+          corsBehavior: {
+            accessControlAllowHeaders: ['*'],
+            accessControlAllowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+            accessControlAllowCredentials: false,
+            originOverride: true,
+            accessControlAllowOrigins: [domain ? `https://${domain}` : '*'], // '*' is for dev / localhost
+          },
+        }),
+      });
 
     const execOptions: childProcess.ExecSyncOptions = { stdio: 'inherit' };
     this.assetDeployment = new s3deploy.BucketDeployment(this, 'frontendDeployment', {
