@@ -1,6 +1,6 @@
-*.js
+# *.js
+# *.d.ts
 !jest.config.js
-*.d.ts
 node_modules
 dist/
 
