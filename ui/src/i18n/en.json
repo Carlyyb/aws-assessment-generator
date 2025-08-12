@@ -1,6 +1,8 @@
 {
   "common": {
     "loading": "Loading list...",
+    "empty": "Empty",
+    "id": "Id",
     "error": "Error",
     "cancel": "Cancel",
     "previous": "Previous",
@@ -46,6 +48,37 @@
   "pages": {
     "home": {
       "title": "HomePage"
+    },
+    "assessments": {
+      "title": "Assessments:"
+    },
+    "courses": {
+      "title": "Courses:",
+      "create_new": "Create New Course",
+      "new_course": "New Course"
+    },
+    "edit_assessments": {
+      "update_success": "Assessment updated successfully",
+      "question_number": "Question {number}",
+      "question_progress": "Question {current} of {total}",
+      "skip_to": "Skip to {title}",
+      "delete_question": "Delete this Question"
+    },
+    "find_assessments": {
+      "title": "Find Assessments:"
+    },
+    "find_student": {
+      "title": "Students:"
+    },
+    "generate_assessments": {
+      "title": "Generate Assessments",
+      "generate_success": "Assessment generated successfully",
+      "select_template": "Select Assessment Template",
+      "use_default": "Use Default",
+      "select_course": "Select Course",
+      "add_lecture_notes": "Add Lecture Notes",
+      "remove_file": "Remove file {index}",
+      "generating": "Generating..."
     },
     "dashboard": {
       "title": "My Performance Dashboard",

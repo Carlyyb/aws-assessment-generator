@@ -1,6 +1,8 @@
 {
   "common": {
     "loading": "加载列表中...",
+    "empty": "空",
+    "id": "编号",
     "error": "错误",
     "cancel": "取消",
     "previous": "上一步",
@@ -46,6 +48,37 @@
   "pages": {
     "home": {
       "title": "首页"
+    },
+    "assessments": {
+      "title": "评估列表："
+    },
+    "courses": {
+      "title": "课程列表：",
+      "create_new": "创建新课程",
+      "new_course": "新建课程"
+    },
+    "edit_assessments": {
+      "update_success": "评估更新成功",
+      "question_number": "问题 {number}",
+      "question_progress": "第 {current} 题，共 {total} 题",
+      "skip_to": "跳转到 {title}",
+      "delete_question": "删除此问题"
+    },
+    "find_assessments": {
+      "title": "查找评估："
+    },
+    "find_student": {
+      "title": "学生列表："
+    },
+    "generate_assessments": {
+      "title": "生成评估",
+      "generate_success": "评估生成成功",
+      "select_template": "选择评估模板",
+      "use_default": "使用默认模板",
+      "select_course": "选择课程",
+      "add_lecture_notes": "添加讲义",
+      "remove_file": "移除文件 {index}",
+      "generating": "生成中..."
     },
     "dashboard": {
       "title": "我的成绩仪表板",

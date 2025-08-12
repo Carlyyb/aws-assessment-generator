@@ -2,6 +2,7 @@ import { useContext } from 'react';
 import { useOutlet } from 'react-router-dom';
 import { ContentLayout, Container, Header, Box, SpaceBetween, Button } from '@cloudscape-design/components';
 import { RoutesContext } from '../contexts/routes';
+import { getText } from '../i18n/lang';
 
 export default () => {
   const outlet = useOutlet();
@@ -17,7 +18,7 @@ export default () => {
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">Assessments:</Header>
+            <Header variant="h1">{getText('pages.assessments.title')}</Header>
           </SpaceBetween>
         }
       >

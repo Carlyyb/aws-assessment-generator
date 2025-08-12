@@ -23,6 +23,7 @@ import { generateAssessment, listCourses, getAssessment, listAssessTemplates } f
 import { Course, AssessStatus, AssessTemplate } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { UserProfileContext } from '../contexts/userProfile';
+import { getText, getTextWithParams } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -56,7 +57,7 @@ export default () => {
       client.graphql<any>({ query: getAssessment, variables: { id: assessId } }).then(({ data }) => {
         const { status } = data.getAssessment;
         if (status === AssessStatus.CREATED) {
-          dispatchAlert({ type: AlertType.SUCCESS, content: 'Assessment generated successfully' });
+          dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.generate_assessments.generate_success') });
           return navigate(`/edit-assessment/${assessId}`);
         }
         checkStatus();
@@ -85,7 +86,7 @@ export default () => {
           actions={
             <SpaceBetween direction="horizontal" size="xs">
               <Button formAction="none" variant="link">
-                Cancel
+                {getText('common.cancel')}
               </Button>
               <Button
                 onClick={async () => {
@@ -123,25 +124,25 @@ export default () => {
                     const id = res.data.generateAssessment;
                     setAssessId(id);
                   } catch (_e) {
-                    dispatchAlert({ type: AlertType.ERROR, content: 'Failed to generate Assessment' });
+                    dispatchAlert({ type: AlertType.ERROR, content: getText('assessment.failed_to_generate') });
                   }
                 }}
                 variant="primary"
               >
-                Generate Assessment
+                {getText('assessment.generate_assessment')}
               </Button>
             </SpaceBetween>
           }
-          header={<Header variant="h1">Generate Assessments</Header>}
+          header={<Header variant="h1">{getText('pages.generate_assessments.title')}</Header>}
         >
-          <Container header={<Header variant="h1">Generate Assessments</Header>}>
+          <Container header={<Header variant="h1">{getText('pages.generate_assessments.title')}</Header>}>
             <SpaceBetween size="l" alignItems="center">
               <Box padding="xxxl">
                 <SpaceBetween size="xxl" direction="horizontal">
-                  <FormField label="Select Assessment Template">
+                  <FormField label={getText('pages.generate_assessments.select_template')}>
                     <SpaceBetween size="l" direction="horizontal" alignItems="center">
                       <Checkbox checked={useDefault} onChange={({ detail }) => setUseDefault(detail.checked)}>
-                        Use Default
+                        {getText('pages.generate_assessments.use_default')}
                       </Checkbox>
                       <Select
                         options={assessTemplates}
@@ -151,30 +152,30 @@ export default () => {
                       />
                     </SpaceBetween>
                   </FormField>
-                  <FormField label="Name">
+                  <FormField label={getText('common.name')}>
                     <Input value={name} onChange={({ detail }) => setName(detail.value)} />
                   </FormField>
-                  <FormField label="Select Course">
+                  <FormField label={getText('pages.generate_assessments.select_course')}>
                     <Select options={courses} selectedOption={course} onChange={({ detail }) => setCourse(detail.selectedOption)} />
                   </FormField>
-                  <FormField label="Lecture Date">
-                    <DatePicker onChange={({ detail }) => setLectureDate(detail.value)} value={lectureDate} placeholder="YYYY/MM/DD" />
+                  <FormField label={getText('pages.student.lecture_date')}>
+                    <DatePicker onChange={({ detail }) => setLectureDate(detail.value)} value={lectureDate} placeholder={getText('date_format.yyyy_mm_dd')} />
                   </FormField>
-                  <FormField label="Deadline">
-                    <DatePicker onChange={({ detail }) => setDeadline(detail.value)} value={deadline} placeholder="YYYY/MM/DD" />
+                  <FormField label={getText('common.deadline')}>
+                    <DatePicker onChange={({ detail }) => setDeadline(detail.value)} value={deadline} placeholder={getText('date_format.yyyy_mm_dd')} />
                   </FormField>
-                  <FormField label="Add Lecture Notes">
+                  <FormField label={getText('pages.generate_assessments.add_lecture_notes')}>
                     <FileUpload
                       multiple
                       onChange={({ detail }) => setFiles(detail.value)}
                       value={files}
                       i18nStrings={{
-                        uploadButtonText: (e) => (e ? 'Choose files' : 'Choose file'),
-                        dropzoneText: (e) => (e ? 'Drop files to upload' : 'Drop file to upload'),
-                        removeFileAriaLabel: (e) => `Remove file ${e + 1}`,
-                        limitShowFewer: 'Show fewer files',
-                        limitShowMore: 'Show more files',
-                        errorIconAriaLabel: 'Error',
+                        uploadButtonText: (e) => (e ? getText('common.choose_files') : getText('common.choose_file')),
+                        dropzoneText: (e) => (e ? getText('common.drop_files_to_upload') : getText('common.drop_file_to_upload')),
+                        removeFileAriaLabel: (e) => getTextWithParams('pages.generate_assessments.remove_file', { index: e + 1 }),
+                        limitShowFewer: getText('common.show_fewer_files'),
+                        limitShowMore: getText('common.show_more_files'),
+                        errorIconAriaLabel: getText('common.error'),
                       }}
                       showFileLastModified
                       showFileSize
@@ -188,7 +189,7 @@ export default () => {
           </Container>
         </Form>
       </form>
-      <Modal visible={!!assessId} header={<Header>Generating...</Header>}>
+      <Modal visible={!!assessId} header={<Header>{getText('pages.generate_assessments.generating')}</Header>}>
         <SpaceBetween size="s" alignItems="center">
           <Spinner size="big" />
         </SpaceBetween>

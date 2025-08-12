@@ -4,6 +4,7 @@ import Dashboard, { DashboardProps } from '../components/Dashboard';
 import { generateClient } from 'aws-amplify/api';
 import { listStudents, listMyStudentAssessments } from '../graphql/queries';
 import { Student, StudentAssessment } from '../graphql/API';
+import { getText } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -33,14 +34,14 @@ export default () => {
 
   return (
     <>
-      <Modal onDismiss={() => setDashboardData(undefined)} visible={!!dashboardData} header="Dashboard">
+      <Modal onDismiss={() => setDashboardData(undefined)} visible={!!dashboardData} header={getText('pages.dashboard.title')}>
         {dashboardData ? <Dashboard data={dashboardData} /> : null}
       </Modal>
       <ContentLayout>
         <Container
           header={
             <SpaceBetween size="l">
-              <Header variant="h1">Students:</Header>
+              <Header variant="h1">{getText('pages.find_student.title')}</Header>
             </SpaceBetween>
           }
         >
@@ -48,25 +49,25 @@ export default () => {
             columnDefinitions={[
               {
                 id: 'id',
-                header: 'Student Id',
+                header: getText('pages.student.student_id'),
                 cell: (item) => item.id,
                 sortingField: 'id',
                 isRowHeader: true,
               },
               {
                 id: 'firstName',
-                header: 'First Name',
+                header: getText('pages.student.first_name'),
                 cell: (item) => item.firstName,
               },
               {
                 id: 'lastName',
-                header: 'Last Name',
+                header: getText('pages.student.last_name'),
                 cell: (item) => item.lastName,
               },
               {
                 id: 'dashboards',
-                header: 'Dashboards',
-                cell: (item) => <Button onClick={() => fetchStudentData(item.id)}>Generate Dashboard</Button>,
+                header: getText('pages.student.dashboards'),
+                cell: (item) => <Button onClick={() => fetchStudentData(item.id)}>{getText('pages.dashboard.generate_dashboard')}</Button>,
               },
             ]}
             columnDisplay={[
@@ -76,11 +77,11 @@ export default () => {
               { id: 'dashboards', visible: true },
             ]}
             items={students}
-            loadingText="Loading list"
+            loadingText={getText('common.loading')}
             trackBy="id"
             empty={
               <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
-                Empty
+                {getText('common.empty')}
               </Box>
             }
             // filter={<TextFilter filteringPlaceholder="Find resources" filteringText="" />}

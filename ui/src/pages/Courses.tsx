@@ -5,6 +5,7 @@ import { listCourses } from '../graphql/queries';
 import { Course } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import CreateCourse from '../components/CreateCourse';
+import { getText } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -22,13 +23,13 @@ export default () => {
 
   return (
     <ContentLayout>
-      <Modal header="Create New Course" visible={showCreateModal} onDismiss={() => setShowCreateModal(false)}>
+      <Modal header={getText('pages.courses.create_new')} visible={showCreateModal} onDismiss={() => setShowCreateModal(false)}>
         <CreateCourse onSubmit={() => setShowCreateModal(false)} onCancel={() => setShowCreateModal(false)} />
       </Modal>
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">Courses:</Header>
+            <Header variant="h1">{getText('pages.courses.title')}</Header>
           </SpaceBetween>
         }
       >
@@ -36,24 +37,24 @@ export default () => {
           header={
             <Header>
               <Button iconName="add-plus" onClick={() => setShowCreateModal(true)}>
-                New Course
+                {getText('pages.courses.new_course')}
               </Button>
             </Header>
           }
           columnDefinitions={[
             {
               id: 'id',
-              header: 'Id',
+              header: getText('common.id'),
               cell: (item) => item.id,
             },
             {
               id: 'name',
-              header: 'Name',
+              header: getText('common.name'),
               cell: (item) => item.name,
             },
             {
               id: 'description',
-              header: 'Description',
+              header: getText('common.description'),
               cell: (item) => item.description,
             },
           ]}
@@ -63,12 +64,12 @@ export default () => {
             { id: 'description', visible: true },
           ]}
           items={courses}
-          loadingText="Loading list"
+          loadingText={getText('common.loading')}
           pagination={<Pagination currentPageIndex={1} pagesCount={1} />}
           trackBy="id"
           empty={
             <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
-              Empty
+              {getText('common.empty')}
             </Box>
           }
           // filter={<TextFilter filteringPlaceholder="Find courses" filteringText="" />}

@@ -5,6 +5,7 @@ import { generateClient } from 'aws-amplify/api';
 import { listAssessments, publishAssessment } from '../graphql/queries';
 import { Assessment, AssessStatus } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
+import { getText } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -28,7 +29,7 @@ export default () => {
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">Find Assessments:</Header>
+            <Header variant="h1">{getText('pages.find_assessments.title')}</Header>
           </SpaceBetween>
         }
       >
@@ -36,32 +37,32 @@ export default () => {
           columnDefinitions={[
             {
               id: 'name',
-              header: 'Name',
+              header: getText('common.name'),
               cell: (item) => item.name,
             },
             {
               id: 'course',
-              header: 'Course',
+              header: getText('common.course'),
               cell: (item) => item.course?.name,
             },
             {
               id: 'lectureDate',
-              header: 'Lecture Date',
+              header: getText('pages.student.lecture_date'),
               cell: (item) => new Date(item.lectureDate).toDateString(),
             },
             {
               id: 'deadline',
-              header: 'Deadline',
+              header: getText('common.deadline'),
               cell: (item) => new Date(item.deadline).toDateString(),
             },
             {
               id: 'updatedAt',
-              header: 'Updated At',
+              header: getText('pages.student.updated_at'),
               cell: (item) => item.updatedAt,
             },
             {
               id: 'status',
-              header: 'Status',
+              header: getText('common.status'),
               cell: (item) => item.status,
             },
             {
@@ -76,7 +77,7 @@ export default () => {
                       navigate(e.detail.href!);
                     }}
                   >
-                    edit
+                    {getText('common.edit')}
                   </Link>
                 ),
             },
@@ -91,12 +92,12 @@ export default () => {
                     onClick={() =>
                       client
                         .graphql<any>({ query: publishAssessment, variables: { assessmentId: item.id } })
-                        .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: 'Published successfully to students' }))
+                        .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.student.published_successfully') }))
                         .then(getAssessments)
-                        .catch(() => dispatchAlert({ type: AlertType.ERROR }))
+                        .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.error') }))
                     }
                   >
-                    {item.published ? 'Published' : 'Publish'}
+                    {item.published ? getText('common.published') : getText('common.publish')}
                   </Button>
                 ) : null,
             },
@@ -112,11 +113,11 @@ export default () => {
             { id: 'publish', visible: true },
           ]}
           items={assessments}
-          loadingText="Loading list"
+          loadingText={getText('common.loading')}
           trackBy="id"
           empty={
             <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
-              Empty
+              {getText('common.empty')}
             </Box>
           }
           // filter={<TextFilter filteringPlaceholder="Find resources" filteringText="" />}

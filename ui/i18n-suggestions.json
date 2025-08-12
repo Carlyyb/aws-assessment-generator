@@ -1,0 +1,222 @@
+{
+  "assessments": {
+    "en": "Assessments:",
+    "zh": "评估"
+  },
+  "courses": {
+    "en": "Courses:",
+    "zh": "课程"
+  },
+  "new_course": {
+    "en": "New Course",
+    "zh": "新课程"
+  },
+  "empty": {
+    "en": "Empty",
+    "zh": "空"
+  },
+  "find_assessments": {
+    "en": "Find Assessments:",
+    "zh": "查找评估"
+  },
+  "edit": {
+    "en": "edit",
+    "zh": "编辑"
+  },
+  "students": {
+    "en": "Students:",
+    "zh": "学生"
+  },
+  "pages.dashboard.generate_dashboard": {
+    "en": "Generate Dashboard",
+    "zh": "生成仪表板"
+  },
+  "common.cancel": {
+    "en": "Cancel",
+    "zh": "取消"
+  },
+  "assessment.generate_assessment": {
+    "en": "Generate Assessment",
+    "zh": "生成评估"
+  },
+  "generate_assessments": {
+    "en": "Generate Assessments",
+    "zh": "生成评估"
+  },
+  "select_assessment_template": {
+    "en": "Select Assessment Template",
+    "zh": "选择评估模板"
+  },
+  "use_default": {
+    "en": "Use Default",
+    "zh": "使用默认"
+  },
+  "common.name": {
+    "en": "Name",
+    "zh": "名称"
+  },
+  "select_course": {
+    "en": "Select Course",
+    "zh": "选择课程"
+  },
+  "pages.student.lecture_date": {
+    "en": "Lecture Date",
+    "zh": "讲座日期"
+  },
+  "date_format.yyyy_mm_dd": {
+    "en": "YYYY/MM/DD",
+    "zh": "YYYY/MM/DD"
+  },
+  "common.deadline": {
+    "en": "Deadline",
+    "zh": "截止日期"
+  },
+  "add_lecture_notes": {
+    "en": "Add Lecture Notes",
+    "zh": "添加讲座笔记"
+  },
+  "generating": {
+    "en": "Generating...",
+    "zh": "生成中..."
+  },
+  "home_page": {
+    "en": "Home Page",
+    "zh": "首页"
+  },
+  "common.submit": {
+    "en": "Submit",
+    "zh": "提交"
+  },
+  "pages.knowledge_base.title": {
+    "en": "Manage Knowledge Bases",
+    "zh": "管理知识库"
+  },
+  "upload_document": {
+    "en": "Upload Document:",
+    "zh": "上传文档："
+  },
+  "choose_course": {
+    "en": "Choose Course:",
+    "zh": "选择课程："
+  },
+  "creating": {
+    "en": "Creating...",
+    "zh": "创建中..."
+  },
+  "pages.dashboard.title": {
+    "en": "My Performance Dashboard",
+    "zh": "我的绩效仪表板"
+  },
+  "question": {
+    "en": "Question",
+    "zh": "问题"
+  },
+  "assessment.answer": {
+    "en": "Answer",
+    "zh": "答案"
+  },
+  "assessment.rubric": {
+    "en": "Rubric",
+    "zh": "评分标准"
+  },
+  "points": {
+    "en": "Points -",
+    "zh": "分数 -"
+  },
+  "assessment.explanation": {
+    "en": "Explanation",
+    "zh": "解释"
+  },
+  "done": {
+    "en": "Done",
+    "zh": "完成"
+  },
+  "common.review": {
+    "en": "Review",
+    "zh": "审查"
+  },
+  "grading": {
+    "en": "Grading...",
+    "zh": "评分中..."
+  },
+  "common.start": {
+    "en": "Start",
+    "zh": "开始"
+  },
+  "templates": {
+    "en": "Templates:",
+    "zh": "模板"
+  },
+  "new_template": {
+    "en": "New Template",
+    "zh": "新模板"
+  },
+  "common.description": {
+    "en": "Description",
+    "zh": "描述"
+  },
+  "name_of_template": {
+    "en": "Name of Template",
+    "zh": "模板名称"
+  },
+  "pages.settings.doc_language": {
+    "en": "Document Language",
+    "zh": "文档语言"
+  },
+  "pages.settings.default_assessment_type": {
+    "en": "Default Assessment Type",
+    "zh": "默认评估类型"
+  },
+  "pages.settings.default_taxonomy": {
+    "en": "Default Taxonomy",
+    "zh": "默认分类"
+  },
+  "number_of_questions": {
+    "en": "Number of Questions",
+    "zh": "问题数量"
+  },
+  "number_of_easy_questions": {
+    "en": "Number of Easy Questions",
+    "zh": "简单问题数量"
+  },
+  "number_of_medium_questions": {
+    "en": "Number of Medium Questions",
+    "zh": "中等问题数量"
+  },
+  "number_of_hard_questions": {
+    "en": "Number of Hard Questions",
+    "zh": "难题数量"
+  },
+  "no_data_available": {
+    "en": "No data available",
+    "zh": "没有可用数据"
+  },
+  "there_is_no_data_available": {
+    "en": "There is no data available",
+    "zh": "没有可用数据"
+  },
+  "no_matching_data": {
+    "en": "No matching data",
+    "zh": "没有匹配的数据"
+  },
+  "there_is_no_matching_data_to_display": {
+    "en": "There is no matching data to display",
+    "zh": "没有匹配的数据可以显示"
+  },
+  "clear_filter": {
+    "en": "Clear filter",
+    "zh": "清除过滤"
+  },
+  "edit_question": {
+    "en": "Edit Question",
+    "zh": "编辑问题"
+  },
+  "edit_answers": {
+    "en": "Edit Answers",
+    "zh": "编辑答案"
+  },
+  "choose_correct_answer": {
+    "en": "Choose Correct Answer",
+    "zh": "选择正确答案"
+  }
+}

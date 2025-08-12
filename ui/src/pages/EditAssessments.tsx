@@ -9,6 +9,7 @@ import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { QAView } from '../components/QAView';
 import { FreeTextView } from '../components/FreeTextView';
 import { removeTypenames } from '../helpers';
+import { getText, getTextWithParams } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -81,19 +82,19 @@ export default () => {
         const { course, ...inputAssessment } = assessment;
         client
           .graphql<any>({ query: upsertAssessment, variables: { input: inputAssessment } })
-          .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: 'Assessment updated successfully' }))
+          .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.edit_assessments.update_success') }))
           .then(() => navigate('/assessments/find-assessments'))
-          .catch(() => dispatchAlert({ type: AlertType.ERROR }));
+          .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.error') }));
       }}
       i18nStrings={{
-        stepNumberLabel: (stepNumber) => `Question ${stepNumber}`,
-        collapsedStepsLabel: (stepNumber, stepsCount) => `Question ${stepNumber} of ${stepsCount}`,
-        skipToButtonLabel: (step, _stepNumber) => `Skip to ${step.title}`,
-        cancelButton: 'Delete this Question',
-        previousButton: 'Previous',
-        nextButton: 'Next',
-        submitButton: 'Submit',
-        optional: 'optional',
+        stepNumberLabel: (stepNumber) => getTextWithParams('pages.edit_assessments.question_number', { number: stepNumber }),
+        collapsedStepsLabel: (stepNumber, stepsCount) => getTextWithParams('pages.edit_assessments.question_progress', { current: stepNumber, total: stepsCount }),
+        skipToButtonLabel: (step, _stepNumber) => getTextWithParams('pages.edit_assessments.skip_to', { title: step.title }),
+        cancelButton: getText('pages.edit_assessments.delete_question'),
+        previousButton: getText('common.previous'),
+        nextButton: getText('common.next'),
+        submitButton: getText('common.submit'),
+        optional: getText('common.optional'),
       }}
       onCancel={() => updateAssessment({ type: ActionTypes.Delete, stepIndex: activeStepIndex })}
       onNavigate={({ detail }) => setActiveStepIndex(detail.requestedStepIndex)}
