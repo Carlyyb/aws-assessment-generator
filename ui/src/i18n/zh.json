@@ -1,0 +1,100 @@
+{
+  "common": {
+    "loading": "加载列表中...",
+    "error": "错误",
+    "cancel": "取消",
+    "previous": "上一步",
+    "next": "下一步",
+    "submit": "提交",
+    "finish": "完成",
+    "start": "开始",
+    "review": "查看",
+    "optional": "可选",
+    "name": "名称",
+    "course": "课程",
+    "action": "操作",
+    "score": "分数",
+    "deadline": "截止日期",
+    "status": "状态",
+    "edit": "编辑",
+    "publish": "发布",
+    "published": "已发布",
+    "points": "分",
+    "point": "分",
+    "description": "描述",
+    "choose_files": "选择文件",
+    "choose_file": "选择文件",
+    "drop_files_to_upload": "拖拽文件到此处上传",
+    "drop_file_to_upload": "拖拽文件到此处上传",
+    "show_fewer_files": "显示更少文件",
+    "show_more_files": "显示更多文件",
+    "find_resources": "查找资源"
+  },
+  "assessment": {
+    "answer": "答案",
+    "correct": "正确",
+    "incorrect": "错误",
+    "rubric": "评分标准",
+    "explanation": "解释",
+    "weight": "权重",
+    "answers": "答案",
+    "generate_assessment": "生成评估",
+    "failed_to_generate": "生成评估失败",
+    "multi_choice": "多选题",
+    "free_text": "自由文本"
+  },
+  "pages": {
+    "home": {
+      "title": "首页"
+    },
+    "dashboard": {
+      "title": "我的成绩仪表板",
+      "generate_dashboard": "生成仪表板",
+      "dashboard": "仪表板"
+    },
+    "knowledge_base": {
+      "title": "管理知识库",
+      "failed_to_create": "创建知识库失败",
+      "created_successfully": "知识库创建成功"
+    },
+    "templates": {
+      "create_new": "创建新模板",
+      "id": "编号",
+      "lang": "语言",
+      "type": "类型",
+      "taxonomy": "分类法",
+      "easy": "简单",
+      "medium": "中等",
+      "hard": "困难",
+      "total": "总计",
+      "created_at": "创建时间",
+      "easy_questions": "简单题目",
+      "medium_questions": "中等题目",
+      "hard_questions": "困难题目",
+      "total_questions": "题目总数"
+    },
+    "student": {
+      "student_id": "学生编号",
+      "first_name": "姓",
+      "last_name": "名",
+      "dashboards": "仪表板",
+      "lecture_date": "授课日期",
+      "updated_at": "更新时间",
+      "published_successfully": "已成功发布给学生"
+    },
+    "settings": {
+      "title": "设置"
+    }
+  },
+  "taxonomy": {
+    "knowledge": "知识",
+    "comprehension": "理解",
+    "application": "应用",
+    "analysis": "分析",
+    "synthesis": "综合",
+    "evaluation": "评估"
+  },
+  "date_format": {
+    "yyyy_mm_dd": "YYYY/MM/DD"
+  }
+}

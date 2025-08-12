@@ -1,6 +1,100 @@
 {
-    "menu": {
-        "home": "Home",
-        "about": "About"
+  "common": {
+    "loading": "Loading list...",
+    "error": "Error",
+    "cancel": "Cancel",
+    "previous": "Previous",
+    "next": "Next",
+    "submit": "Submit",
+    "finish": "Finish",
+    "start": "Start",
+    "review": "Review",
+    "optional": "optional",
+    "name": "Name",
+    "course": "Course",
+    "action": "Action",
+    "score": "Score",
+    "deadline": "Deadline",
+    "status": "Status",
+    "edit": "Edit",
+    "publish": "Publish",
+    "published": "Published",
+    "points": "Points",
+    "point": "point",
+    "description": "Description",
+    "choose_files": "Choose files",
+    "choose_file": "Choose file",
+    "drop_files_to_upload": "Drop files to upload",
+    "drop_file_to_upload": "Drop file to upload",
+    "show_fewer_files": "Show fewer files",
+    "show_more_files": "Show more files",
+    "find_resources": "Find resources"
+  },
+  "assessment": {
+    "answer": "Answer",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "rubric": "Rubric",
+    "explanation": "Explanation",
+    "weight": "weight",
+    "answers": "answers",
+    "generate_assessment": "Generate Assessment",
+    "failed_to_generate": "Failed to generate Assessment",
+    "multi_choice": "Multi Choice",
+    "free_text": "Free Text"
+  },
+  "pages": {
+    "home": {
+      "title": "HomePage"
+    },
+    "dashboard": {
+      "title": "My Performance Dashboard",
+      "generate_dashboard": "Generate Dashboard",
+      "dashboard": "Dashboard"
+    },
+    "knowledge_base": {
+      "title": "Manage Knowledge Bases",
+      "failed_to_create": "Failed to create Knowledge Base",
+      "created_successfully": "Knowledge Base created successfully"
+    },
+    "templates": {
+      "create_new": "Create New Template",
+      "id": "Id",
+      "lang": "Lang",
+      "type": "Type",
+      "taxonomy": "Taxonomy",
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "total": "Total",
+      "created_at": "Created At",
+      "easy_questions": "Easy Questions",
+      "medium_questions": "Medium Questions",
+      "hard_questions": "Hard Questions",
+      "total_questions": "Total Questions"
+    },
+    "student": {
+      "student_id": "Student Id",
+      "first_name": "First Name",
+      "last_name": "Last Name",
+      "dashboards": "Dashboards",
+      "lecture_date": "Lecture Date",
+      "updated_at": "Updated At",
+      "published_successfully": "Published successfully to students"
+    },
+    "settings": {
+      "title": "Settings"
     }
+  },
+  "taxonomy": {
+    "knowledge": "Knowledge",
+    "comprehension": "Comprehension",
+    "application": "Application",
+    "analysis": "Analysis",
+    "synthesis": "Synthesis",
+    "evaluation": "Evaluation"
+  },
+  "date_format": {
+    "yyyy_mm_dd": "YYYY/MM/DD"
+  }
 }
