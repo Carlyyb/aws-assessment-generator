@@ -21,6 +21,7 @@ import { createKnowledgeBase } from '../graphql/mutations';
 import { Course } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { UserProfileContext } from '../contexts/userProfile';
+import { getText, getTextWithParams } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -82,9 +83,9 @@ export default () => {
             if (!ingestionJobId) throw new Error('Failed to create Knowledge Base');
             await waitForIngestion(knowledgeBaseId, dataSourceId, ingestionJobId);
             setShowSpinner(false);
-            dispatchAlert({ type: AlertType.SUCCESS, content: 'Knowledge Base created successfully' });
+            dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.knowledge_base.created_successfully') });
           } catch (_e) {
-            dispatchAlert({ type: AlertType.ERROR, content: 'Failed to create Knowledge Base' });
+            dispatchAlert({ type: AlertType.ERROR, content: getText('pages.knowledge_base.failed_to_create') });
           }
         }}
       >
@@ -92,26 +93,26 @@ export default () => {
           actions={
             <SpaceBetween direction="horizontal" size="xs">
               <Button formAction="none" variant="link">
-                Cancel
+                {getText('common.cancel')}
               </Button>
               <Button variant="primary" disabled={!course || !files.length}>
-                Submit
+                {getText('common.submit')}
               </Button>
             </SpaceBetween>
           }
-          header={<Header variant="h1">Manage Knowledge Bases</Header>}
+          header={<Header variant="h1">{getText('pages.knowledge_base.title')}</Header>}
         >
           <ContentLayout>
             <Container
               header={
                 <SpaceBetween size="l">
-                  <Header variant="h1">Upload Document:</Header>
+                  <Header variant="h1">{getText('pages.knowledge_base.upload_document')}</Header>
                 </SpaceBetween>
               }
             >
               <Box padding="xxxl">
                 <SpaceBetween size="l" direction="horizontal" alignItems="start">
-                  <FormField label="Choose Course:">
+                  <FormField label={getText('pages.knowledge_base.choose_course')}>
                     <Select options={courses} selectedOption={course} onChange={({ detail }) => setCourse(detail.selectedOption)} />
                   </FormField>
                   <FormField>
@@ -119,12 +120,12 @@ export default () => {
                       onChange={({ detail }) => setFiles(detail.value)}
                       value={files}
                       i18nStrings={{
-                        uploadButtonText: (e) => (e ? 'Choose files' : 'Choose file'),
-                        dropzoneText: (e) => (e ? 'Drop files to upload' : 'Drop file to upload'),
-                        removeFileAriaLabel: (e) => `Remove file ${e + 1}`,
-                        limitShowFewer: 'Show fewer files',
-                        limitShowMore: 'Show more files',
-                        errorIconAriaLabel: 'Error',
+                        uploadButtonText: (e) => (e ? getText('common.choose_files') : getText('common.choose_file')),
+                        dropzoneText: (e) => (e ? getText('common.drop_files_to_upload') : getText('common.drop_file_to_upload')),
+                        removeFileAriaLabel: (e) => getTextWithParams('pages.knowledge_base.remove_file', { index: e + 1 }),
+                        limitShowFewer: getText('common.show_fewer_files'),
+                        limitShowMore: getText('common.show_more_files'),
+                        errorIconAriaLabel: getText('common.error'),
                       }}
                       showFileLastModified
                       showFileSize
@@ -138,7 +139,7 @@ export default () => {
           </ContentLayout>
         </Form>
       </form>
-      <Modal visible={showSpinner} header={<Header>Creating...</Header>}>
+      <Modal visible={showSpinner} header={<Header>{getText('pages.knowledge_base.creating')}</Header>}>
         <SpaceBetween size="s" alignItems="center">
           <Spinner size="big" />
         </SpaceBetween>

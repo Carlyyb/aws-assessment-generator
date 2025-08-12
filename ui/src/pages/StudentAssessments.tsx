@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import { listStudentAssessments } from '../graphql/queries';
 import { StudentAssessment } from '../graphql/API';
+import { getText } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -27,7 +28,7 @@ export default () => {
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">Assessments:</Header>
+            <Header variant="h1"> {getText('studentAssessments.title')} </Header>
           </SpaceBetween>
         }
       >
@@ -35,35 +36,35 @@ export default () => {
           columnDefinitions={[
             {
               id: 'name',
-              header: 'Name',
+              header: getText('studentAssessments.table.name'),
               cell: (item) => item.assessment!.name,
               sortingField: 'name',
             },
             {
               id: 'course',
-              header: 'Course',
+              header: getText('studentAssessments.table.course'),
               cell: (item) => item.assessment!.course?.name,
               sortingField: 'course',
             },
             {
               id: 'deadline',
-              header: 'Deadline',
+              header: getText('studentAssessments.table.deadline'),
               cell: (item) => new Date(item.assessment!.deadline).toDateString(),
               sortingField: 'course',
             },
             {
               id: 'action',
-              header: 'Action',
+              header: getText('studentAssessments.table.action'),
               cell: (item) =>
                 item.completed ? (
-                  <Button onClick={() => navigate('/review/' + item.parentAssessId)}>Review</Button>
+                  <Button onClick={() => navigate('/review/' + item.parentAssessId)}>{getText('studentAssessments.actions.review')}</Button>
                 ) : (
-                  <Button onClick={() => navigate('/assessment/' + item.parentAssessId)}>Start</Button>
+                  <Button onClick={() => navigate('/assessment/' + item.parentAssessId)}>{getText('studentAssessments.actions.start')}</Button>
                 ),
             },
             {
               id: 'score',
-              header: 'Score',
+              header: getText('studentAssessments.table.score'),
               cell: (item) => (item.completed ? item.score + '%' : ''),
             },
           ]}
@@ -75,11 +76,11 @@ export default () => {
             { id: 'action', visible: true },
           ]}
           items={assessments}
-          loadingText="Loading list"
+          loadingText={getText('studentAssessments.loading')}
           trackBy="id"
           empty={
             <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
-              Empty
+              {getText('studentAssessments.empty')}
             </Box>
           }
           // filter={<TextFilter filteringPlaceholder="Find resources" filteringText="" />}

@@ -3,6 +3,7 @@ import { Container, SpaceBetween, Button, Form, FormField, Box, Input } from '@c
 import { generateClient } from 'aws-amplify/api';
 import { upsertCourse } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
+import { getText } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -28,7 +29,7 @@ export default (props: CreateCourseProps) => {
             variables: { input: { name, description } },
           })
           .then(() => {
-            dispatchAlert({ type: AlertType.SUCCESS, content: 'Course created successfully' });
+            dispatchAlert({ type: AlertType.SUCCESS, content: getText('courses.create_success') });
             onSubmit();
           })
           .catch(() => {
@@ -41,19 +42,19 @@ export default (props: CreateCourseProps) => {
         actions={
           <SpaceBetween direction="horizontal" size="xs">
             <Button formAction="none" variant="link" onClick={onCancel}>
-              Cancel
+              {getText('common.cancel')}
             </Button>
-            <Button variant="primary">Submit</Button>
+            <Button variant="primary">{getText('common.submit')}</Button>
           </SpaceBetween>
         }
       >
         <Container>
           <Box padding="xxxl">
             <SpaceBetween direction="horizontal" size="l">
-              <FormField label="Name">
+              <FormField label={getText('common.name')}>
                 <Input value={name} onChange={(e) => setName(e.detail.value)} />
               </FormField>
-              <FormField label="Description">
+              <FormField label={getText('common.description')}>
                 <Input value={description} onChange={(e) => setDescription(e.detail.value)} />
               </FormField>
             </SpaceBetween>

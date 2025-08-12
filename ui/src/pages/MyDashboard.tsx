@@ -4,6 +4,7 @@ import Dashboard from '../components/Dashboard';
 import { generateClient } from 'aws-amplify/api';
 import { listStudentAssessments } from '../graphql/queries';
 import { StudentAssessment } from '../graphql/API';
+import { getText } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -29,7 +30,7 @@ export default () => {
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">My Performance Dashboard</Header>
+            <Header variant="h1">{getText('pages.dashboard.title')}</Header>
           </SpaceBetween>
         }
       >

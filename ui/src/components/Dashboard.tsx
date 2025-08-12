@@ -1,4 +1,5 @@
 import { LineChart, Box, Button } from '@cloudscape-design/components';
+import { getText } from '../i18n/lang';
 
 export type DashboardProps = {
   data: { x: Date; y: number }[];
@@ -11,7 +12,7 @@ export default (props: DashboardProps) => {
     <LineChart
       series={[
         {
-          title: 'Score',
+          title: getText('dashboard.score'),
           type: 'line',
           data,
         },
@@ -27,27 +28,27 @@ export default (props: DashboardProps) => {
             .split(',')
             .join('\n'),
       }}
-      ariaLabel="Single data series line chart"
+      ariaLabel={getText('dashboard.chart_label')}
       hideFilter
       hideLegend
       xScaleType="time"
-      xTitle="Time (UTC)"
-      yTitle="Score %"
+      xTitle={getText('dashboard.time_utc')}
+      yTitle={getText('dashboard.score_percent')}
       empty={
         <Box textAlign="center" color="inherit">
-          <b>No data available</b>
+          <b>{getText('dashboard.no_data_title')}</b>
           <Box variant="p" color="inherit">
-            There is no data available
+            {getText('dashboard.no_data_message')}
           </Box>
         </Box>
       }
       noMatch={
         <Box textAlign="center" color="inherit">
-          <b>No matching data</b>
+          <b>{getText('dashboard.no_match_title')}</b>
           <Box variant="p" color="inherit">
-            There is no matching data to display
+            {getText('dashboard.no_match_message')}
           </Box>
-          <Button>Clear filter</Button>
+          <Button>{getText('dashboard.clear_filter')}</Button>
         </Box>
       }
     />

@@ -1,6 +1,7 @@
 import { Container, Header, SpaceBetween, Textarea, Table, Input, Button } from '@cloudscape-design/components';
 import { FreeText } from '../graphql/API';
 import { ActionTypes } from '../pages/EditAssessments';
+import { getText, getTextWithParams } from '../i18n/lang';
 
 type FreeTextViewProps = {
   activeStepIndex: number;
@@ -19,7 +20,7 @@ export const FreeTextView = ({ activeStepIndex, freetextAssessment, updateAssess
 
   return (
     <SpaceBetween size="l">
-      <Container header={<Header variant="h2">Edit Question {activeStepIndex + 1}</Header>}>
+      <Container header={<Header variant="h2">{getTextWithParams('pages.edit_assessments.question_number', { number: activeStepIndex + 1 })}</Header>}>
         <Textarea
           onChange={({ detail }) =>
             updateAssessment({ type: ActionTypes.Update, stepIndex: activeStepIndex, key: 'question', content: detail.value })
@@ -27,7 +28,7 @@ export const FreeTextView = ({ activeStepIndex, freetextAssessment, updateAssess
           value={question}
         />
       </Container>
-      <Container header={<Header variant="h2">Rubric</Header>}>
+      <Container header={<Header variant="h2">{getText('assessment.rubric')}</Header>}>
         <Table
           wrapLines
           columnDefinitions={[
@@ -68,13 +69,13 @@ export const FreeTextView = ({ activeStepIndex, freetextAssessment, updateAssess
             },
             {
               id: 'weight',
-              header: 'Points',
+              header: getText('common.points'),
               width: 90,
               cell: (item) => <Input value={'' + item.weight} onChange={(event) => submitRubricChanges('weight', item, +event.detail.value)} />,
             },
             {
               id: 'point',
-              header: 'Description',
+              header: getText('common.description'),
               cell: (item) => <Textarea value={'' + item.point} onChange={(event) => submitRubricChanges('point', item, event.detail.value)} />,
             },
           ]}

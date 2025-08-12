@@ -43,11 +43,21 @@
     "generate_assessment": "Generate Assessment",
     "failed_to_generate": "Failed to generate Assessment",
     "multi_choice": "Multi Choice",
-    "free_text": "Free Text"
+    "free_text": "Free Text",
+    "edit_answers": "Edit Answers",
+    "choose_answer": "Choose Correct Answer"
   },
   "pages": {
     "home": {
-      "title": "HomePage"
+      "title": "HomePage",
+      "buttons": {
+        "courses": "Courses",
+        "assessments": "Assessments",
+        "settings": "Settings",
+        "find-student": "Find Student",
+        "find-assessments": "Find Assessments",
+        "manage-knowledge-bases": "Manage Knowledge Bases"
+      }
     },
     "assessments": {
       "title": "Assessments:"
@@ -70,6 +80,56 @@
     "find_student": {
       "title": "Students:"
     },
+    "review_assessment": {
+      "question_number": "Question {number}",
+      "question_progress": "Question {current} of {total}",
+      "question_title": "Question {number}",
+      "points_with_rate": "Points - {rate}"
+    },
+    "student_assessment": {
+      "your_score": "Your Score:",
+      "question_number": "Question {number}",
+      "question_progress": "Question {current} of {total}",
+      "question_title": "Question {number}",
+      "skip_to": "Skip to {title}",
+      "provide_answer": "Provide:",
+      "choose_answer": "Choose:",
+      "grading": "Grading..."
+    },
+    "student_assessments": {
+      "title": "Student Assessments",
+      "description": "List of student assessments",
+      "loading": "Loading assessment list...",
+      "empty": "No assessments found",
+      "table": {
+        "name": "Name",
+        "course": "Course",
+        "deadline": "Deadline",
+        "action": "Action",
+        "score": "Score"
+      },
+      "actions": {
+        "review": "Review",
+        "start": "Start"
+      }
+    },
+    "section": {
+      "assessments": "Assessments:",
+      "settings": "Settings:",
+      "courses": "Courses:",
+      "buttons": {
+        "find-assessments": "Find Assessments",
+        "find-student": "Find Student",
+        "manage-knowledge-bases": "Manage Knowledge Bases",
+        "generate-assessments": "Generate Assessments",
+        "student-assessments": "Student Assessments",
+        "my-dashboard": "My Dashboard",
+        "create-course": "Create Course",
+        "create-template": "Create Template",
+        "templates": "Templates",
+        "default-settings": "Default Settings"
+      }
+    },
     "generate_assessments": {
       "title": "Generate Assessments",
       "generate_success": "Assessment generated successfully",
@@ -83,15 +143,30 @@
     "dashboard": {
       "title": "My Performance Dashboard",
       "generate_dashboard": "Generate Dashboard",
-      "dashboard": "Dashboard"
+      "dashboard": "Dashboard",
+      "score": "Score",
+      "chart_label": "Single data series line chart",
+      "time_utc": "Time (UTC)",
+      "score_percent": "Score %",
+      "no_data_title": "No data available",
+      "no_data_message": "There is no data available",
+      "no_match_title": "No matching data",
+      "no_match_message": "There is no matching data to display",
+      "clear_filter": "Clear filter"
     },
     "knowledge_base": {
       "title": "Manage Knowledge Bases",
       "failed_to_create": "Failed to create Knowledge Base",
-      "created_successfully": "Knowledge Base created successfully"
+      "created_successfully": "Knowledge Base created successfully",
+      "upload_document": "Upload Document:",
+      "choose_course": "Choose Course:",
+      "remove_file": "Remove file {index}",
+      "creating": "Creating..."
     },
     "templates": {
+      "title": "Templates:",
       "create_new": "Create New Template",
+      "create_success": "Template created successfully",
       "id": "Id",
       "lang": "Lang",
       "type": "Type",
@@ -104,7 +179,10 @@
       "easy_questions": "Easy Questions",
       "medium_questions": "Medium Questions",
       "hard_questions": "Hard Questions",
-      "total_questions": "Total Questions"
+      "total_questions": "Total Questions",
+      "name": "Template Name",
+      "docLang": "Document Language",
+      "assessType": "Assessment Type"
     },
     "student": {
       "student_id": "Student Id",

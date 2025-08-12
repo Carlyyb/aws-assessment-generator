@@ -5,6 +5,7 @@ import { listAssessTemplates } from '../graphql/queries';
 import { AssessTemplate } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import CreateTemplate from '../components/CreateTemplate';
+import { getText } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -22,13 +23,13 @@ export default () => {
 
   return (
     <ContentLayout>
-      <Modal header="Create New Template" visible={showCreateModal} onDismiss={() => setShowCreateModal(false)}>
+      <Modal header={getText('templates.create_new')} visible={showCreateModal} onDismiss={() => setShowCreateModal(false)}>
         <CreateTemplate onSubmit={() => setShowCreateModal(false)} onCancel={() => setShowCreateModal(false)} />
       </Modal>
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">Templates:</Header>
+            <Header variant="h1">{getText('templates.title')}</Header>
           </SpaceBetween>
         }
       >
@@ -36,59 +37,59 @@ export default () => {
           header={
             <Header>
               <Button iconName="add-plus" onClick={() => setShowCreateModal(true)}>
-                New Template
+                {getText('templates.create_new')}
               </Button>
             </Header>
           }
           columnDefinitions={[
             {
               id: 'id',
-              header: 'Id',
+              header: getText('templates.id'),
               cell: (item) => item.id,
             },
             {
               id: 'name',
-              header: 'Name',
+              header: getText('common.name'),
               cell: (item) => item.name,
             },
             {
               id: 'docLang',
-              header: 'Lang',
+              header: getText('templates.lang'),
               cell: (item) => item.docLang,
             },
             {
               id: 'assessType',
-              header: 'Type',
+              header: getText('templates.type'),
               cell: (item) => item.assessType,
             },
             {
               id: 'taxonomy',
-              header: 'Taxonomy',
+              header: getText('templates.taxonomy'),
               cell: (item) => item.taxonomy,
             },
             {
               id: 'easyQuestions',
-              header: 'Easy',
+              header: getText('templates.easy'),
               cell: (item) => item.easyQuestions,
             },
             {
               id: 'mediumQuestions',
-              header: 'Medium',
+              header: getText('templates.medium'),
               cell: (item) => item.mediumQuestions,
             },
             {
               id: 'hardQuestions',
-              header: 'Hard',
+              header: getText('templates.hard'),
               cell: (item) => item.hardQuestions,
             },
             {
               id: 'totalQuestions',
-              header: 'Total',
+              header: getText('templates.total'),
               cell: (item) => item.totalQuestions,
             },
             {
               id: 'createdAt',
-              header: 'CreatedAt',
+              header: getText('templates.created_at'),
               cell: (item) => item.createdAt,
             },
           ]}
@@ -104,12 +105,12 @@ export default () => {
             { id: 'createdAt', visible: true },
           ]}
           items={templates}
-          loadingText="Loading list"
+          loadingText={getText('common.loading')}
           pagination={<Pagination currentPageIndex={1} pagesCount={1} />}
           trackBy="id"
           empty={
             <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
-              Empty
+              {getText('common.empty')}
             </Box>
           }
         />

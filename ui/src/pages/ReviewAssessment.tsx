@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import { StudentAssessment as RawStudentAssessment, AssessType, MultiChoice } from '../graphql/API';
 import { getStudentAssessment } from '../graphql/queries';
+import { getText, getTextWithParams } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -37,13 +38,13 @@ export default () => {
     <Wizard
       onSubmit={() => navigate('/assessments')}
       i18nStrings={{
-        stepNumberLabel: (stepNumber) => `Question ${stepNumber}`,
-        collapsedStepsLabel: (stepNumber, stepsCount) => `Question ${stepNumber} of ${stepsCount}`,
-        cancelButton: 'Cancel',
-        previousButton: 'Previous',
-        nextButton: 'Next',
-        submitButton: 'Finish',
-        optional: 'optional',
+        stepNumberLabel: (stepNumber) => getTextWithParams('pages.review_assessment.question_number', { number: stepNumber }),
+        collapsedStepsLabel: (stepNumber, stepsCount) => getTextWithParams('pages.review_assessment.question_progress', { current: stepNumber, total: stepsCount }),
+        cancelButton: getText('common.cancel'),
+        previousButton: getText('common.previous'),
+        nextButton: getText('common.next'),
+        submitButton: getText('common.finish'),
+        optional: getText('common.optional'),
       }}
       onCancel={() => navigate('/assessments')}
       onNavigate={({ detail }) => {
@@ -56,10 +57,10 @@ export default () => {
           title: assessment.title,
           content: (
             <SpaceBetween size="l">
-              <Container header={<Header variant="h2">Question {activeStepIndex + 1}</Header>}>
+              <Container header={<Header variant="h2">{getTextWithParams('pages.review_assessment.question_title', { number: activeStepIndex + 1 })}</Header>}>
                 <Box variant="p">{assessment.question}</Box>
               </Container>
-              <Container header={<Header variant="h2">Answer</Header>}>
+              <Container header={<Header variant="h2">{getText('assessment.answer')}</Header>}>
                 <SpaceBetween size="l">
                   {assessType === AssessType.multiChoiceAssessment ? (
                     (assessment as MultiChoice).answerChoices.map((answerChoice, i) => (
@@ -86,29 +87,29 @@ export default () => {
               </Container>
               {JSON.parse(studentAssessment.report || '{}')[activeStepIndex] ? (
                 <>
-                  <Container header={<Header variant="h2">Rubric</Header>}>
+                  <Container header={<Header variant="h2">{getText('assessment.rubric')}</Header>}>
                     <Table
                       columnDefinitions={[
                         {
                           id: 'weight',
-                          header: 'Points',
+                          header: getText('common.points'),
                           cell: (item) => item.weight,
                         },
                         {
                           id: 'point',
-                          header: 'Description',
+                          header: getText('common.description'),
                           cell: (item) => item.point,
                         },
                       ]}
                       items={studentAssessment.assessment!.freeTextAssessment![activeStepIndex].rubric}
                     />
                   </Container>
-                  <Container header={<Header variant="h2">Points - {JSON.parse(studentAssessment.report!)[activeStepIndex].rate}</Header>}>
+                  <Container header={<Header variant="h2">{getTextWithParams('pages.review_assessment.points_with_rate', { rate: JSON.parse(studentAssessment.report!)[activeStepIndex].rate })}</Header>}>
                     <Box variant="p">{JSON.parse(studentAssessment.report!)[activeStepIndex].explanation}</Box>
                   </Container>
                 </>
               ) : (
-                <Container header={<Header variant="h2">Explanation</Header>}>
+                <Container header={<Header variant="h2">{getText('assessment.explanation')}</Header>}>
                   <Box variant="p">{(assessment as MultiChoice).explanation}</Box>
                 </Container>
               )}

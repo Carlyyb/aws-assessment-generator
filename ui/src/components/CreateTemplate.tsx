@@ -5,6 +5,7 @@ import { createAssessTemplate } from '../graphql/mutations';
 import { Lang, AssessType, Taxonomy } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { optionise } from '../helpers';
+import { getText } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -51,7 +52,7 @@ export default (props: CreateTemplateProps) => {
             },
           })
           .then(() => {
-            dispatchAlert({ type: AlertType.SUCCESS, content: 'Templated created successfully' });
+            dispatchAlert({ type: AlertType.SUCCESS, content: getText('templates.create_success') });
             onSubmit();
           })
           .catch(() => {
@@ -64,13 +65,13 @@ export default (props: CreateTemplateProps) => {
         actions={
           <SpaceBetween direction="horizontal" size="xs">
             <Button formAction="none" variant="link" onClick={onCancel}>
-              Cancel
+              {getText('common.cancel')}
             </Button>
             <Button
               variant="primary"
               disabled={!docLang || !assessType || !taxonomy || !totalQuestions || !easyQuestions || !mediumQuestions || !hardQuestions}
             >
-              Submit
+              {getText('common.submit')}
             </Button>
           </SpaceBetween>
         }
@@ -79,28 +80,28 @@ export default (props: CreateTemplateProps) => {
           <SpaceBetween size="l" alignItems="center">
             <Box padding="xxxl">
               <SpaceBetween direction="horizontal" size="l">
-                <FormField label="Name of Template">
+                <FormField label={getText('templates.name')}>
                   <Input value={name} onChange={({ detail }) => setName(detail.value)} />
                 </FormField>
-                <FormField label="Document Language">
+                <FormField label={getText('templates.docLang')}>
                   <Select options={langs} selectedOption={docLang} onChange={({ detail }) => setDocLang(detail.selectedOption)} />
                 </FormField>
-                <FormField label="Default Assessment Type">
+                <FormField label={getText('templates.assessType')}>
                   <Select options={assessTypes} selectedOption={assessType} onChange={({ detail }) => setAssessType(detail.selectedOption)} />
                 </FormField>
-                <FormField label="Default Taxonomy">
+                <FormField label={getText('templates.taxonomy')}>
                   <Select options={taxonomies} selectedOption={taxonomy} onChange={({ detail }) => setTaxonomy(detail.selectedOption)} />
                 </FormField>
-                <FormField label="Number of Questions">
+                <FormField label={getText('templates.total_questions')}>
                   <Input value={totalQuestions} onChange={({ detail }) => setTotalQuestions(detail.value)} />
                 </FormField>
-                <FormField label="Number of Easy Questions">
+                <FormField label={getText('templates.easy_questions')}>
                   <Input value={easyQuestions} onChange={({ detail }) => setEasyQuestions(detail.value)} />
                 </FormField>
-                <FormField label="Number of Medium Questions">
+                <FormField label={getText('templates.medium_questions')}>
                   <Input value={mediumQuestions} onChange={({ detail }) => setMediumQuestions(detail.value)} />
                 </FormField>
-                <FormField label="Number of Hard Questions">
+                <FormField label={getText('templates.hard_questions')}>
                   <Input value={hardQuestions} onChange={({ detail }) => setHardQuestions(detail.value)} />
                 </FormField>
               </SpaceBetween>

@@ -3,6 +3,7 @@ import { useOutlet, useNavigate } from 'react-router-dom';
 import { ContentLayout, Container, Header, Box, SpaceBetween, Button } from '@cloudscape-design/components';
 import { titlise } from '../helpers';
 import { RoutesContext } from '../contexts/routes';
+import { getText } from '../i18n/lang';
 
 export default () => {
   const outlet = useOutlet();
@@ -19,7 +20,7 @@ export default () => {
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">Home Page</Header>
+            <Header variant="h1">{getText('pages.home.title')}</Header>
           </SpaceBetween>
         }
       >
@@ -29,7 +30,7 @@ export default () => {
               {paths?.map((path: any) => (
                 <Button key={`button-${path}`} onClick={() => navigate(path)}>
                   <Box variant="h2" padding="m">
-                    {titlise(path)}
+                    {getText(`pages.home.buttons.${path}`) || titlise(path)}
                   </Box>
                 </Button>
               ))}

@@ -20,6 +20,7 @@ import { MultiChoice, FreeText, AssessType, StudentAssessment } from '../graphql
 import { getStudentAssessment } from '../graphql/queries';
 import { gradeStudentAssessment } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
+import { getText, getTextWithParams } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -52,11 +53,11 @@ export default () => {
     <>
       <Modal
         visible={score !== undefined}
-        header="Your Score:"
+        header={getText('pages.student_assessment.your_score')}
         footer={
           <Box float="right">
             <Button variant="primary" onClick={() => navigate('/assessments')}>
-              Done
+              {getText('common.finish')}
             </Button>
           </Box>
         }
@@ -67,13 +68,13 @@ export default () => {
             hideLegend
             variant="donut"
             data={[
-              { title: 'Correct', value: score! },
-              { title: 'Incorrect', value: 100 - score! },
+              { title: getText('assessment.correct'), value: score! },
+              { title: getText('assessment.incorrect'), value: 100 - score! },
             ]}
             innerMetricValue={`${score}%`}
           />
           <Button fullWidth onClick={() => navigate('/review/' + assessmentId)}>
-            Review
+            {getText('common.review')}
           </Button>
         </SpaceBetween>
       </Modal>
@@ -98,14 +99,14 @@ export default () => {
             .finally(() => setShowSpinner(false));
         }}
         i18nStrings={{
-          stepNumberLabel: (stepNumber) => `Question ${stepNumber}`,
-          collapsedStepsLabel: (stepNumber, stepsCount) => `Question ${stepNumber} of ${stepsCount}`,
-          skipToButtonLabel: (step, _stepNumber) => `Skip to ${step.title}`,
-          cancelButton: 'Cancel',
-          previousButton: 'Previous',
-          nextButton: 'Next',
-          submitButton: 'Submit',
-          optional: 'optional',
+          stepNumberLabel: (stepNumber) => getTextWithParams('pages.student_assessment.question_number', { number: stepNumber }),
+          collapsedStepsLabel: (stepNumber, stepsCount) => getTextWithParams('pages.student_assessment.question_progress', { current: stepNumber, total: stepsCount }),
+          skipToButtonLabel: (step, _stepNumber) => getTextWithParams('pages.student_assessment.skip_to', { title: step.title }),
+          cancelButton: getText('common.cancel'),
+          previousButton: getText('common.previous'),
+          nextButton: getText('common.next'),
+          submitButton: getText('common.submit'),
+          optional: getText('common.optional'),
         }}
         onCancel={() => navigate('/assessments')}
         onNavigate={({ detail }) => {
@@ -118,12 +119,12 @@ export default () => {
             title: q.title,
             content: (
               <SpaceBetween size="l">
-                <Container header={<Header variant="h2">Question {activeStepIndex + 1}</Header>}>
+                <Container header={<Header variant="h2">{getTextWithParams('pages.student_assessment.question_title', { number: activeStepIndex + 1 })}</Header>}>
                   <Box variant="p">{q.question}</Box>
                 </Container>
-                <Container header={<Header variant="h2">Answer</Header>}>
+                <Container header={<Header variant="h2">{getText('assessment.answer')}</Header>}>
                   {assessType === AssessType.freeTextAssessment ? (
-                    <FormField label={'Provide:'}>
+                    <FormField label={getText('pages.student_assessment.provide_answer')}>
                       <Textarea
                         value={answers[activeStepIndex]}
                         onChange={({ detail }) => {
@@ -134,7 +135,7 @@ export default () => {
                       />
                     </FormField>
                   ) : (
-                    <FormField label={'Choose:'}>
+                    <FormField label={getText('pages.student_assessment.choose_answer')}>
                       <Tiles
                         columns={1}
                         value={answers[activeStepIndex]}
@@ -153,7 +154,7 @@ export default () => {
           };
         })}
       />
-      <Modal visible={showSpinner} header={<Header>Grading...</Header>}>
+      <Modal visible={showSpinner} header={<Header>{getText('pages.student_assessment.grading')}</Header>}>
         <SpaceBetween size="s" alignItems="center">
           <Spinner size="big" />
         </SpaceBetween>

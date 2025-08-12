@@ -3,6 +3,7 @@ import { useOutlet, useNavigate } from 'react-router-dom';
 import { ContentLayout, Container, Header, Box, SpaceBetween, Button } from '@cloudscape-design/components';
 import { titlise } from '../helpers';
 import { RoutesContext } from '../contexts/routes';
+import { getText } from '../i18n/lang';
 
 type SectionProps = { id: number };
 
@@ -21,7 +22,7 @@ export default (props: SectionProps) => {
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">{`${titlise(rootPath)}:`}</Header>
+            <Header variant="h1">{getText(`pages.section.${rootPath}`)}</Header>
           </SpaceBetween>
         }
       >
@@ -31,7 +32,7 @@ export default (props: SectionProps) => {
               {paths?.map((path: any) => (
                 <Button key={`button-${path}`} onClick={() => navigate(path)}>
                   <Box variant="h2" padding="m">
-                    {titlise(path)}
+                    {getText(`pages.section.buttons.${path}`) || titlise(path)}
                   </Box>
                 </Button>
               ))}
