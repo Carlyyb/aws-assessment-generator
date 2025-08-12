@@ -3,10 +3,10 @@ import re
 import json
 
 # 设置React+TypeScript前端代码目录
-root_dir = './ui'
+root_dir = './src'
 
 # 设置输出目录
-output_dir = './i18n'
+output_dir = './src/i18n'
 
 # 设置语言代码
 lang_code = 'en'
