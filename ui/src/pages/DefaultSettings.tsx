@@ -1,11 +1,13 @@
 import { useEffect, useState, useContext } from 'react';
 import { Container, Header, SpaceBetween, Button, Form, FormField, Box, Select, SelectProps } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
-import { Lang, AssessType, Taxonomy } from '../graphql/API';
+import { AssessType, Taxonomy } from '../graphql/API';
+import { Lang } from '../graphql/Lang';
 import { getSettings } from '../graphql/queries';
 import { upsertSettings } from '../graphql/mutations';
 import { optionise } from '../helpers';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
+import { setCurrentLang } from '../i18n/lang';
 
 const client = generateClient();
 
@@ -26,6 +28,10 @@ export default () => {
       const settings = data.getSettings;
       if (!settings) return;
       setUiLang(optionise(settings.uiLang!));
+      // 设置初始语言
+      if (settings.uiLang) {
+        setCurrentLang(settings.uiLang as Lang);
+      }
       setDocLang(optionise(settings.docLang!));
       setAssessType(optionise(settings.assessType!));
     });
@@ -59,7 +65,17 @@ export default () => {
           <Box padding="xxxl">
             <SpaceBetween direction="horizontal" size="l">
               <FormField label="UI Language">
-                <Select options={langs} selectedOption={uiLang} onChange={({ detail }) => setUiLang(detail.selectedOption)} />
+                <Select 
+                  options={langs} 
+                  selectedOption={uiLang} 
+                  onChange={({ detail }) => {
+                    setUiLang(detail.selectedOption);
+                    // 设置新的语言
+                    if (detail.selectedOption?.value) {
+                      setCurrentLang(detail.selectedOption.value as Lang);
+                    }
+                  }} 
+                />
               </FormField>
               <FormField label="Document Language">
                 <Select options={langs} selectedOption={docLang} onChange={({ detail }) => setDocLang(detail.selectedOption)} />
