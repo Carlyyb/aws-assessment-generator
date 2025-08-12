@@ -83,7 +83,12 @@
       "published_successfully": "Published successfully to students"
     },
     "settings": {
-      "title": "Settings"
+      "title": "Settings",
+      "update_success": "Settings updated successfully",
+      "ui_language": "UI Language",
+      "doc_language": "Document Language",
+      "default_assessment_type": "Default Assessment Type",
+      "default_taxonomy": "Default Taxonomy"
     }
   },
   "taxonomy": {

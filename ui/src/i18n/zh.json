@@ -83,7 +83,12 @@
       "published_successfully": "已成功发布给学生"
     },
     "settings": {
-      "title": "设置"
+      "title": "设置",
+      "update_success": "设置更新成功",
+      "ui_language": "界面语言",
+      "doc_language": "文档语言",
+      "default_assessment_type": "默认评估类型",
+      "default_taxonomy": "默认分类法"
     }
   },
   "taxonomy": {
