@@ -12,3 +12,4 @@ cdk.out
 /ui/build/
 yas-ai.cn.ppk
 yas-ai.cn.pem
+.env.development.local
