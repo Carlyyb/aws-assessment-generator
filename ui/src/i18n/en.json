@@ -65,7 +65,8 @@
     "courses": {
       "title": "Courses:",
       "create_new": "Create New Course",
-      "new_course": "New Course"
+      "new_course": "New Course",
+      "create_success": "Courses create success"
     },
     "edit_assessments": {
       "update_success": "Assessment updated successfully",

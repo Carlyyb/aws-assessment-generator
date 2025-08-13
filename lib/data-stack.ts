@@ -277,7 +277,7 @@ export class DataStack extends NestedStack {
       entry: path.resolve(__dirname, 'questions-generation', 'lambdas', 'event-handler', 'index.ts'),
       memorySize: 512,
       role: assessmentLambdaRole,
-      runtime: Runtime.NODEJS_18_X,
+      runtime: Runtime.NODEJS_20_X,
       architecture: Architecture.ARM_64,
       tracing: Tracing.ACTIVE,
       timeout: Duration.minutes(15),
@@ -304,7 +304,7 @@ export class DataStack extends NestedStack {
       description: 'Wraps around the Question generator ',
       entry: path.resolve(__dirname, 'questions-generation', 'lambdas', 'wrapper', 'index.ts'),
       memorySize: 512,
-      runtime: Runtime.NODEJS_18_X,
+      runtime: Runtime.NODEJS_20_X,
       architecture: Architecture.ARM_64,
       tracing: Tracing.ACTIVE,
       timeout: Duration.seconds(30),
@@ -378,7 +378,7 @@ export class DataStack extends NestedStack {
       entry: 'lib/lambdas/gradeAssessment.ts',
       memorySize: 512,
       role: assessmentLambdaRole,
-      runtime: Runtime.NODEJS_18_X,
+      runtime: Runtime.NODEJS_20_X,
       architecture: Architecture.ARM_64,
       tracing: Tracing.ACTIVE,
       timeout: Duration.minutes(15),
@@ -443,7 +443,7 @@ export class DataStack extends NestedStack {
 
     const getIngestionJobFn = new NodejsFunction(this, 'GetIngestionJobFn', {
       entry: 'lib/lambdas/getIngestionJob.ts',
-      runtime: Runtime.NODEJS_18_X,
+      runtime: Runtime.NODEJS_20_X,
       architecture: Architecture.ARM_64,
       tracing: Tracing.ACTIVE,
       bundling: {

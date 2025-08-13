@@ -65,7 +65,8 @@
     "courses": {
       "title": "课程列表：",
       "create_new": "创建新课程",
-      "new_course": "新建课程"
+      "new_course": "新建课程",
+      "create_success": "课程创建成功"
     },
     "edit_assessments": {
       "update_success": "评估更新成功",
