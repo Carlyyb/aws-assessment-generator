@@ -1,7 +1,6 @@
 enum Lang {
-  EN
-  FR
-  ES
+  en
+  zh
 }
 
 enum Taxonomy {

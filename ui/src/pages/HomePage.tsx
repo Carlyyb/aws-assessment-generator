@@ -28,7 +28,11 @@ export default () => {
           <SpaceBetween size="l" alignItems="center">
             <SpaceBetween size="l" direction="horizontal">
               {paths?.map((path: any) => (
-                <Button key={`button-${path}`} onClick={() => navigate(path)}>
+                <Button 
+                  key={`button-${path}`} 
+                  onClick={() => navigate(path)}
+                  ariaLabel={getText(`pages.home.buttons.${path}`) || titlise(path)}
+                  >
                   <Box variant="h2" padding="m">
                     {getText(`pages.home.buttons.${path}`) || titlise(path)}
                   </Box>

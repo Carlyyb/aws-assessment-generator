@@ -53,10 +53,19 @@ export default () => {
       <Form
         actions={
           <SpaceBetween direction="horizontal" size="xs">
-            <Button formAction="none" variant="link">
+            <Button 
+              formAction="none" 
+              variant="link" 
+              ariaLabel={getText('common.cancel')}
+              >
               {getText('common.cancel')}
             </Button>
-            <Button variant="primary">{getText('common.submit')}</Button>
+            <Button 
+              variant="primary" 
+              ariaLabel={getText('common.submit')}
+              >
+              {getText('common.submit')}
+            </Button>
           </SpaceBetween>
         }
         header={<Header variant="h1">{getText('pages.settings.title')}</Header>}

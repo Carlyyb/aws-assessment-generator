@@ -9,9 +9,8 @@ export type UpsertSettingsInput = {
 };
 
 export enum Lang {
-  EN = "EN",
-  FR = "FR",
-  ES = "ES",
+  en = "en",
+  zh = "zh"
 }
 
 

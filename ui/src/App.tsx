@@ -8,6 +8,8 @@ import {
   SideNavigation,
   TopNavigation,
 } from '@cloudscape-design/components';
+import './styles/high-contrast.css';
+import './styles/cross-browser.css';
 import { I18nProvider } from '@cloudscape-design/components/i18n';
 import messages from '@cloudscape-design/components/i18n/messages/all.en';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';

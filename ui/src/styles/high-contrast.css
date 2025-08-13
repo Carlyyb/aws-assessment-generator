@@ -1,0 +1,26 @@
+/* 替换旧的 -ms-high-contrast 媒体查询 */
+@media (forced-colors: active) {
+  /* 基础样式 */
+  :root {
+    --button-border-color: CanvasText;
+    --button-text-color: CanvasText;
+    --button-background: Canvas;
+  }
+
+  /* 按钮样式 */
+  button {
+    border-color: var(--button-border-color);
+    color: var(--button-text-color);
+    background-color: var(--button-background);
+  }
+
+  /* 链接样式 */
+  a {
+    color: LinkText;
+  }
+
+  /* 禁用状态 */
+  button:disabled {
+    opacity: 0.5;
+  }
+}

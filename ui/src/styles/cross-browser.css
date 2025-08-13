@@ -1,0 +1,64 @@
+/* 触摸操作相关 */
+* {
+  -ms-touch-action: manipulation;  /* IE/Edge */
+  touch-action: manipulation;      /* 标准 */
+}
+
+/* 文本大小调整 */
+html {
+  -webkit-text-size-adjust: 100%;  /* Safari */
+  -moz-text-size-adjust: 100%;     /* Firefox */
+  -ms-text-size-adjust: 100%;      /* IE/Edge */
+  text-size-adjust: 100%;          /* 标准 */
+}
+
+/* 用户选择 */
+.no-select {
+  -webkit-user-select: none;      /* Safari */
+  -moz-user-select: none;         /* Firefox */
+  -ms-user-select: none;          /* IE/Edge */
+  user-select: none;              /* 标准 */
+}
+
+/* 用户拖拽 */
+.draggable {
+  -webkit-user-drag: element;     /* Safari/Chrome */
+  -khtml-user-drag: element;      /* Konqueror */
+  user-drag: element;             /* 标准 */
+}
+
+/* 强制颜色模式（替代 -ms-high-contrast） */
+@media (forced-colors: active) {
+  /* 基础样式 */
+  :root {
+    --button-border-color: CanvasText;
+    --button-text-color: CanvasText;
+    --button-background: Canvas;
+  }
+
+  /* 按钮样式 */
+  button {
+    border-color: var(--button-border-color);
+    color: var(--button-text-color);
+    background-color: var(--button-background);
+  }
+
+  /* 链接样式 */
+  a {
+    color: LinkText;
+  }
+
+  /* 禁用状态 */
+  button:disabled {
+    opacity: 0.5;
+  }
+}
+
+/* 响应式文本大小 */
+@media screen and (max-width: 768px) {
+  html {
+    /* 对于不支持 text-size-adjust 的浏览器，提供合理的默认值 */
+    font-size: 16px;
+    font-size: calc(14px + 0.5vw);
+  }
+}
