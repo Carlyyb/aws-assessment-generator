@@ -1,0 +1,41 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install Backend Dependencies
+      run: npm ci
+    
+    - name: Run Backend Tests
+      run: npm test
+    
+    - name: Install Frontend Dependencies
+      working-directory: ./ui
+      run: npm ci
+    
+    - name: Build Frontend
+      working-directory: ./ui
+      run: npm run build
+
+    - name: Lint Frontend
+      working-directory: ./ui
+      run: npm run lint
