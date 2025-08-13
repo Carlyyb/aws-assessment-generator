@@ -204,6 +204,16 @@
       "default_taxonomy": "默认分类法"
     }
   },
+  "studentAssessments": {
+    "table": {
+      "name":"课程名称",
+      "course": "课程",
+      "deadline": "",
+      "action": "",
+      "score": ""
+    }
+    ""
+  },
   "taxonomy": {
     "knowledge": "知识",
     "comprehension": "理解",
