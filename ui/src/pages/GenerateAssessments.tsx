@@ -15,6 +15,8 @@ import {
   DatePicker,
   Spinner,
   Modal,
+  ProgressBar,
+  Alert,
 } from '@cloudscape-design/components';
 import { uploadData } from 'aws-amplify/storage';
 import { generateClient } from 'aws-amplify/api';
@@ -42,6 +44,28 @@ export default () => {
   const [assessId, setAssessId] = useState('');
   const [assessTemplates, setAssessTemplates] = useState<SelectProps.Option[]>([]);
   const [assessTemplate, setAssessTemplate] = useState<SelectProps.Option | null>(null);
+  
+  // 进度和日志状态
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
+  const [logs, setLogs] = useState<string[]>([]);
+  const [statusCheckCount, setStatusCheckCount] = useState(0);
+
+  // 添加日志函数
+  const addLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const logMessage = `[${timestamp}] ${message}`;
+    setLogs(prev => [...prev, logMessage]);
+    console.log(logMessage); // 同时输出到控制台
+  };
+
+  // 更新步骤和进度
+  const updateStep = (step: string, progressValue: number) => {
+    setCurrentStep(step);
+    setProgress(progressValue);
+    addLog(step);
+  };
 
   useEffect(() => {
     client.graphql<any>({ query: listAssessTemplates }).then(({ data, errors }) => {
@@ -69,15 +93,45 @@ export default () => {
 
   function checkStatus() {
     setTimeout(() => {
+      setStatusCheckCount(prev => prev + 1);
+      const checkNumber = statusCheckCount + 1;
+      
+      addLog(`检查生成状态... (第 ${checkNumber} 次)`);
+      
       client.graphql<any>({ query: getAssessment, variables: { id: assessId } }).then(({ data }) => {
-        const { status } = data.getAssessment;
+        const assessment = data.getAssessment;
+        const { status } = assessment;
+        
+        addLog(`当前状态: ${status}`);
+        
         if (status === AssessStatus.CREATED) {
+          updateStep('✅ 评估生成完成！正在跳转到编辑页面...', 100);
+          setIsGenerating(false);
           dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.generate_assessments.generate_success') });
-          return navigate(`/edit-assessment/${assessId}`);
+          setTimeout(() => {
+            navigate(`/edit-assessment/${assessId}`);
+          }, 1000);
+          return;
         }
+        
+        // 根据检查次数更新进度
+        const estimatedProgress = Math.min(30 + (checkNumber * 5), 90);
+        setProgress(estimatedProgress);
+        
+        if (checkNumber > 60) { // 超过 5 分钟（60 * 5秒 = 300秒）
+          addLog('⚠️ 生成时间过长，可能遇到问题。请检查网络连接或稍后重试。');
+          setIsGenerating(false);
+          dispatchAlert({ type: AlertType.ERROR, content: '评估生成超时，请稍后重试' });
+          return;
+        }
+        
         checkStatus();
+      }).catch((error) => {
+        addLog(`❌ 状态检查失败: ${error.message || error}`);
+        console.error('Status check error:', error);
+        checkStatus(); // 继续重试
       });
-    }, 1000);
+    }, 5000); // 每5秒检查一次
   }
 
   useEffect(() => {
@@ -105,24 +159,55 @@ export default () => {
               </Button>
               <Button
                 onClick={async () => {
-                  const data = files.map((file) => ({
-                    key: `Assessments/${userProfile?.userId}/${course?.value}/${file.name}`,
-                    file,
-                  }));
                   try {
+                    // 重置状态
+                    setIsGenerating(true);
+                    setProgress(0);
+                    setLogs([]);
+                    setStatusCheckCount(0);
+                    
+                    updateStep('🚀 开始生成评估...', 5);
+                    
+                    // 验证必填字段
+                    if (!name.trim()) {
+                      throw new Error('请输入评估名称');
+                    }
+                    if (!course?.value) {
+                      throw new Error('请选择课程');
+                    }
+                    if (files.length === 0) {
+                      throw new Error('请上传至少一个文件');
+                    }
+                    
+                    updateStep('📁 准备上传文件...', 10);
+                    
+                    const data = files.map((file) => ({
+                      key: `Assessments/${userProfile?.userId}/${course?.value}/${file.name}`,
+                      file,
+                    }));
+                    
+                    addLog(`准备上传 ${files.length} 个文件`);
+                    
+                    updateStep('📤 正在上传文件到云存储...', 15);
+                    
                     await Promise.all(
                       data.map(
-                        ({ key, file }) =>
-                          uploadData({
+                        ({ key, file }, index) => {
+                          addLog(`上传文件 ${index + 1}/${files.length}: ${file.name}`);
+                          return uploadData({
                             key,
                             data: file,
-                          }).result
+                          }).result;
+                        }
                       )
                     );
-                    //TODO implement validation
-                    if (!(course && course.value)) {
-                      throw new Error('Invalid course');
-                    }
+                    
+                    updateStep('✅ 文件上传完成', 25);
+                    addLog('所有文件上传成功');
+                    
+                    updateStep('🤖 正在调用AI生成评估...', 30);
+                    addLog('发送生成请求到后端服务...');
+                    
                     const res = await client.graphql<any>({
                       query: generateAssessment,
                       variables: {
@@ -136,15 +221,25 @@ export default () => {
                         },
                       },
                     });
+                    
                     const id = res.data.generateAssessment;
                     setAssessId(id);
-                  } catch (_e) {
-                    dispatchAlert({ type: AlertType.ERROR, content: getText('teachers.assessments.generate.failed_to_generate') });
+                    
+                    addLog(`✅ 评估请求已提交，ID: ${id}`);
+                    updateStep('⏳ 正在后台生成评估内容...', 35);
+                    addLog('开始监控生成进度...');
+                    
+                  } catch (error: any) {
+                    const errorMessage = error.message || '未知错误';
+                    addLog(`❌ 生成失败: ${errorMessage}`);
+                    setIsGenerating(false);
+                    dispatchAlert({ type: AlertType.ERROR, content: `生成评估失败: ${errorMessage}` });
                   }
                 }}
                 variant="primary"
+                disabled={isGenerating}
               >
-                {getText('teachers.assessments.generate.title')}
+                {isGenerating ? '生成中...' : getText('teachers.assessments.generate.title')}
               </Button>
             </SpaceBetween>
           }
@@ -204,9 +299,93 @@ export default () => {
           </Container>
         </Form>
       </form>
-      <Modal visible={!!assessId} header={<Header>{getText('teachers.assessments.generate.generating')}</Header>}>
-        <SpaceBetween size="s" alignItems="center">
-          <Spinner size="big" />
+      <Modal 
+        visible={isGenerating || !!assessId} 
+        onDismiss={() => {
+          if (!isGenerating) {
+            setAssessId('');
+            setLogs([]);
+            setProgress(0);
+            setCurrentStep('');
+          }
+        }}
+        header={<Header>{getText('teachers.assessments.generate.generating')}</Header>}
+        size="large"
+      >
+        <SpaceBetween size="l">
+          {/* 进度条 */}
+          <Box>
+            <ProgressBar
+              value={progress}
+              additionalInfo={`${progress}% 完成`}
+              description={currentStep || '准备中...'}
+            />
+          </Box>
+          
+          {/* 当前步骤显示 */}
+          {currentStep && (
+            <Alert statusIconAriaLabel="Info" header="当前进度">
+              {currentStep}
+            </Alert>
+          )}
+          
+          {/* 实时日志 */}
+          <Box>
+            <Header variant="h3">生成日志</Header>
+            <div
+              style={{
+                backgroundColor: '#f8f9fa',
+                border: '1px solid #dee2e6',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                maxHeight: '300px',
+                overflowY: 'auto',
+                padding: '16px',
+              }}
+            >
+              {logs.length > 0 ? (
+                <div>
+                  {logs.map((log, index) => (
+                    <div key={index} style={{ marginBottom: '4px' }}>
+                      {log}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ color: '#6c757d' }}>等待开始...</div>
+              )}
+            </div>
+          </Box>
+          
+          {/* 加载指示器 */}
+          <SpaceBetween size="s" alignItems="center">
+            <Spinner size="big" />
+            <Box textAlign="center">
+              <strong>正在生成评估</strong>
+              <br />
+              <small>这可能需要几分钟时间，请耐心等待...</small>
+            </Box>
+          </SpaceBetween>
+          
+          {/* 取消按钮 */}
+          <SpaceBetween direction="horizontal" size="xs">
+            <Button 
+              variant="link" 
+              onClick={() => {
+                if (window.confirm('确定要取消生成吗？')) {
+                  setIsGenerating(false);
+                  setAssessId('');
+                  setLogs([]);
+                  setProgress(0);
+                  setCurrentStep('');
+                }
+              }}
+              disabled={progress === 100}
+            >
+              取消生成
+            </Button>
+          </SpaceBetween>
         </SpaceBetween>
       </Modal>
     </>
