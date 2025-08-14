@@ -44,11 +44,26 @@ export default () => {
   const [assessTemplate, setAssessTemplate] = useState<SelectProps.Option | null>(null);
 
   useEffect(() => {
-    client.graphql<any>({ query: listAssessTemplates }).then(({ data }) => {
-      const list = data.listAssessTemplates;
+    client.graphql<any>({ query: listAssessTemplates }).then(({ data, errors }) => {
+      if (errors && errors.length > 0) {
+        console.warn('GraphQL errors:', errors);
+      }
+      
+      const list = data?.listAssessTemplates;
       if (!list) return;
-      const options = list.map((assessTemplate: AssessTemplate) => ({ label: assessTemplate.name, value: assessTemplate.id }));
+      
+      // 过滤掉无效的模板记录
+      const validList = list.filter((assessTemplate: AssessTemplate) => {
+        return assessTemplate && assessTemplate.id && assessTemplate.name;
+      });
+      
+      const options = validList.map((assessTemplate: AssessTemplate) => ({ 
+        label: assessTemplate.name, 
+        value: assessTemplate.id 
+      }));
       setAssessTemplates(options);
+    }).catch((error) => {
+      console.error('Error fetching templates:', error);
     });
   }, []);
 

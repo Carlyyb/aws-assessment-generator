@@ -17,8 +17,27 @@ export default () => {
   useEffect(() => {
     client
       .graphql<any>({ query: listAssessTemplates })
-      .then(({ data }) => setTemplates(data.listAssessTemplates || []))
-      .catch(() => dispatchAlert({ type: AlertType.ERROR }));
+      .then(({ data, errors }) => {
+        if (errors && errors.length > 0) {
+          console.warn('GraphQL errors:', errors);
+          // 即使有错误，也尝试使用可用的数据
+          const validTemplates = (data?.listAssessTemplates || []).filter((template: AssessTemplate) => {
+            // 过滤掉无效的模板记录
+            return template && template.id;
+          });
+          setTemplates(validTemplates);
+          dispatchAlert({ 
+            type: 'warning', 
+            content: getText('teachers.settings.templates.data_warning') || '部分模板数据存在问题，已过滤显示' 
+          });
+        } else {
+          setTemplates(data.listAssessTemplates || []);
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching templates:', error);
+        dispatchAlert({ type: AlertType.ERROR });
+      });
   }, [showCreateModal]);
 
   return (
@@ -55,7 +74,7 @@ export default () => {
             {
               id: 'docLang',
               header: getText('teachers.settings.templates.lang'),
-              cell: (item) => item.docLang,
+              cell: (item) => item.docLang || '-',
             },
             {
               id: 'assessType',
