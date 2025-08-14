@@ -23,13 +23,13 @@ export default () => {
 
   return (
     <ContentLayout>
-      <Modal header={getText('templates.create_new')} visible={showCreateModal} onDismiss={() => setShowCreateModal(false)}>
+  <Modal header={getText('teachers.settings.templates.create_new')} visible={showCreateModal} onDismiss={() => setShowCreateModal(false)}>
         <CreateTemplate onSubmit={() => setShowCreateModal(false)} onCancel={() => setShowCreateModal(false)} />
       </Modal>
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">{getText('templates.title')}</Header>
+            <Header variant="h1">{getText('teachers.settings.templates.title')}</Header>
           </SpaceBetween>
         }
       >
@@ -37,59 +37,59 @@ export default () => {
           header={
             <Header>
               <Button iconName="add-plus" onClick={() => setShowCreateModal(true)}>
-                {getText('templates.create_new')}
+                {getText('teachers.settings.templates.create_new')}
               </Button>
             </Header>
           }
           columnDefinitions={[
             {
               id: 'id',
-              header: getText('templates.id'),
+              header: getText('teachers.settings.templates.id'),
               cell: (item) => item.id,
             },
             {
               id: 'name',
-              header: getText('common.name'),
+              header: getText('common.labels.name'),
               cell: (item) => item.name,
             },
             {
               id: 'docLang',
-              header: getText('templates.lang'),
+              header: getText('teachers.settings.templates.lang'),
               cell: (item) => item.docLang,
             },
             {
               id: 'assessType',
-              header: getText('templates.type'),
+              header: getText('teachers.settings.templates.type'),
               cell: (item) => item.assessType,
             },
             {
               id: 'taxonomy',
-              header: getText('templates.taxonomy'),
+              header: getText('teachers.settings.templates.taxonomy'),
               cell: (item) => item.taxonomy,
             },
             {
               id: 'easyQuestions',
-              header: getText('templates.easy'),
+              header: getText('teachers.settings.templates.difficulty.easy'),
               cell: (item) => item.easyQuestions,
             },
             {
               id: 'mediumQuestions',
-              header: getText('templates.medium'),
+              header: getText('teachers.settings.templates.difficulty.medium'),
               cell: (item) => item.mediumQuestions,
             },
             {
               id: 'hardQuestions',
-              header: getText('templates.hard'),
+              header: getText('teachers.settings.templates.difficulty.hard'),
               cell: (item) => item.hardQuestions,
             },
             {
               id: 'totalQuestions',
-              header: getText('templates.total'),
+              header: getText('teachers.settings.templates.difficulty.total'),
               cell: (item) => item.totalQuestions,
             },
             {
               id: 'createdAt',
-              header: getText('templates.created_at'),
+              header: getText('teachers.settings.templates.created_at'),
               cell: (item) => item.createdAt,
             },
           ]}
@@ -105,12 +105,12 @@ export default () => {
             { id: 'createdAt', visible: true },
           ]}
           items={templates}
-          loadingText={getText('common.loading')}
+          loadingText={getText('common.status.loading')}
           pagination={<Pagination currentPageIndex={1} pagesCount={1} />}
           trackBy="id"
           empty={
             <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
-              {getText('common.empty')}
+              {getText('common.status.empty')}
             </Box>
           }
         />

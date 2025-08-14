@@ -83,9 +83,9 @@ export default () => {
             if (!ingestionJobId) throw new Error('Failed to create Knowledge Base');
             await waitForIngestion(knowledgeBaseId, dataSourceId, ingestionJobId);
             setShowSpinner(false);
-            dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.knowledge_base.created_successfully') });
+            dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.settings.knowledge_base.created_successfully') });
           } catch (_e) {
-            dispatchAlert({ type: AlertType.ERROR, content: getText('pages.knowledge_base.failed_to_create') });
+            dispatchAlert({ type: AlertType.ERROR, content: getText('teachers.settings.knowledge_base.failed_to_create') });
           }
         }}
       >
@@ -93,26 +93,26 @@ export default () => {
           actions={
             <SpaceBetween direction="horizontal" size="xs">
               <Button formAction="none" variant="link">
-                {getText('common.cancel')}
+                {getText('common.action.cancel')}
               </Button>
               <Button variant="primary" disabled={!course || !files.length}>
-                {getText('common.submit')}
+                {getText('common.action.submit')}
               </Button>
             </SpaceBetween>
           }
-          header={<Header variant="h1">{getText('pages.knowledge_base.title')}</Header>}
+          header={<Header variant="h1">{getText('teachers.settings.knowledge_base.title')}</Header>}
         >
           <ContentLayout>
             <Container
               header={
                 <SpaceBetween size="l">
-                  <Header variant="h1">{getText('pages.knowledge_base.upload_document')}</Header>
+                  <Header variant="h1">{getText('teachers.settings.knowledge_base.upload_document')}</Header>
                 </SpaceBetween>
               }
             >
               <Box padding="xxxl">
                 <SpaceBetween size="l" direction="horizontal" alignItems="start">
-                  <FormField label={getText('pages.knowledge_base.choose_course')}>
+                  <FormField label={getText('teachers.settings.knowledge_base.choose_course')}>
                     <Select options={courses} selectedOption={course} onChange={({ detail }) => setCourse(detail.selectedOption)} />
                   </FormField>
                   <FormField>
@@ -120,12 +120,12 @@ export default () => {
                       onChange={({ detail }) => setFiles(detail.value)}
                       value={files}
                       i18nStrings={{
-                        uploadButtonText: (e) => (e ? getText('common.choose_files') : getText('common.choose_file')),
-                        dropzoneText: (e) => (e ? getText('common.drop_files_to_upload') : getText('common.drop_file_to_upload')),
-                        removeFileAriaLabel: (e) => getTextWithParams('pages.knowledge_base.remove_file', { index: e + 1 }),
-                        limitShowFewer: getText('common.show_fewer_files'),
-                        limitShowMore: getText('common.show_more_files'),
-                        errorIconAriaLabel: getText('common.error'),
+                        uploadButtonText: (e) => (e ? getText('common.action.choose_files') : getText('common.action.choose_file')),
+                        dropzoneText: (e) => (e ? getText('common.status.drop_files_to_upload') : getText('common.status.drop_file_to_upload')),
+                        removeFileAriaLabel: (e) => getTextWithParams('teachers.settings.knowledge_base.remove_file', { index: e + 1 }),
+                        limitShowFewer: getText('common.status.show_fewer_files'),
+                        limitShowMore: getText('common.status.show_more_files'),
+                        errorIconAriaLabel: getText('common.status.error'),
                       }}
                       showFileLastModified
                       showFileSize
@@ -139,7 +139,7 @@ export default () => {
           </ContentLayout>
         </Form>
       </form>
-      <Modal visible={showSpinner} header={<Header>{getText('pages.knowledge_base.creating')}</Header>}>
+  <Modal visible={showSpinner} header={<Header>{getText('teachers.settings.knowledge_base.creating')}</Header>}>
         <SpaceBetween size="s" alignItems="center">
           <Spinner size="big" />
         </SpaceBetween>

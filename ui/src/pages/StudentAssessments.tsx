@@ -28,7 +28,7 @@ export default () => {
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1"> {getText('studentAssessments.title')} </Header>
+            <Header variant="h1"> {getText('students.assessments.list.title')} </Header>
           </SpaceBetween>
         }
       >
@@ -36,35 +36,35 @@ export default () => {
           columnDefinitions={[
             {
               id: 'name',
-              header: getText('studentAssessments.table.name'),
+              header: getText('students.assessments.list.table.name'),
               cell: (item) => item.assessment!.name,
               sortingField: 'name',
             },
             {
               id: 'course',
-              header: getText('studentAssessments.table.course'),
+              header: getText('students.assessments.list.table.course'),
               cell: (item) => item.assessment!.course?.name,
               sortingField: 'course',
             },
             {
               id: 'deadline',
-              header: getText('studentAssessments.table.deadline'),
+              header: getText('students.assessments.list.table.deadline'),
               cell: (item) => new Date(item.assessment!.deadline).toDateString(),
               sortingField: 'course',
             },
             {
               id: 'action',
-              header: getText('studentAssessments.table.action'),
+              header: getText('students.assessments.list.table.action'),
               cell: (item) =>
                 item.completed ? (
-                  <Button onClick={() => navigate('/review/' + item.parentAssessId)}>{getText('studentAssessments.actions.review')}</Button>
+                  <Button onClick={() => navigate('/review/' + item.parentAssessId)}>{getText('students.assessments.list.actions.review')}</Button>
                 ) : (
-                  <Button onClick={() => navigate('/assessment/' + item.parentAssessId)}>{getText('studentAssessments.actions.start')}</Button>
+                  <Button onClick={() => navigate('/assessment/' + item.parentAssessId)}>{getText('students.assessments.list.actions.start')}</Button>
                 ),
             },
             {
               id: 'score',
-              header: getText('studentAssessments.table.score'),
+              header: getText('students.assessments.list.table.score'),
               cell: (item) => (item.completed ? item.score + '%' : ''),
             },
           ]}
@@ -76,11 +76,11 @@ export default () => {
             { id: 'action', visible: true },
           ]}
           items={assessments}
-          loadingText={getText('studentAssessments.loading')}
+          loadingText={getText('students.assessments.list.loading')}
           trackBy="id"
           empty={
             <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
-              {getText('studentAssessments.empty')}
+              {getText('students.assessments.list.empty')}
             </Box>
           }
           // filter={<TextFilter filteringPlaceholder="Find resources" filteringText="" />}

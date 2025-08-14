@@ -38,13 +38,13 @@ export default () => {
     <Wizard
       onSubmit={() => navigate('/assessments')}
       i18nStrings={{
-        stepNumberLabel: (stepNumber) => getTextWithParams('pages.review_assessment.question_number', { number: stepNumber }),
-        collapsedStepsLabel: (stepNumber, stepsCount) => getTextWithParams('pages.review_assessment.question_progress', { current: stepNumber, total: stepsCount }),
-        cancelButton: getText('common.cancel'),
-        previousButton: getText('common.previous'),
-        nextButton: getText('common.next'),
-        submitButton: getText('common.finish'),
-        optional: getText('common.optional'),
+        stepNumberLabel: (stepNumber) => getTextWithParams('teachers.assessments.review.question_number', { number: stepNumber }),
+        collapsedStepsLabel: (stepNumber, stepsCount) => getTextWithParams('teachers.assessments.review.question_progress', { current: stepNumber, total: stepsCount }),
+        cancelButton: getText('common.action.cancel'),
+        previousButton: getText('common.action.previous'),
+        nextButton: getText('common.action.next'),
+        submitButton: getText('common.action.finish'),
+        optional: getText('common.status.optional'),
       }}
       onCancel={() => navigate('/assessments')}
       onNavigate={({ detail }) => {
@@ -57,10 +57,10 @@ export default () => {
           title: assessment.title,
           content: (
             <SpaceBetween size="l">
-              <Container header={<Header variant="h2">{getTextWithParams('pages.review_assessment.question_title', { number: activeStepIndex + 1 })}</Header>}>
+              <Container header={<Header variant="h2">{getTextWithParams('teachers.assessments.review.question_title', { number: activeStepIndex + 1 })}</Header>}>
                 <Box variant="p">{assessment.question}</Box>
               </Container>
-              <Container header={<Header variant="h2">{getText('assessment.answer')}</Header>}>
+              <Container header={<Header variant="h2">{getText('teachers.assessments.review.answer')}</Header>}>
                 <SpaceBetween size="l">
                   {assessType === AssessType.multiChoiceAssessment ? (
                     (assessment as MultiChoice).answerChoices.map((answerChoice, i) => (
@@ -87,29 +87,29 @@ export default () => {
               </Container>
               {JSON.parse(studentAssessment.report || '{}')[activeStepIndex] ? (
                 <>
-                  <Container header={<Header variant="h2">{getText('assessment.rubric')}</Header>}>
+                  <Container header={<Header variant="h2">{getText('teachers.assessments.review.rubric')}</Header>}>
                     <Table
                       columnDefinitions={[
                         {
                           id: 'weight',
-                          header: getText('common.points'),
+                          header: getText('common.status.points'),
                           cell: (item) => item.weight,
                         },
                         {
                           id: 'point',
-                          header: getText('common.description'),
+                          header: getText('common.status.description'),
                           cell: (item) => item.point,
                         },
                       ]}
                       items={studentAssessment.assessment!.freeTextAssessment![activeStepIndex].rubric}
                     />
                   </Container>
-                  <Container header={<Header variant="h2">{getTextWithParams('pages.review_assessment.points_with_rate', { rate: JSON.parse(studentAssessment.report!)[activeStepIndex].rate })}</Header>}>
+                  <Container header={<Header variant="h2">{getTextWithParams('teachers.assessments.review.points_with_rate', { rate: JSON.parse(studentAssessment.report!)[activeStepIndex].rate })}</Header>}>
                     <Box variant="p">{JSON.parse(studentAssessment.report!)[activeStepIndex].explanation}</Box>
                   </Container>
                 </>
               ) : (
-                <Container header={<Header variant="h2">{getText('assessment.explanation')}</Header>}>
+                <Container header={<Header variant="h2">{getText('teachers.assessments.review.explanation')}</Header>}>
                   <Box variant="p">{(assessment as MultiChoice).explanation}</Box>
                 </Container>
               )}

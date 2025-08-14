@@ -29,7 +29,7 @@ export default (props: CreateCourseProps) => {
             variables: { input: { name, description } },
           })
           .then(() => {
-            dispatchAlert({ type: AlertType.SUCCESS, content: getText('courses.create_success') });
+            dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.settings.courses.create_success') });
             onSubmit();
           })
           .catch(() => {
@@ -42,19 +42,19 @@ export default (props: CreateCourseProps) => {
         actions={
           <SpaceBetween direction="horizontal" size="xs">
             <Button formAction="none" variant="link" onClick={onCancel}>
-              {getText('common.cancel')}
+              {getText('common.actions.cancel')}
             </Button>
-            <Button variant="primary">{getText('common.submit')}</Button>
+            <Button variant="primary">{getText('common.actions.submit')}</Button>
           </SpaceBetween>
         }
       >
         <Container>
           <Box padding="xxxl">
             <SpaceBetween direction="horizontal" size="l">
-              <FormField label={getText('common.name')}>
+              <FormField label={getText('common.labels.name')}>
                 <Input value={name} onChange={(e) => setName(e.detail.value)} />
               </FormField>
-              <FormField label={getText('common.description')}>
+              <FormField label={getText('common.labels.description')}>
                 <Input value={description} onChange={(e) => setDescription(e.detail.value)} />
               </FormField>
             </SpaceBetween>

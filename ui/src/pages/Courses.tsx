@@ -23,13 +23,13 @@ export default () => {
 
   return (
     <ContentLayout>
-      <Modal header={getText('pages.courses.create_new')} visible={showCreateModal} onDismiss={() => setShowCreateModal(false)}>
+  <Modal header={getText('teachers.settings.courses.create_new')} visible={showCreateModal} onDismiss={() => setShowCreateModal(false)}>
         <CreateCourse onSubmit={() => setShowCreateModal(false)} onCancel={() => setShowCreateModal(false)} />
       </Modal>
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">{getText('pages.courses.title')}</Header>
+            <Header variant="h1">{getText('teachers.settings.courses.title')}</Header>
           </SpaceBetween>
         }
       >
@@ -37,24 +37,24 @@ export default () => {
           header={
             <Header>
               <Button iconName="add-plus" onClick={() => setShowCreateModal(true)}>
-                {getText('pages.courses.new_course')}
+                {getText('teachers.settings.courses.new_course')}
               </Button>
             </Header>
           }
           columnDefinitions={[
             {
               id: 'id',
-              header: getText('common.id'),
+              header: getText('common.labels.id'),
               cell: (item) => item.id,
             },
             {
               id: 'name',
-              header: getText('common.name'),
+              header: getText('common.labels.name'),
               cell: (item) => item.name,
             },
             {
               id: 'description',
-              header: getText('common.description'),
+              header: getText('common.labels.description'),
               cell: (item) => item.description,
             },
           ]}
@@ -64,12 +64,12 @@ export default () => {
             { id: 'description', visible: true },
           ]}
           items={courses}
-          loadingText={getText('common.loading')}
+          loadingText={getText('common.status.loading')}
           pagination={<Pagination currentPageIndex={1} pagesCount={1} />}
           trackBy="id"
           empty={
             <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
-              {getText('common.empty')}
+              {getText('common.status.empty')}
             </Box>
           }
           // filter={<TextFilter filteringPlaceholder="Find courses" filteringText="" />}

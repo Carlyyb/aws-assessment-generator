@@ -1,206 +1,196 @@
 {
   "common": {
-    "loading": "Loading list...",
-    "empty": "Empty",
-    "id": "Id",
-    "error": "Error",
-    "cancel": "Cancel",
-    "previous": "Previous",
-    "next": "Next",
-    "submit": "Submit",
-    "finish": "Finish",
-    "start": "Start",
-    "review": "Review",
-    "optional": "optional",
-    "name": "Name",
-    "course": "Course",
-    "action": "Action",
-    "score": "Score",
-    "deadline": "Deadline",
-    "status": "Status",
-    "edit": "Edit",
-    "publish": "Publish",
-    "published": "Published",
-    "points": "Points",
-    "point": "point",
-    "description": "Description",
-    "choose_files": "Choose files",
-    "choose_file": "Choose file",
-    "drop_files_to_upload": "Drop files to upload",
-    "drop_file_to_upload": "Drop file to upload",
-    "show_fewer_files": "Show fewer files",
-    "show_more_files": "Show more files",
+    "actions": {
+      "submit": "Submit",
+      "cancel": "Cancel",
+      "previous": "Previous",
+      "next": "Next",
+      "finish": "Finish",
+      "start": "Start",
+      "review": "Review",
+      "edit": "Edit",
+      "delete": "Delete",
+      "publish": "Publish"
+    },
+    "status": {
+      "loading": "Loading...",
+      "empty": "No data available",
+      "error": "Error",
+      "published": "Published"
+    },
+    "labels": {
+      "id": "Id",
+      "name": "Name",
+      "description": "Description",
+      "course": "Course",
+      "action": "Action",
+      "score": "Score",
+      "deadline": "Deadline",
+      "status": "Status",
+      "points": "Points",
+      "optional": "Optional"
+    },
+    "upload": {
+      "choose_files": "Choose files",
+      "choose_file": "Choose file",
+      "drop_files": "Drop files to upload",
+      "drop_file": "Drop file to upload",
+      "show_fewer": "Show fewer files",
+      "show_more": "Show more files"
+    },
     "find_resources": "Find resources"
   },
-  "assessment": {
-    "answer": "Answer",
-    "correct": "Correct",
-    "incorrect": "Incorrect",
-    "rubric": "Rubric",
-    "explanation": "Explanation",
-    "weight": "weight",
-    "answers": "answers",
-    "generate_assessment": "Generate Assessment",
-    "failed_to_generate": "Failed to generate Assessment",
-    "multi_choice": "Multi Choice",
-    "free_text": "Free Text",
-    "edit_answers": "Edit Answers",
-    "choose_answer": "Choose Correct Answer"
+  "components": {
+    "create_course": {
+      "title": "Create New Course",
+      "success": "Course created successfully"
+    },
+    "create_template": {
+      "title": "Create New Template",
+      "success": "Template created successfully"
+    },
+    "assessment": {
+      "answer": "Answer",
+      "correct": "Correct",
+      "incorrect": "Incorrect",
+      "rubric": "Rubric",
+      "explanation": "Explanation",
+      "weight": "Weight",
+      "answers": "Answers",
+      "multi_choice": "Multi Choice",
+      "free_text": "Free Text",
+      "edit_answers": "Edit Answers",
+      "choose_answer": "Choose Correct Answer"
+    }
   },
-  "pages": {
+  "teachers": {
     "home": {
-      "title": "HomePage",
-      "buttons": {
-        "courses": "Courses",
-        "assessments": "Assessments",
-        "settings": "Settings",
-        "find-student": "Find Student",
-        "find-assessments": "Find Assessments",
-        "manage-knowledge-bases": "Manage Knowledge Bases"
+      "title": "Home"
+    },
+    "settings": {
+      "title": "Settings",
+      "default_settings": {
+        "title": "Default Settings",
+        "update_success": "Settings updated successfully",
+        "ui_language": "UI Language",
+        "doc_language": "Document Language",
+        "default_assessment_type": "Default Assessment Type",
+        "default_taxonomy": "Default Taxonomy"
+      },
+      "knowledge_bases": {
+        "title": "Manage Knowledge Bases",
+        "failed_to_create": "Failed to create Knowledge Base",
+        "created_successfully": "Knowledge Base created successfully",
+        "upload_document": "Upload Document:",
+        "choose_course": "Choose Course:",
+        "remove_file": "Remove file {index}",
+        "creating": "Creating..."
+      },
+      "templates": {
+        "title": "Templates",
+        "create_new": "Create New Template",
+        "id": "Id",
+        "lang": "Language",
+        "type": "Type",
+        "taxonomy": "Taxonomy",
+        "difficulty": {
+          "easy": "Easy",
+          "medium": "Medium",
+          "hard": "Hard",
+          "total": "Total"
+        },
+        "questions": {
+          "easy": "Easy Questions",
+          "medium": "Medium Questions",
+          "hard": "Hard Questions",
+          "total": "Total Questions"
+        },
+        "created_at": "Created At",
+        "name": "Template Name",
+        "doc_lang": "Document Language",
+        "assess_type": "Assessment Type"
+      },
+      "courses": {
+        "title": "Course List",
+        "create_new": "Create New Course",
+        "new_course": "New Course",
+        "create_success": "Course created successfully"
       }
     },
     "assessments": {
-      "title": "Assessments:"
-    },
-    "courses": {
-      "title": "Courses:",
-      "create_new": "Create New Course",
-      "new_course": "New Course",
-      "create_success": "Courses create success"
-    },
-    "edit_assessments": {
-      "update_success": "Assessment updated successfully",
-      "question_number": "Question {number}",
-      "question_progress": "Question {current} of {total}",
-      "skip_to": "Skip to {title}",
-      "delete_question": "Delete this Question"
-    },
-    "find_assessments": {
-      "title": "Find Assessments:"
-    },
-    "find_student": {
-      "title": "Students:"
-    },
-    "review_assessment": {
-      "question_number": "Question {number}",
-      "question_progress": "Question {current} of {total}",
-      "question_title": "Question {number}",
-      "points_with_rate": "Points - {rate}"
-    },
-    "student_assessment": {
-      "your_score": "Your Score:",
-      "question_number": "Question {number}",
-      "question_progress": "Question {current} of {total}",
-      "question_title": "Question {number}",
-      "skip_to": "Skip to {title}",
-      "provide_answer": "Provide:",
-      "choose_answer": "Choose:",
-      "grading": "Grading..."
-    },
-    "student_assessments": {
-      "title": "Student Assessments",
-      "description": "List of student assessments",
-      "loading": "Loading assessment list...",
-      "empty": "No assessments found",
-      "table": {
-        "name": "Name",
-        "course": "Course",
-        "deadline": "Deadline",
-        "action": "Action",
-        "score": "Score"
+      "title": "Assessments",
+      "find": {
+        "title": "Find Assessments"
       },
-      "actions": {
-        "review": "Review",
-        "start": "Start"
+      "generate": {
+        "title": "Generate Assessment",
+        "generate_success": "Assessment generated successfully",
+        "failed_to_generate": "Failed to generate Assessment",
+        "select_template": "Select Assessment Template",
+        "use_default": "Use Default Template",
+        "select_course": "Select Course",
+        "add_lecture_notes": "Add Lecture Notes",
+        "remove_file": "Remove file {index}",
+        "generating": "Generating..."
+      },
+      "edit": {
+        "update_success": "Assessment updated successfully",
+        "question_number": "Question {number}",
+        "question_progress": "Question {current} of {total}",
+        "skip_to": "Skip to {title}",
+        "delete_question": "Delete this Question"
       }
-    },
-    "section": {
-      "assessments": "Assessments:",
-      "settings": "Settings:",
-      "courses": "Courses:",
-      "buttons": {
-        "find-assessments": "Find Assessments",
-        "find-student": "Find Student",
-        "manage-knowledge-bases": "Manage Knowledge Bases",
-        "generate-assessments": "Generate Assessments",
-        "student-assessments": "Student Assessments",
-        "my-dashboard": "My Dashboard",
-        "create-course": "Create Course",
-        "create-template": "Create Template",
-        "templates": "Templates",
-        "default-settings": "Default Settings"
-      }
-    },
-    "generate_assessments": {
-      "title": "Generate Assessments",
-      "generate_success": "Assessment generated successfully",
-      "select_template": "Select Assessment Template",
-      "use_default": "Use Default",
-      "select_course": "Select Course",
-      "add_lecture_notes": "Add Lecture Notes",
-      "remove_file": "Remove file {index}",
-      "generating": "Generating..."
+    }
+  },
+  "students": {
+    "home": {
+      "title": "Home"
     },
     "dashboard": {
       "title": "My Performance Dashboard",
-      "generate_dashboard": "Generate Dashboard",
-      "dashboard": "Dashboard",
+      "generate": "Generate Dashboard",
       "score": "Score",
       "chart_label": "Single data series line chart",
       "time_utc": "Time (UTC)",
       "score_percent": "Score %",
-      "no_data_title": "No data available",
-      "no_data_message": "There is no data available",
-      "no_match_title": "No matching data",
-      "no_match_message": "There is no matching data to display",
+      "no_data": {
+        "title": "No data available",
+        "message": "There is no data available"
+      },
+      "no_match": {
+        "title": "No matching data",
+        "message": "There is no matching data to display"
+      },
       "clear_filter": "Clear filter"
     },
-    "knowledge_base": {
-      "title": "Manage Knowledge Bases",
-      "failed_to_create": "Failed to create Knowledge Base",
-      "created_successfully": "Knowledge Base created successfully",
-      "upload_document": "Upload Document:",
-      "choose_course": "Choose Course:",
-      "remove_file": "Remove file {index}",
-      "creating": "Creating..."
-    },
-    "templates": {
-      "title": "Templates:",
-      "create_new": "Create New Template",
-      "create_success": "Template created successfully",
-      "id": "Id",
-      "lang": "Lang",
-      "type": "Type",
-      "taxonomy": "Taxonomy",
-      "easy": "Easy",
-      "medium": "Medium",
-      "hard": "Hard",
-      "total": "Total",
-      "created_at": "Created At",
-      "easy_questions": "Easy Questions",
-      "medium_questions": "Medium Questions",
-      "hard_questions": "Hard Questions",
-      "total_questions": "Total Questions",
-      "name": "Template Name",
-      "docLang": "Document Language",
-      "assessType": "Assessment Type"
-    },
-    "student": {
-      "student_id": "Student Id",
-      "first_name": "First Name",
-      "last_name": "Last Name",
-      "dashboards": "Dashboards",
-      "lecture_date": "Lecture Date",
-      "updated_at": "Updated At",
-      "published_successfully": "Published successfully to students"
-    },
-    "settings": {
-      "title": "Settings",
-      "update_success": "Settings updated successfully",
-      "ui_language": "UI Language",
-      "doc_language": "Document Language",
-      "default_assessment_type": "Default Assessment Type",
-      "default_taxonomy": "Default Taxonomy"
+    "assessments": {
+      "list": {
+        "title": "Student Assessments",
+        "description": "List of student assessments",
+        "loading": "Loading assessment list...",
+        "empty": "No assessments found",
+        "table": {
+          "name": "Name",
+          "course": "Course",
+          "deadline": "Deadline",
+          "action": "Action",
+          "score": "Score"
+        },
+        "actions": {
+          "review": "Review",
+          "start": "Start"
+        }
+      },
+      "detail": {
+        "your_score": "Your Score:",
+        "question_number": "Question {number}",
+        "question_progress": "Question {current} of {total}",
+        "question_title": "Question {number}",
+        "skip_to": "Skip to {title}",
+        "provide_answer": "Provide:",
+        "choose_answer": "Choose:",
+        "grading": "Grading..."
+      }
     }
   },
   "taxonomy": {
@@ -211,7 +201,9 @@
     "synthesis": "Synthesis",
     "evaluation": "Evaluation"
   },
-  "date_format": {
-    "yyyy_mm_dd": "YYYY/MM/DD"
+  "formats": {
+    "date": {
+      "yyyy_mm_dd": "YYYY/MM/DD"
+    }
   }
 }

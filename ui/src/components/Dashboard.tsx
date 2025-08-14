@@ -12,7 +12,7 @@ export default (props: DashboardProps) => {
     <LineChart
       series={[
         {
-          title: getText('dashboard.score'),
+          title: getText('students.dashboard.score'),
           type: 'line',
           data,
         },
@@ -28,27 +28,27 @@ export default (props: DashboardProps) => {
             .split(',')
             .join('\n'),
       }}
-      ariaLabel={getText('dashboard.chart_label')}
+      ariaLabel={getText('students.dashboard.chart_label')}
       hideFilter
       hideLegend
       xScaleType="time"
-      xTitle={getText('dashboard.time_utc')}
-      yTitle={getText('dashboard.score_percent')}
+      xTitle={getText('students.dashboard.time_utc')}
+      yTitle={getText('students.dashboard.score_percent')}
       empty={
         <Box textAlign="center" color="inherit">
-          <b>{getText('dashboard.no_data_title')}</b>
+          <b>{getText('students.dashboard.no_data.title')}</b>
           <Box variant="p" color="inherit">
-            {getText('dashboard.no_data_message')}
+            {getText('students.dashboard.no_data.message')}
           </Box>
         </Box>
       }
       noMatch={
         <Box textAlign="center" color="inherit">
-          <b>{getText('dashboard.no_match_title')}</b>
+          <b>{getText('students.dashboard.no_match.title')}</b>
           <Box variant="p" color="inherit">
-            {getText('dashboard.no_match_message')}
+            {getText('students.dashboard.no_match.message')}
           </Box>
-          <Button>{getText('dashboard.clear_filter')}</Button>
+          <Button>{getText('students.dashboard.clear_filter')}</Button>
         </Box>
       }
     />

@@ -20,7 +20,7 @@ export const FreeTextView = ({ activeStepIndex, freetextAssessment, updateAssess
 
   return (
     <SpaceBetween size="l">
-      <Container header={<Header variant="h2">{getTextWithParams('pages.edit_assessments.question_number', { number: activeStepIndex + 1 })}</Header>}>
+      <Container header={<Header variant="h2">{getTextWithParams('teachers.assessments.edit.question_number', { number: activeStepIndex + 1 })}</Header>}>
         <Textarea
           onChange={({ detail }) =>
             updateAssessment({ type: ActionTypes.Update, stepIndex: activeStepIndex, key: 'question', content: detail.value })
@@ -28,7 +28,7 @@ export const FreeTextView = ({ activeStepIndex, freetextAssessment, updateAssess
           value={question}
         />
       </Container>
-      <Container header={<Header variant="h2">{getText('assessment.rubric')}</Header>}>
+      <Container header={<Header variant="h2">{getText('components.assessment.rubric')}</Header>}>
         <Table
           wrapLines
           columnDefinitions={[
@@ -69,13 +69,13 @@ export const FreeTextView = ({ activeStepIndex, freetextAssessment, updateAssess
             },
             {
               id: 'weight',
-              header: getText('common.points'),
+              header: getText('common.labels.points'),
               width: 90,
               cell: (item) => <Input value={'' + item.weight} onChange={(event) => submitRubricChanges('weight', item, +event.detail.value)} />,
             },
             {
               id: 'point',
-              header: getText('common.description'),
+              header: getText('common.labels.description'),
               cell: (item) => <Textarea value={'' + item.point} onChange={(event) => submitRubricChanges('point', item, event.detail.value)} />,
             },
           ]}

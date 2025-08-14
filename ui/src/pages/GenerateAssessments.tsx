@@ -86,7 +86,7 @@ export default () => {
           actions={
             <SpaceBetween direction="horizontal" size="xs">
               <Button formAction="none" variant="link">
-                {getText('common.cancel')}
+                {getText('common.actions.cancel')}
               </Button>
               <Button
                 onClick={async () => {
@@ -124,25 +124,25 @@ export default () => {
                     const id = res.data.generateAssessment;
                     setAssessId(id);
                   } catch (_e) {
-                    dispatchAlert({ type: AlertType.ERROR, content: getText('assessment.failed_to_generate') });
+                    dispatchAlert({ type: AlertType.ERROR, content: getText('teachers.assessments.generate.failed_to_generate') });
                   }
                 }}
                 variant="primary"
               >
-                {getText('assessment.generate_assessment')}
+                {getText('teachers.assessments.generate.title')}
               </Button>
             </SpaceBetween>
           }
-          header={<Header variant="h1">{getText('pages.generate_assessments.title')}</Header>}
+          header={<Header variant="h1">{getText('teachers.assessments.generate.title')}</Header>}
         >
-          <Container header={<Header variant="h1">{getText('pages.generate_assessments.title')}</Header>}>
+          <Container header={<Header variant="h1">{getText('teachers.assessments.generate.title')}</Header>}>
             <SpaceBetween size="l" alignItems="center">
               <Box padding="xxxl">
                 <SpaceBetween size="xxl" direction="horizontal">
-                  <FormField label={getText('pages.generate_assessments.select_template')}>
+                  <FormField label={getText('teachers.assessments.generate.select_template')}>
                     <SpaceBetween size="l" direction="horizontal" alignItems="center">
                       <Checkbox checked={useDefault} onChange={({ detail }) => setUseDefault(detail.checked)}>
-                        {getText('pages.generate_assessments.use_default')}
+                        {getText('teachers.assessments.generate.use_default')}
                       </Checkbox>
                       <Select
                         options={assessTemplates}
@@ -152,30 +152,30 @@ export default () => {
                       />
                     </SpaceBetween>
                   </FormField>
-                  <FormField label={getText('common.name')}>
+                  <FormField label={getText('common.labels.name')}>
                     <Input value={name} onChange={({ detail }) => setName(detail.value)} />
                   </FormField>
-                  <FormField label={getText('pages.generate_assessments.select_course')}>
+                  <FormField label={getText('teachers.assessments.generate.select_course')}>
                     <Select options={courses} selectedOption={course} onChange={({ detail }) => setCourse(detail.selectedOption)} />
                   </FormField>
-                  <FormField label={getText('pages.student.lecture_date')}>
+                  <FormField label={getText('teachers.assessments.generate.lecture_date')}>
                     <DatePicker onChange={({ detail }) => setLectureDate(detail.value)} value={lectureDate} placeholder={getText('date_format.yyyy_mm_dd')} />
                   </FormField>
-                  <FormField label={getText('common.deadline')}>
+                  <FormField label={getText('common.labels.deadline')}>
                     <DatePicker onChange={({ detail }) => setDeadline(detail.value)} value={deadline} placeholder={getText('date_format.yyyy_mm_dd')} />
                   </FormField>
-                  <FormField label={getText('pages.generate_assessments.add_lecture_notes')}>
+                  <FormField label={getText('teachers.assessments.generate.add_lecture_notes')}>
                     <FileUpload
                       multiple
                       onChange={({ detail }) => setFiles(detail.value)}
                       value={files}
                       i18nStrings={{
-                        uploadButtonText: (e) => (e ? getText('common.choose_files') : getText('common.choose_file')),
-                        dropzoneText: (e) => (e ? getText('common.drop_files_to_upload') : getText('common.drop_file_to_upload')),
-                        removeFileAriaLabel: (e) => getTextWithParams('pages.generate_assessments.remove_file', { index: e + 1 }),
-                        limitShowFewer: getText('common.show_fewer_files'),
-                        limitShowMore: getText('common.show_more_files'),
-                        errorIconAriaLabel: getText('common.error'),
+                        uploadButtonText: (e) => (e ? getText('common.upload.choose_files') : getText('common.upload.choose_file')),
+                        dropzoneText: (e) => (e ? getText('common.upload.drop_files') : getText('common.upload.drop_file')),
+                        removeFileAriaLabel: (e) => getTextWithParams('teachers.assessments.generate.remove_file', { index: e + 1 }),
+                        limitShowFewer: getText('common.upload.show_fewer'),
+                        limitShowMore: getText('common.upload.show_more'),
+                        errorIconAriaLabel: getText('common.status.error'),
                       }}
                       showFileLastModified
                       showFileSize
@@ -189,7 +189,7 @@ export default () => {
           </Container>
         </Form>
       </form>
-      <Modal visible={!!assessId} header={<Header>{getText('pages.generate_assessments.generating')}</Header>}>
+      <Modal visible={!!assessId} header={<Header>{getText('teachers.assessments.generate.generating')}</Header>}>
         <SpaceBetween size="s" alignItems="center">
           <Spinner size="big" />
         </SpaceBetween>

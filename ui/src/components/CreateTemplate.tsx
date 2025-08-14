@@ -52,7 +52,7 @@ export default (props: CreateTemplateProps) => {
             },
           })
           .then(() => {
-            dispatchAlert({ type: AlertType.SUCCESS, content: getText('templates.create_success') });
+            dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.settings.templates.create_success') });
             onSubmit();
           })
           .catch(() => {
@@ -65,13 +65,13 @@ export default (props: CreateTemplateProps) => {
         actions={
           <SpaceBetween direction="horizontal" size="xs">
             <Button formAction="none" variant="link" onClick={onCancel}>
-              {getText('common.cancel')}
+              {getText('common.actions.cancel')}
             </Button>
             <Button
               variant="primary"
               disabled={!docLang || !assessType || !taxonomy || !totalQuestions || !easyQuestions || !mediumQuestions || !hardQuestions}
             >
-              {getText('common.submit')}
+              {getText('common.actions.submit')}
             </Button>
           </SpaceBetween>
         }
@@ -80,28 +80,28 @@ export default (props: CreateTemplateProps) => {
           <SpaceBetween size="l" alignItems="center">
             <Box padding="xxxl">
               <SpaceBetween direction="horizontal" size="l">
-                <FormField label={getText('templates.name')}>
+                <FormField label={getText('teachers.settings.templates.name')}>
                   <Input value={name} onChange={({ detail }) => setName(detail.value)} />
                 </FormField>
-                <FormField label={getText('templates.docLang')}>
+                <FormField label={getText('teachers.settings.templates.doc_lang')}>
                   <Select options={langs} selectedOption={docLang} onChange={({ detail }) => setDocLang(detail.selectedOption)} />
                 </FormField>
-                <FormField label={getText('templates.assessType')}>
+                <FormField label={getText('teachers.settings.templates.assess_type')}>
                   <Select options={assessTypes} selectedOption={assessType} onChange={({ detail }) => setAssessType(detail.selectedOption)} />
                 </FormField>
-                <FormField label={getText('templates.taxonomy')}>
+                <FormField label={getText('teachers.settings.templates.taxonomy')}>
                   <Select options={taxonomies} selectedOption={taxonomy} onChange={({ detail }) => setTaxonomy(detail.selectedOption)} />
                 </FormField>
-                <FormField label={getText('templates.total_questions')}>
+                <FormField label={getText('teachers.settings.templates.questions.total')}>
                   <Input value={totalQuestions} onChange={({ detail }) => setTotalQuestions(detail.value)} />
                 </FormField>
-                <FormField label={getText('templates.easy_questions')}>
+                <FormField label={getText('teachers.settings.templates.questions.easy')}>
                   <Input value={easyQuestions} onChange={({ detail }) => setEasyQuestions(detail.value)} />
                 </FormField>
-                <FormField label={getText('templates.medium_questions')}>
+                <FormField label={getText('teachers.settings.templates.questions.medium')}>
                   <Input value={mediumQuestions} onChange={({ detail }) => setMediumQuestions(detail.value)} />
                 </FormField>
-                <FormField label={getText('templates.hard_questions')}>
+                <FormField label={getText('teachers.settings.templates.questions.hard')}>
                   <Input value={hardQuestions} onChange={({ detail }) => setHardQuestions(detail.value)} />
                 </FormField>
               </SpaceBetween>

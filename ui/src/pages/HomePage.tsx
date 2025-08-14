@@ -20,24 +20,24 @@ export default () => {
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">{getText('pages.home.title')}</Header>
+              <Header variant="h1">{getText('teachers.home.title')}</Header>
           </SpaceBetween>
         }
       >
         <Box padding="xxxl">
           <SpaceBetween size="l" alignItems="center">
             <SpaceBetween size="l" direction="horizontal">
-              {paths?.map((path: any) => (
-                <Button 
-                  key={`button-${path}`} 
-                  onClick={() => navigate(path)}
-                  ariaLabel={getText(`pages.home.buttons.${path}`) || titlise(path)}
-                  >
-                  <Box variant="h2" padding="m">
-                    {getText(`pages.home.buttons.${path}`) || titlise(path)}
-                  </Box>
-                </Button>
-              ))}
+                {paths?.map((path: any) => (
+                  <Button 
+                    key={`button-${path}`} 
+                    onClick={() => navigate(path)}
+                    ariaLabel={getText(`teachers.home.buttons.${path}`) || titlise(path)}
+                    >
+                    <Box variant="h2" padding="m">
+                      {getText(`teachers.home.buttons.${path}`) || titlise(path)}
+                    </Box>
+                  </Button>
+                ))}
             </SpaceBetween>
           </SpaceBetween>
         </Box>

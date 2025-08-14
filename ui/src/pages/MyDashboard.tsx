@@ -30,7 +30,7 @@ export default () => {
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">{getText('pages.dashboard.title')}</Header>
+            <Header variant="h1">{getText('students.dashboard.title')}</Header>
           </SpaceBetween>
         }
       >

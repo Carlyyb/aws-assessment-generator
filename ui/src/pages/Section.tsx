@@ -22,7 +22,7 @@ export default (props: SectionProps) => {
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">{getText(`pages.section.${rootPath}`)}</Header>
+            <Header variant="h1">{getText(`teachers.assessments.section.${rootPath}`)}</Header>
           </SpaceBetween>
         }
       >
@@ -32,7 +32,7 @@ export default (props: SectionProps) => {
               {paths?.map((path: any) => (
                 <Button key={`button-${path}`} onClick={() => navigate(path)}>
                   <Box variant="h2" padding="m">
-                    {getText(`pages.section.buttons.${path}`) || titlise(path)}
+                    {getText(`teachers.assessments.section.buttons.${path}`) || titlise(path)}
                   </Box>
                 </Button>
               ))}

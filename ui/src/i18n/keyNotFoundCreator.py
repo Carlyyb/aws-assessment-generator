@@ -207,7 +207,7 @@ class TranslationKeyManager:
 def main():
     """主函数"""
     print("=== 翻译键管理工具 ===")
-    
+    os.chdir("ui\src\i18n")
     # 获取翻译文件路径
     zh_file = input("请输入中文翻译文件路径 (默认: zh.json): ").strip() or "zh.json"
     en_file = input("请输入英文翻译文件路径 (默认: en.json): ").strip() or "en.json"

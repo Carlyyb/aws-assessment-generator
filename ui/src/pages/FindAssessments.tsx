@@ -29,7 +29,7 @@ export default () => {
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">{getText('pages.find_assessments.title')}</Header>
+            <Header variant="h1">{getText('teachers.assessments.find.title')}</Header>
           </SpaceBetween>
         }
       >
@@ -37,32 +37,32 @@ export default () => {
           columnDefinitions={[
             {
               id: 'name',
-              header: getText('common.name'),
+              header: getText('common.labels.name'),
               cell: (item) => item.name,
             },
             {
               id: 'course',
-              header: getText('common.course'),
+              header: getText('common.labels.course'),
               cell: (item) => item.course?.name,
             },
             {
               id: 'lectureDate',
-              header: getText('pages.student.lecture_date'),
+              header: getText('teachers.assessments.find.lecture_date'),
               cell: (item) => new Date(item.lectureDate).toDateString(),
             },
             {
               id: 'deadline',
-              header: getText('common.deadline'),
+              header: getText('common.labels.deadline'),
               cell: (item) => new Date(item.deadline).toDateString(),
             },
             {
               id: 'updatedAt',
-              header: getText('pages.student.updated_at'),
+              header: getText('teachers.assessments.find.updated_at'),
               cell: (item) => item.updatedAt,
             },
             {
               id: 'status',
-              header: getText('common.status'),
+              header: getText('common.labels.status'),
               cell: (item) => item.status,
             },
             {
@@ -77,7 +77,7 @@ export default () => {
                       navigate(e.detail.href!);
                     }}
                   >
-                    {getText('common.edit')}
+                    {getText('common.actions.edit')}
                   </Link>
                 ),
             },
@@ -92,12 +92,12 @@ export default () => {
                     onClick={() =>
                       client
                         .graphql<any>({ query: publishAssessment, variables: { assessmentId: item.id } })
-                        .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.student.published_successfully') }))
+                        .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.assessments.find.published_successfully') }))
                         .then(getAssessments)
-                        .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.error') }))
+                        .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.status.error') }))
                     }
                   >
-                    {item.published ? getText('common.published') : getText('common.publish')}
+                    {item.published ? getText('common.status.published') : getText('common.actions.publish')}
                   </Button>
                 ) : null,
             },
@@ -113,11 +113,11 @@ export default () => {
             { id: 'publish', visible: true },
           ]}
           items={assessments}
-          loadingText={getText('common.loading')}
+          loadingText={getText('common.status.loading')}
           trackBy="id"
           empty={
             <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
-              {getText('common.empty')}
+              {getText('common.status.empty')}
             </Box>
           }
           // filter={<TextFilter filteringPlaceholder="Find resources" filteringText="" />}

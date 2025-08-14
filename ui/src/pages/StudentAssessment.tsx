@@ -68,8 +68,8 @@ export default () => {
             hideLegend
             variant="donut"
             data={[
-              { title: getText('assessment.correct'), value: score! },
-              { title: getText('assessment.incorrect'), value: 100 - score! },
+              { title: getText('students.assessments.correct'), value: score! },
+              { title: getText('students.assessments.incorrect'), value: 100 - score! },
             ]}
             innerMetricValue={`${score}%`}
           />

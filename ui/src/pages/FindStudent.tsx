@@ -34,14 +34,14 @@ export default () => {
 
   return (
     <>
-      <Modal onDismiss={() => setDashboardData(undefined)} visible={!!dashboardData} header={getText('pages.dashboard.title')}>
+  <Modal onDismiss={() => setDashboardData(undefined)} visible={!!dashboardData} header={getText('students.dashboard.title')}>
         {dashboardData ? <Dashboard data={dashboardData} /> : null}
       </Modal>
       <ContentLayout>
         <Container
           header={
             <SpaceBetween size="l">
-              <Header variant="h1">{getText('pages.find_student.title')}</Header>
+              <Header variant="h1">{getText('teachers.find_student.title')}</Header>
             </SpaceBetween>
           }
         >
@@ -49,25 +49,25 @@ export default () => {
             columnDefinitions={[
               {
                 id: 'id',
-                header: getText('pages.student.student_id'),
+                header: getText('teachers.find_student.student_id'),
                 cell: (item) => item.id,
                 sortingField: 'id',
                 isRowHeader: true,
               },
               {
                 id: 'firstName',
-                header: getText('pages.student.first_name'),
+                header: getText('teachers.find_student.first_name'),
                 cell: (item) => item.firstName,
               },
               {
                 id: 'lastName',
-                header: getText('pages.student.last_name'),
+                header: getText('teachers.find_student.last_name'),
                 cell: (item) => item.lastName,
               },
               {
                 id: 'dashboards',
-                header: getText('pages.student.dashboards'),
-                cell: (item) => <Button onClick={() => fetchStudentData(item.id)}>{getText('pages.dashboard.generate_dashboard')}</Button>,
+                header: getText('teachers.find_student.dashboards'),
+                cell: (item) => <Button onClick={() => fetchStudentData(item.id)}>{getText('students.dashboard.generate')}</Button>,
               },
             ]}
             columnDisplay={[
@@ -77,11 +77,11 @@ export default () => {
               { id: 'dashboards', visible: true },
             ]}
             items={students}
-            loadingText={getText('common.loading')}
+            loadingText={getText('common.status.loading')}
             trackBy="id"
             empty={
               <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
-                {getText('common.empty')}
+                {getText('common.status.empty')}
               </Box>
             }
             // filter={<TextFilter filteringPlaceholder="Find resources" filteringText="" />}

@@ -14,7 +14,7 @@ export const QAView = ({ activeStepIndex, multiChoiceAssessment, updateAssessmen
 
   return (
     <SpaceBetween size="l">
-      <Container header={<Header variant="h2">{getTextWithParams('pages.edit_assessments.question_number', { number: activeStepIndex + 1 })}</Header>}>
+      <Container header={<Header variant="h2">{getTextWithParams('teachers.assessments.edit.question_number', { number: activeStepIndex + 1 })}</Header>}>
         <Textarea
           onChange={({ detail }) =>
             updateAssessment({ type: ActionTypes.Update, stepIndex: activeStepIndex, key: 'question', content: detail.value })
@@ -22,7 +22,7 @@ export const QAView = ({ activeStepIndex, multiChoiceAssessment, updateAssessmen
           value={question}
         />
       </Container>
-      <Container header={<Header variant="h2">{getText('assessment.edit_answers')}</Header>}>
+            <Container header={<Header variant="h2">{getText('components.assessment.edit_answers')}</Header>}>
         <SpaceBetween size="l" direction="horizontal" alignItems="center">
           {answerChoices?.map((answerChoice, answerIndex) => (
             <Container
@@ -76,7 +76,7 @@ export const QAView = ({ activeStepIndex, multiChoiceAssessment, updateAssessmen
           </Container>
         </SpaceBetween>
       </Container>
-      <Container header={<Header variant="h2">{getText('assessment.choose_answer')}</Header>}>
+      <Container header={<Header variant="h2">{getText('components.assessment.choose_answer')}</Header>}>
         <Tiles
           value={(correctAnswer! - 1).toString()}
           items={answerChoices.map((answerChoice, i) => ({ label: answerChoice, value: i.toString() }))}
@@ -90,7 +90,7 @@ export const QAView = ({ activeStepIndex, multiChoiceAssessment, updateAssessmen
           }
         />
       </Container>
-      <Container header={<Header variant="h2">{getText('assessment.explanation')}</Header>}>
+      <Container header={<Header variant="h2">{getText('components.assessment.explanation')}</Header>}>
         <Textarea
           onChange={({ detail }) =>
             updateAssessment({ type: ActionTypes.Update, stepIndex: activeStepIndex, key: 'explanation', content: detail.value })
