@@ -36,12 +36,13 @@
     "nav": {
       "dashboard": "Dashboard",
       "assessments": "Assessments",
-      "settings": "Settings",
+      "settings": "User Settings",
+      "management": "Management",
       "courses": "Courses",
       "templates": "Templates",
       "find-assessments": "Find Assessments",
       "manage-knowledge-bases": "Manage Knowledge Base",
-      "default-settings": "Default Settings",
+      "template-settings": "Template Settings",
       "generate-assessments": "Generate Assessments",
       "log-management": "Log Management"
     },
@@ -111,7 +112,10 @@
       "show_fewer": "Show fewer files",
       "show_more": "Show more files"
     },
-    "find_resources": "Find resources"
+    "find_resources": "Find resources",
+    "action": {
+      "sign_out": "Sign Out"
+    }
   },
   "components": {
     "create_course": {
@@ -141,11 +145,21 @@
       "title": "Home",
       "buttons": {
         "dashboard": "Dashboard",
-        "assessments": "Assessment"
+        "assessments": "Assessment",
+        "settings": "Settings"
       }
     },
+    "management": {
+      "template_settings": "Template Settings",
+      "settings_update_success": "Settings updated successfully"
+    },
     "settings": {
-      "title": "Settings",
+      "title": "User Settings",
+      "ui_language": "UI Language",
+      "doc_language": "Document Language",
+      "default_assessment_type": "Default Assessment Type",
+      "default_taxonomy": "Default Taxonomy",
+      "update_success": "Settings updated successfully",
       "default_settings": {
         "title": "Default Settings",
         "update_success": "Settings updated successfully",
@@ -166,6 +180,8 @@
       "templates": {
         "title": "Templates",
         "create_new": "Create New Template",
+        "create_success": "Template created successfully",
+        "validation_error": "Please fill in all required fields",
         "id": "Id",
         "lang": "Language",
         "type": "Type",
@@ -227,7 +243,8 @@
           "default-settings": "Default Settings",
           "templates": "Templates",
           "generate-assessments": "Generate Assessments",
-          "courses": "Courses"
+          "courses": "Courses",
+          "log-management": "Log Management"
         },
         "assessments": "Assessment",
         "settings": "Settings"

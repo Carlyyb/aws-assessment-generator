@@ -36,12 +36,13 @@
     "nav": {
       "dashboard": "仪表盘",
       "assessments": "评估",
-      "settings": "设置",
+      "settings": "用户设置",
+      "management": "管理",
       "courses": "课程",
       "templates": "模板",
       "find-assessments": "查找评估",
       "manage-knowledge-bases": "知识库管理",
-      "default-settings": "默认设置",
+      "template-settings": "模板设置",
       "generate-assessments": "生成评估",
       "log-management": "日志管理"
     },
@@ -111,7 +112,10 @@
       "show_fewer": "显示更少文件",
       "show_more": "显示更多文件"
     },
-    "find_resources": "查找资源"
+    "find_resources": "查找资源",
+    "action": {
+      "sign_out": "登出"
+    }
   },
   "components": {
     "create_course": {
@@ -141,11 +145,21 @@
       "title": "首页",
       "buttons": {
         "dashboard": "仪表盘",
-        "assessments": "评估"
+        "assessments": "评估",
+        "settings": "设置"
       }
     },
+    "management": {
+      "template_settings": "模板设置",
+      "settings_update_success": "设置更新成功"
+    },
     "settings": {
-      "title": "设置",
+      "title": "用户设置",
+      "ui_language": "界面语言",
+      "doc_language": "文档语言",
+      "default_assessment_type": "默认评估类型",
+      "default_taxonomy": "默认分类法",
+      "update_success": "设置更新成功",
       "default_settings": {
         "title": "默认设置",
         "update_success": "设置更新成功",
@@ -166,6 +180,8 @@
       "templates": {
         "title": "模板",
         "create_new": "创建新模板",
+        "create_success": "模板创建成功",
+        "validation_error": "请填写所有必需字段",
         "id": "编号",
         "lang": "语言",
         "type": "类型",
@@ -227,7 +243,8 @@
           "default-settings": "默认设置",
           "templates": "模板管理",
           "generate-assessments": "生成评估",
-          "courses": "课程管理"
+          "courses": "课程管理",
+          "log-management": "日志管理"
         },
         "assessments": "评估",
         "settings": "设置"
