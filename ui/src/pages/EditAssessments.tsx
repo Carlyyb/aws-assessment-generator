@@ -91,9 +91,9 @@ export default () => {
         collapsedStepsLabel: (stepNumber, stepsCount) => getTextWithParams('teachers.assessments.edit.question_progress', { current: stepNumber, total: stepsCount }),
         skipToButtonLabel: (step, _stepNumber) => getTextWithParams('teachers.assessments.edit.skip_to', { title: step.title }),
         cancelButton: getText('teachers.assessments.edit.delete_question'),
-        previousButton: getText('common.action.previous'),
-        nextButton: getText('common.action.next'),
-        submitButton: getText('common.action.submit'),
+        previousButton: getText('common.actions.previous'),
+        nextButton: getText('common.actions.next'),
+        submitButton: getText('common.actions.submit'),
         optional: getText('common.status.optional'),
       }}
       onCancel={() => updateAssessment({ type: ActionTypes.Delete, stepIndex: activeStepIndex })}

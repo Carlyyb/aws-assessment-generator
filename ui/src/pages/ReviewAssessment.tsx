@@ -40,10 +40,10 @@ export default () => {
       i18nStrings={{
         stepNumberLabel: (stepNumber) => getTextWithParams('teachers.assessments.review.question_number', { number: stepNumber }),
         collapsedStepsLabel: (stepNumber, stepsCount) => getTextWithParams('teachers.assessments.review.question_progress', { current: stepNumber, total: stepsCount }),
-        cancelButton: getText('common.action.cancel'),
-        previousButton: getText('common.action.previous'),
-        nextButton: getText('common.action.next'),
-        submitButton: getText('common.action.finish'),
+        cancelButton: getText('common.actions.cancel'),
+        previousButton: getText('common.actions.previous'),
+        nextButton: getText('common.actions.next'),
+        submitButton: getText('common.actions.finish'),
         optional: getText('common.status.optional'),
       }}
       onCancel={() => navigate('/assessments')}

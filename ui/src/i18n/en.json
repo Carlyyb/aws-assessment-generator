@@ -16,7 +16,9 @@
       "loading": "Loading...",
       "empty": "No data available",
       "error": "Error",
-      "published": "Published"
+      "published": "Published",
+      "show_fewer_files": "Show fewer files",
+      "show_more_files": "Show more files"
     },
     "labels": {
       "id": "Id",
@@ -65,7 +67,11 @@
   },
   "teachers": {
     "home": {
-      "title": "Home"
+      "title": "Home",
+      "buttons": {
+        "dashboard": "Dashboard",
+        "assessments": "Assessment"
+      }
     },
     "settings": {
       "title": "Settings",
@@ -77,7 +83,7 @@
         "default_assessment_type": "Default Assessment Type",
         "default_taxonomy": "Default Taxonomy"
       },
-      "knowledge_bases": {
+      "knowledge_base": {
         "title": "Manage Knowledge Bases",
         "failed_to_create": "Failed to create Knowledge Base",
         "created_successfully": "Knowledge Base created successfully",
@@ -120,7 +126,9 @@
     "assessments": {
       "title": "Assessments",
       "find": {
-        "title": "Find Assessments"
+        "title": "Find Assessments",
+        "updated_at": "Update At",
+        "lecture_date": "Lecture Date"
       },
       "generate": {
         "title": "Generate Assessment",
@@ -131,7 +139,8 @@
         "select_course": "Select Course",
         "add_lecture_notes": "Add Lecture Notes",
         "remove_file": "Remove file {index}",
-        "generating": "Generating..."
+        "generating": "Generating...",
+        "lecture_date": "Lecture Date"
       },
       "edit": {
         "update_success": "Assessment updated successfully",
@@ -139,6 +148,18 @@
         "question_progress": "Question {current} of {total}",
         "skip_to": "Skip to {title}",
         "delete_question": "Delete this Question"
+      },
+      "section": {
+        "buttons": {
+          "manage-knowledge-bases": "Manage Knowledge Base",
+          "find-assessments": "Find Assessments",
+          "default-settings": "Default Settings",
+          "templates": "Templates",
+          "generate-assessments": "Generate Assessments",
+          "courses": "Courses"
+        },
+        "assessments": "Assessment",
+        "settings": "Settings"
       }
     }
   },
@@ -205,5 +226,8 @@
     "date": {
       "yyyy_mm_dd": "YYYY/MM/DD"
     }
+  },
+  "date_format": {
+    "yyyy_mm_dd": "YYYY/MM/DD"
   }
 }

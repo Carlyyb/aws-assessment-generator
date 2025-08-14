@@ -93,10 +93,10 @@ export default () => {
           actions={
             <SpaceBetween direction="horizontal" size="xs">
               <Button formAction="none" variant="link">
-                {getText('common.action.cancel')}
+                {getText('common.actions.cancel')}
               </Button>
               <Button variant="primary" disabled={!course || !files.length}>
-                {getText('common.action.submit')}
+                {getText('common.actions.submit')}
               </Button>
             </SpaceBetween>
           }
@@ -120,7 +120,7 @@ export default () => {
                       onChange={({ detail }) => setFiles(detail.value)}
                       value={files}
                       i18nStrings={{
-                        uploadButtonText: (e) => (e ? getText('common.action.choose_files') : getText('common.action.choose_file')),
+                        uploadButtonText: (e) => (e ? getText('common.actions.choose_files') : getText('common.actions.choose_file')),
                         dropzoneText: (e) => (e ? getText('common.status.drop_files_to_upload') : getText('common.status.drop_file_to_upload')),
                         removeFileAriaLabel: (e) => getTextWithParams('teachers.settings.knowledge_base.remove_file', { index: e + 1 }),
                         limitShowFewer: getText('common.status.show_fewer_files'),
