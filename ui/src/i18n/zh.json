@@ -1,6 +1,7 @@
 {
   "common": {
     "actions": {
+      "sign_out": "退出登录",
       "submit": "提交",
       "cancel": "取消",
       "previous": "上一步",
@@ -11,6 +12,35 @@
       "edit": "编辑",
       "delete": "删除",
       "publish": "发布"
+    },
+    "status": {
+      "success": "操作成功",
+      "failed": "操作失败",
+    "brand": "智能评估系统",
+    "profile": "个人信息",
+    "breadcrumb": {
+      "home": "首页",
+      "service": "服务"
+    },
+    "role": {
+      "teachers": "教师",
+      "students": "学生"
+    },
+    "nav": {
+      "dashboard": "仪表盘",
+      "assessments": "评估",
+      "settings": "设置",
+      "courses": "课程",
+      "templates": "模板",
+      "find-assessments": "查找评估",
+      "manage-knowledge-bases": "知识库管理",
+      "default-settings": "默认设置",
+      "generate-assessments": "生成评估",
+      "log-management": "日志管理"
+    },
+    "help": {
+      "overview": "系统概览",
+      "content": "欢迎使用智能评估系统，如需帮助请联系管理员。"
     },
     "status": {
       "loading": "加载中...",
@@ -229,5 +259,6 @@
   },
   "date_format": {
     "yyyy_mm_dd": "YYYY/MM/DD"
+  }
   }
 }

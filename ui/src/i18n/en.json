@@ -1,6 +1,7 @@
 {
   "common": {
     "actions": {
+      "sign_out": "Sign out",
       "submit": "Submit",
       "cancel": "Cancel",
       "previous": "Previous",
@@ -11,6 +12,35 @@
       "edit": "Edit",
       "delete": "Delete",
       "publish": "Publish"
+    },
+    "status": {
+      "success": "Operation successful",
+      "failed": "Operation failed",
+    "brand": "Gen Assess",
+    "profile": "Profile",
+    "breadcrumb": {
+      "home": "Home",
+      "service": "Service"
+    },
+    "role": {
+      "teachers": "Teachers",
+      "students": "Students"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "assessments": "Assessments",
+      "settings": "Settings",
+      "courses": "Courses",
+      "templates": "Templates",
+      "find-assessments": "Find Assessments",
+      "manage-knowledge-bases": "Manage Knowledge Base",
+      "default-settings": "Default Settings",
+      "generate-assessments": "Generate Assessments",
+      "log-management": "Log Management"
+    },
+    "help": {
+      "overview": "Overview",
+      "content": "Welcome to Gen Assess. For help, please contact the administrator."
     },
     "status": {
       "loading": "Loading...",
@@ -229,5 +259,6 @@
   },
   "date_format": {
     "yyyy_mm_dd": "YYYY/MM/DD"
+  }
   }
 }
