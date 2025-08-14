@@ -53,9 +53,9 @@
       "templates": "Templates",
       "find-assessments": "Find Assessments",
       "manage-knowledge-bases": "Manage Knowledge Base",
-      "template-settings": "Template Settings",
       "generate-assessments": "Generate Assessments",
-      "log-management": "Log Management"
+      "log-management": "Log Management",
+      "find-student": "Find Student"
     },
     "help": {
       "overview": "Overview",
@@ -171,6 +171,13 @@
       "template_settings": "Template Settings",
       "settings_update_success": "Settings updated successfully"
     },
+    "find_student": {
+      "title": "Find Student",
+      "student_id": "Student ID",
+      "first_name": "First Name",
+      "last_name": "Last Name",
+      "dashboards": "Dashboards"
+    },
     "settings": {
       "update_success": "Settings updated successfully",
       "default_settings": {
@@ -259,8 +266,7 @@
           "templates": "Templates",
           "generate-assessments": "Generate Assessments",
           "courses": "Courses",
-          "log-management": "Log Management",
-          "template-settings": "Template Settings"
+          "log-management": "Log Management"
         },
         "assessments": "Assessment",
         "settings": "Settings",

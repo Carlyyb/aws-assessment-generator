@@ -53,9 +53,9 @@
       "templates": "模板",
       "find-assessments": "查找评估",
       "manage-knowledge-bases": "知识库管理",
-      "template-settings": "模板设置",
       "generate-assessments": "生成评估",
-      "log-management": "日志管理"
+      "log-management": "日志管理",
+      "find-student": "查找学生"
     },
     "help": {
       "overview": "系统概览",
@@ -171,6 +171,13 @@
       "template_settings": "模板设置",
       "settings_update_success": "设置更新成功"
     },
+    "find_student": {
+      "title": "查找学生",
+      "student_id": "学生编号",
+      "first_name": "名字",
+      "last_name": "姓氏",
+      "dashboards": "成绩仪表板"
+    },
     "settings": {
       "update_success": "设置更新成功",
       "default_settings": {
@@ -259,8 +266,7 @@
           "templates": "模板管理",
           "generate-assessments": "生成评估",
           "courses": "课程管理",
-          "log-management": "日志管理",
-          "template-settings": "模板设置"
+          "log-management": "日志管理"
         },
         "assessments": "评估",
         "settings": "设置",
