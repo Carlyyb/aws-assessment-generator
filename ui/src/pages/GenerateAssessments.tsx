@@ -50,7 +50,8 @@ export default () => {
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
   const [logs, setLogs] = useState<string[]>([]);
-  const [statusCheckCount, setStatusCheckCount] = useState(0);
+  const [statusCheckCount, setStatusCheckCount] = useState(0); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [failureCount, setFailureCount] = useState(0); // eslint-disable-line @typescript-eslint/no-unused-vars
 
   // 添加日志函数
   const addLog = (message: string) => {
@@ -93,43 +94,63 @@ export default () => {
 
   function checkStatus() {
     setTimeout(() => {
-      setStatusCheckCount(prev => prev + 1);
-      const checkNumber = statusCheckCount + 1;
-      
-      addLog(`检查生成状态... (第 ${checkNumber} 次)`);
-      
-      client.graphql<any>({ query: getAssessment, variables: { id: assessId } }).then(({ data }) => {
-        const assessment = data.getAssessment;
-        const { status } = assessment;
+      setStatusCheckCount(prev => {
+        const newCheckCount = prev + 1;
         
-        addLog(`当前状态: ${status}`);
+        addLog(`检查生成状态... (第 ${newCheckCount} 次)`);
         
-        if (status === AssessStatus.CREATED) {
-          updateStep('✅ 评估生成完成！正在跳转到编辑页面...', 100);
-          setIsGenerating(false);
-          dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.generate_assessments.generate_success') });
-          setTimeout(() => {
-            navigate(`/edit-assessment/${assessId}`);
-          }, 1000);
-          return;
-        }
+        client.graphql<any>({ query: getAssessment, variables: { id: assessId } }).then(({ data }) => {
+          const assessment = data.getAssessment;
+          const { status } = assessment;
+          
+          addLog(`当前状态: ${status}`);
+          
+          if (status === AssessStatus.CREATED) {
+            updateStep('✅ 评估生成完成！正在跳转到编辑页面...', 100);
+            setIsGenerating(false);
+            setFailureCount(0); // 重置失败计数
+            dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.generate_assessments.generate_success') });
+            setTimeout(() => {
+              navigate(`/edit-assessment/${assessId}`);
+            }, 1000);
+            return;
+          }
+          
+          // 根据检查次数更新进度
+          const estimatedProgress = Math.min(30 + (newCheckCount * 5), 90);
+          setProgress(estimatedProgress);
+          
+          if (newCheckCount > 60) { // 超过 5 分钟（60 * 5秒 = 300秒）
+            addLog('⚠️ 生成时间过长，可能遇到问题。请检查网络连接或稍后重试。');
+            setIsGenerating(false);
+            setFailureCount(0); // 重置失败计数
+            dispatchAlert({ type: AlertType.ERROR, content: '评估生成超时，请稍后重试' });
+            return;
+          }
+          
+          // 重置失败计数（成功获取状态）
+          setFailureCount(0);
+          checkStatus();
+        }).catch((error) => {
+          setFailureCount(prevFailures => {
+            const newFailureCount = prevFailures + 1;
+            addLog(`❌ 状态检查失败 (${newFailureCount}/5): ${error.message || error}`);
+            console.error('Status check error:', error);
+            
+            if (newFailureCount >= 5) {
+              addLog('❌ 连续5次状态检查失败，停止生成');
+              setIsGenerating(false);
+              dispatchAlert({ type: AlertType.ERROR, content: '网络连接不稳定，请检查网络后重试' });
+              return newFailureCount;
+            }
+            
+            // 继续重试
+            checkStatus();
+            return newFailureCount;
+          });
+        });
         
-        // 根据检查次数更新进度
-        const estimatedProgress = Math.min(30 + (checkNumber * 5), 90);
-        setProgress(estimatedProgress);
-        
-        if (checkNumber > 60) { // 超过 5 分钟（60 * 5秒 = 300秒）
-          addLog('⚠️ 生成时间过长，可能遇到问题。请检查网络连接或稍后重试。');
-          setIsGenerating(false);
-          dispatchAlert({ type: AlertType.ERROR, content: '评估生成超时，请稍后重试' });
-          return;
-        }
-        
-        checkStatus();
-      }).catch((error) => {
-        addLog(`❌ 状态检查失败: ${error.message || error}`);
-        console.error('Status check error:', error);
-        checkStatus(); // 继续重试
+        return newCheckCount;
       });
     }, 5000); // 每5秒检查一次
   }
@@ -165,6 +186,7 @@ export default () => {
                     setProgress(0);
                     setLogs([]);
                     setStatusCheckCount(0);
+                    setFailureCount(0);
                     
                     updateStep('🚀 开始生成评估...', 5);
                     
@@ -233,6 +255,7 @@ export default () => {
                     const errorMessage = error.message || '未知错误';
                     addLog(`❌ 生成失败: ${errorMessage}`);
                     setIsGenerating(false);
+                    setFailureCount(0); // 重置失败计数
                     dispatchAlert({ type: AlertType.ERROR, content: `生成评估失败: ${errorMessage}` });
                   }
                 }}
@@ -307,6 +330,8 @@ export default () => {
             setLogs([]);
             setProgress(0);
             setCurrentStep('');
+            setStatusCheckCount(0);
+            setFailureCount(0);
           }
         }}
         header={<Header>{getText('teachers.assessments.generate.generating')}</Header>}
@@ -379,6 +404,8 @@ export default () => {
                   setLogs([]);
                   setProgress(0);
                   setCurrentStep('');
+                  setStatusCheckCount(0);
+                  setFailureCount(0);
                 }
               }}
               disabled={progress === 100}
