@@ -20,6 +20,7 @@ import { routes as routesList } from './routes';
 import { getText } from './i18n/lang';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { ThemeButton } from './components/ThemeButton';
+import { ThemeCustomizer } from './components/ThemeCustomizer';
 import { AlertType, DispatchAlertContext } from './contexts/alerts';
 import { UserProfile, UserProfileContext } from './contexts/userProfile';
 import { RoutesContext } from './contexts/routes';
@@ -27,6 +28,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { generateBreadcrumbs } from './utils/breadcrumbs';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Notifications } from '@mantine/notifications';
+import { useDisclosure } from '@mantine/hooks';
 
 const LOCALE = 'en';
 
@@ -39,6 +41,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
   const [alerts, setAlerts] = useState<FlashbarProps.MessageDefinition[]>([]);
   const [activeHref, setActiveHref] = useState(window.location.pathname);
   const { currentTheme } = useTheme();
+  const [themeCustomizerOpened, { open: openThemeCustomizer, close: closeThemeCustomizer }] = useDisclosure(false);
 
   const dispatchAlert = (newAlert: FlashbarProps.MessageDefinition) => {
     const id = Date.now().toString();
@@ -78,7 +81,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
                     iconName: 'settings',
                     ariaLabel: getText('theme.title'),
                     onClick: () => {
-                      // 这里会被 ThemeButton 组件接管
+                      openThemeCustomizer();
                     },
                   },
                   {
@@ -159,6 +162,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
               }
               content={<RouterProvider router={router}/>}
             />
+            <ThemeCustomizer opened={themeCustomizerOpened} onClose={closeThemeCustomizer} />
           </I18nProvider>
         </RoutesContext.Provider>
       </UserProfileContext.Provider>
