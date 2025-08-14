@@ -243,6 +243,8 @@
         "lecture_date": "Lecture Date"
       },
       "edit": {
+        "title": "Edit Assessment",
+        "current": "Current Assessment",
         "update_success": "Assessment updated successfully",
         "question_number": "Question {number}",
         "question_progress": "Question {current} of {total}",
@@ -287,6 +289,14 @@
       },
       "clear_filter": "Clear filter"
     },
+    "assessment": {
+      "title": "Assessment",
+      "current": "Current Assessment"
+    },
+    "review": {
+      "title": "Review Assessment", 
+      "current": "Assessment Review"
+    },
     "assessments": {
       "list": {
         "title": "Student Assessments",
@@ -318,12 +328,6 @@
     }
   },
   "taxonomy": {
-    "knowledge": "Knowledge",
-    "comprehension": "Comprehension",
-    "application": "Application",
-    "analysis": "Analysis",
-    "synthesis": "Synthesis",
-    "evaluation": "Evaluation",
     "Knowledge": "Knowledge",
     "Comprehension": "Comprehension",
     "Application": "Application",
@@ -342,5 +346,50 @@
   },
   "date_format": {
     "yyyy_mm_dd": "YYYY/MM/DD"
+  },
+  "theme": {
+    "title": "Theme Customization",
+    "current": {
+      "title": "Current Theme",
+      "select": "Select Theme"
+    },
+    "preview": {
+      "title": "Preview",
+      "subtitle": "This is how your theme looks",
+      "description": "Customize your application's appearance",
+      "sampleContent": "Sample Content",
+      "sampleText": "This is sample text to show how the theme looks.",
+      "modal": {
+        "title": "Theme Preview"
+      }
+    },
+    "custom": {
+      "title": "Create Custom Theme",
+      "name": "Theme Name",
+      "namePlaceholder": "Enter theme name",
+      "primaryColor": "Primary Color",
+      "secondaryColor": "Secondary Color", 
+      "backgroundColor": "Background Color",
+      "textColor": "Text Color",
+      "logo": "Logo",
+      "logoPlaceholder": "Upload logo image",
+      "preview": "Preview",
+      "save": "Save Theme",
+      "list": "Custom Themes",
+      "apply": "Apply",
+      "noCustomThemes": "No custom themes created yet"
+    },
+    "success": {
+      "saved": "Theme saved successfully",
+      "deleted": "Theme deleted successfully"
+    },
+    "error": {
+      "nameRequired": "Theme name is required",
+      "saveFailed": "Failed to save theme",
+      "deleteFailed": "Failed to delete theme"
+    },
+    "permission": {
+      "required": "Only teachers can create custom themes"
+    }
   }
 }

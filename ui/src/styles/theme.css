@@ -1,0 +1,132 @@
+/* 主题CSS变量 */
+:root {
+  --primary-color: #232f3e;
+  --secondary-color: #ff9900;
+  --background-color: #ffffff;
+  --text-color: #000000;
+}
+
+/* 应用主题变量到现有组件 */
+.awsui-app-layout {
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+.awsui-top-navigation {
+  border-bottom-color: var(--primary-color);
+}
+
+.awsui-side-navigation {
+  background-color: var(--background-color);
+  border-right-color: var(--primary-color);
+}
+
+.awsui-side-navigation .awsui-side-navigation-link {
+  color: var(--text-color);
+}
+
+.awsui-side-navigation .awsui-side-navigation-link:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.awsui-side-navigation .awsui-side-navigation-link.awsui-side-navigation-link-active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.awsui-breadcrumb-group .awsui-breadcrumb-link {
+  color: var(--primary-color);
+}
+
+.awsui-button.awsui-button-variant-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.awsui-button.awsui-button-variant-primary:hover {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+}
+
+/* 主题按钮样式 */
+.theme-button {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+.theme-button:hover {
+  background-color: var(--secondary-color) !important;
+  border-color: var(--secondary-color) !important;
+}
+
+/* 响应式主题适配 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --default-background-color: #1a1b23;
+    --default-text-color: #ffffff;
+  }
+}
+
+/* 主题预览样式 */
+.theme-preview {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 8px 0;
+}
+
+/* Logo适配 */
+.app-logo {
+  max-height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* 卡片主题适配 */
+.awsui-cards .awsui-cards-card {
+  border-color: var(--primary-color);
+}
+
+.awsui-cards .awsui-cards-card-header {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* 表格主题适配 */
+.awsui-table .awsui-table-header {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.awsui-table .awsui-table-row:hover {
+  background-color: var(--primary-color)20;
+}
+
+/* 通知和警告的主题适配 */
+.awsui-flashbar .awsui-flashbar-item.awsui-flashbar-type-success {
+  background-color: var(--secondary-color)20;
+  border-left-color: var(--secondary-color);
+}
+
+/* 输入框主题适配 */
+.awsui-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color);
+}
+
+.awsui-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color);
+}
+
+/* 主题切换动画 */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* 防止过度动画 */
+.no-transition * {
+  transition: none !important;
+}

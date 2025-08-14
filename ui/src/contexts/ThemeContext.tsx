@@ -1,0 +1,205 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { MantineProvider, MantineThemeOverride, createTheme } from '@mantine/core';
+import { UserProfile } from './userProfile';
+
+export interface CustomTheme {
+  id: string;
+  name: string;
+  primaryColor: string;
+  secondaryColor: string;
+  backgroundColor: string;
+  textColor: string;
+  logo?: string;
+  logoUrl?: string;
+  createdBy: string;
+  isDefault: boolean;
+}
+
+export interface ThemeContextType {
+  currentTheme: CustomTheme;
+  availableThemes: CustomTheme[];
+  setTheme: (theme: CustomTheme) => void;
+  canCustomizeTheme: (userProfile?: UserProfile) => boolean;
+  saveCustomTheme: (theme: Omit<CustomTheme, 'id' | 'createdBy'>) => void;
+  deleteCustomTheme: (themeId: string) => void;
+}
+
+const defaultThemes: CustomTheme[] = [
+  {
+    id: 'default',
+    name: 'Default AWS',
+    primaryColor: '#232f3e',
+    secondaryColor: '#ff9900',
+    backgroundColor: '#ffffff',
+    textColor: '#000000',
+    createdBy: 'system',
+    isDefault: true,
+  },
+  {
+    id: 'dark',
+    name: 'Dark Mode',
+    primaryColor: '#1a1b23',
+    secondaryColor: '#4dabf7',
+    backgroundColor: '#1a1b23',
+    textColor: '#ffffff',
+    createdBy: 'system',
+    isDefault: true,
+  },
+  {
+    id: 'education',
+    name: 'Education Blue',
+    primaryColor: '#1976d2',
+    secondaryColor: '#42a5f5',
+    backgroundColor: '#f5f5f5',
+    textColor: '#333333',
+    createdBy: 'system',
+    isDefault: true,
+  },
+];
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+};
+
+interface ThemeProviderProps {
+  children: ReactNode;
+  userProfile?: UserProfile;
+}
+
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, userProfile }) => {
+  const [currentTheme, setCurrentTheme] = useState<CustomTheme>(defaultThemes[0]);
+  const [availableThemes, setAvailableThemes] = useState<CustomTheme[]>(defaultThemes);
+
+  // 检查用户是否可以自定义主题
+  const canCustomizeTheme = (user?: UserProfile): boolean => {
+    return user?.group === 'teachers'; // 目前只有老师可以自定义，后续可改为管理员
+  };
+
+  // 从 localStorage 加载保存的主题
+  useEffect(() => {
+    const savedThemes = localStorage.getItem('customThemes');
+    const savedCurrentTheme = localStorage.getItem('currentTheme');
+    
+    if (savedThemes) {
+      try {
+        const customThemes = JSON.parse(savedThemes);
+        setAvailableThemes([...defaultThemes, ...customThemes]);
+      } catch (error) {
+        console.error('Error loading custom themes:', error);
+      }
+    }
+
+    if (savedCurrentTheme) {
+      try {
+        const theme = JSON.parse(savedCurrentTheme);
+        setCurrentTheme(theme);
+      } catch (error) {
+        console.error('Error loading current theme:', error);
+      }
+    }
+  }, []);
+
+  // 设置主题
+  const setTheme = (theme: CustomTheme) => {
+    setCurrentTheme(theme);
+    localStorage.setItem('currentTheme', JSON.stringify(theme));
+  };
+
+  // 保存自定义主题
+  const saveCustomTheme = (themeData: Omit<CustomTheme, 'id' | 'createdBy'>) => {
+    if (!canCustomizeTheme(userProfile)) {
+      throw new Error('You do not have permission to create custom themes');
+    }
+
+    const newTheme: CustomTheme = {
+      ...themeData,
+      id: `custom_${Date.now()}`,
+      createdBy: userProfile?.email || 'unknown',
+      isDefault: false,
+    };
+
+    const customThemes = availableThemes.filter(theme => !theme.isDefault);
+    const updatedCustomThemes = [...customThemes, newTheme];
+    const allThemes = [...defaultThemes, ...updatedCustomThemes];
+    
+    setAvailableThemes(allThemes);
+    localStorage.setItem('customThemes', JSON.stringify(updatedCustomThemes));
+  };
+
+  // 删除自定义主题
+  const deleteCustomTheme = (themeId: string) => {
+    if (!canCustomizeTheme(userProfile)) {
+      throw new Error('You do not have permission to delete custom themes');
+    }
+
+    const customThemes = availableThemes.filter(
+      theme => !theme.isDefault && theme.id !== themeId
+    );
+    const allThemes = [...defaultThemes, ...customThemes];
+    
+    setAvailableThemes(allThemes);
+    localStorage.setItem('customThemes', JSON.stringify(customThemes));
+
+    // 如果删除的是当前主题，切换到默认主题
+    if (currentTheme.id === themeId) {
+      setTheme(defaultThemes[0]);
+    }
+  };
+
+  // 创建 Mantine 主题配置
+  const mantineTheme: MantineThemeOverride = createTheme({
+    primaryColor: 'brand',
+    colors: {
+      brand: [
+        currentTheme.primaryColor + '0D', // lightest
+        currentTheme.primaryColor + '1A',
+        currentTheme.primaryColor + '33',
+        currentTheme.primaryColor + '4D',
+        currentTheme.primaryColor + '66',
+        currentTheme.primaryColor,          // main color
+        currentTheme.primaryColor + 'CC',
+        currentTheme.primaryColor + 'B3',
+        currentTheme.primaryColor + '99',
+        currentTheme.primaryColor + '80',   // darkest
+      ],
+    },
+    other: {
+      secondaryColor: currentTheme.secondaryColor,
+      backgroundColor: currentTheme.backgroundColor,
+      textColor: currentTheme.textColor,
+      logoUrl: currentTheme.logoUrl,
+    },
+  });
+
+  // 应用全局 CSS 变量
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--primary-color', currentTheme.primaryColor);
+    root.style.setProperty('--secondary-color', currentTheme.secondaryColor);
+    root.style.setProperty('--background-color', currentTheme.backgroundColor);
+    root.style.setProperty('--text-color', currentTheme.textColor);
+  }, [currentTheme]);
+
+  const contextValue: ThemeContextType = {
+    currentTheme,
+    availableThemes,
+    setTheme,
+    canCustomizeTheme,
+    saveCustomTheme,
+    deleteCustomTheme,
+  };
+
+  return (
+    <ThemeContext.Provider value={contextValue}>
+      <MantineProvider theme={mantineTheme}>
+        {children}
+      </MantineProvider>
+    </ThemeContext.Provider>
+  );
+};

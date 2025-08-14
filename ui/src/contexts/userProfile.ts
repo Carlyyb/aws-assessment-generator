@@ -1,7 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
  
-import { createContext } from 'react';
+import { createContext, useContext } from 'react';
 import { AuthUser } from 'aws-amplify/auth';
 
 export interface UserProfile extends AuthUser {
@@ -11,3 +11,8 @@ export interface UserProfile extends AuthUser {
 }
 
 export const UserProfileContext = createContext<UserProfile | undefined>(undefined);
+
+export const useUserProfile = () => {
+  const context = useContext(UserProfileContext);
+  return context;
+};

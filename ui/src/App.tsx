@@ -10,6 +10,7 @@ import {
 } from '@cloudscape-design/components';
 import './styles/high-contrast.css';
 import './styles/cross-browser.css';
+import './styles/theme.css';
 import { I18nProvider } from '@cloudscape-design/components/i18n';
 import messages from '@cloudscape-design/components/i18n/messages/all.en';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -18,24 +19,33 @@ import { withAuthenticator } from '@aws-amplify/ui-react';
 import { routes as routesList } from './routes';
 import { getText } from './i18n/lang';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
+import { ThemeButton } from './components/ThemeButton';
 import { AlertType, DispatchAlertContext } from './contexts/alerts';
 import { UserProfile, UserProfileContext } from './contexts/userProfile';
 import { RoutesContext } from './contexts/routes';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { generateBreadcrumbs } from './utils/breadcrumbs';
 import { fetchAuthSession } from 'aws-amplify/auth';
+import { Notifications } from '@mantine/notifications';
 
 const LOCALE = 'en';
 
-export function App({ signOut, user }: WithAuthenticatorProps) {
+interface AppContentProps {
+  userProfile: UserProfile;
+  signOut?: () => void;
+}
+
+function AppContent({ userProfile, signOut }: AppContentProps) {
   const [alerts, setAlerts] = useState<FlashbarProps.MessageDefinition[]>([]);
-  const [userProfile, setUserProfile] = useState<UserProfile | undefined>();
   const [activeHref, setActiveHref] = useState(window.location.pathname);
+  const { currentTheme } = useTheme();
 
   const dispatchAlert = (newAlert: FlashbarProps.MessageDefinition) => {
     const id = Date.now().toString();
     setAlerts([
       ...alerts,
       {
-  content: newAlert.type === AlertType.SUCCESS ? getText('common.status.success') : getText('common.status.failed'),
+        content: newAlert.type === AlertType.SUCCESS ? getText('common.status.success') : getText('common.status.failed'),
         ...newAlert,
         id,
         dismissible: true,
@@ -43,21 +53,6 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
       },
     ]);
   };
-
-  useEffect(() => {
-    fetchAuthSession()
-      .then((session) =>
-        setUserProfile({
-          ...user,
-          group: (session.tokens?.idToken?.payload as any)['cognito:groups'][0],
-          email: session.tokens?.idToken?.payload.email,
-          name: session.tokens?.idToken?.payload.name,
-        } as UserProfile),
-      )
-      .catch(() => dispatchAlert({ type: AlertType.ERROR }));
-  }, []);
-
-  if (!userProfile?.group) return null;
 
   const routes = (routesList as any)[userProfile.group];
   const router = createBrowserRouter(routes);
@@ -70,6 +65,7 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
       <UserProfileContext.Provider value={userProfile}>
         <RoutesContext.Provider value={routes}>
           <I18nProvider locale={LOCALE} messages={[messages]}>
+            <Notifications />
             <div id="h">
               <TopNavigation
                 identity={{
@@ -77,6 +73,14 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
                   title: getText('common.brand'),
                 }}
                 utilities={[
+                  {
+                    type: 'button',
+                    iconName: 'settings',
+                    ariaLabel: getText('theme.title'),
+                    onClick: () => {
+                      // 这里会被 ThemeButton 组件接管
+                    },
+                  },
                   {
                     type: 'menu-dropdown',
                     text: `${getText(`common.role.${userProfile?.group}`)}: ${userProfile?.name}`,
@@ -89,15 +93,28 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
                   },
                 ]}
               />
+              {/* 自定义Logo显示区域 */}
+              {currentTheme.logoUrl && (
+                <div style={{
+                  position: 'absolute',
+                  top: '8px',
+                  left: '16px',
+                  zIndex: 1000,
+                }}>
+                  <img 
+                    src={currentTheme.logoUrl} 
+                    alt={getText('common.brand')} 
+                    className="app-logo"
+                    style={{ maxHeight: '32px' }}
+                  />
+                </div>
+              )}
             </div>
             <AppLayout
               headerSelector="#h"
               breadcrumbs={
                 <BreadcrumbGroup
-                  items={[
-                    { text: getText('common.breadcrumb.home'), href: '#' },
-                    { text: getText('common.breadcrumb.service'), href: '#' },
-                  ]}
+                  items={generateBreadcrumbs(activeHref)}
                 />
               }
               navigationOpen={true}
@@ -112,8 +129,8 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
                     e.preventDefault();
                     router.navigate(e.detail.href);
                   }}
-                  items={sideNavRoutes.children.map(({ path, children }: any) => {
-                    if (children) {
+                  items={sideNavRoutes.children?.map(({ path, children }: any) => {
+                    if (children && children.length > 0) {
                       return {
                         type: 'expandable-link-group',
                         text: getText(`common.nav.${path}`),
@@ -127,18 +144,50 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
                     } else {
                       return { type: 'link', text: getText(`common.nav.${path}`), href: `/${path}` };
                     }
-                  })}
+                  }) || []}
                 />
               }
               notifications={<Flashbar items={alerts}/>}
               toolsOpen={false}
-          tools={<HelpPanel header={<h2>{getText('common.help.overview')}</h2>}>{getText('common.help.content')}</HelpPanel>}
+              tools={
+                <HelpPanel header={<h2>{getText('common.help.overview')}</h2>}>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+                    <ThemeButton />
+                  </div>
+                  {getText('common.help.content')}
+                </HelpPanel>
+              }
               content={<RouterProvider router={router}/>}
             />
           </I18nProvider>
         </RoutesContext.Provider>
       </UserProfileContext.Provider>
     </DispatchAlertContext.Provider>
+  );
+}
+
+export function App({ signOut, user }: WithAuthenticatorProps) {
+  const [userProfile, setUserProfile] = useState<UserProfile | undefined>();
+
+  useEffect(() => {
+    fetchAuthSession()
+      .then((session) =>
+        setUserProfile({
+          ...user,
+          group: (session.tokens?.idToken?.payload as any)['cognito:groups'][0],
+          email: session.tokens?.idToken?.payload.email,
+          name: session.tokens?.idToken?.payload.name,
+        } as UserProfile),
+      )
+      .catch(() => console.error('Failed to fetch auth session'));
+  }, []);
+
+  if (!userProfile?.group) return null;
+
+  return (
+    <ThemeProvider userProfile={userProfile}>
+      <AppContent userProfile={userProfile} signOut={signOut} />
+    </ThemeProvider>
   );
 }
 

@@ -243,6 +243,8 @@
         "lecture_date": "起始日期"
       },
       "edit": {
+        "title": "编辑评估",
+        "current": "当前评估",
         "update_success": "评估更新成功",
         "question_number": "问题 {number}",
         "question_progress": "第 {current} 题，共 {total} 题",
@@ -287,6 +289,14 @@
       },
       "clear_filter": "清除筛选"
     },
+    "assessment": {
+      "title": "评估",
+      "current": "当前评估"
+    },
+    "review": {
+      "title": "评估回顾",
+      "current": "评估回顾"
+    },
     "assessments": {
       "list": {
         "title": "学生评估",
@@ -318,12 +328,6 @@
     }
   },
   "taxonomy": {
-    "knowledge": "知识",
-    "comprehension": "理解",
-    "application": "应用",
-    "analysis": "分析",
-    "synthesis": "综合",
-    "evaluation": "评估",
     "Knowledge": "知识",
     "Comprehension": "理解",
     "Application": "应用",
@@ -342,5 +346,50 @@
   },
   "date_format": {
     "yyyy_mm_dd": "YYYY/MM/DD"
+  },
+  "theme": {
+    "title": "主题自定义",
+    "current": {
+      "title": "当前主题",
+      "select": "选择主题"
+    },
+    "preview": {
+      "title": "预览",
+      "subtitle": "这是您的主题外观",
+      "description": "自定义您的应用程序外观",
+      "sampleContent": "示例内容",
+      "sampleText": "这是显示主题外观的示例文本。",
+      "modal": {
+        "title": "主题预览"
+      }
+    },
+    "custom": {
+      "title": "创建自定义主题",
+      "name": "主题名称",
+      "namePlaceholder": "输入主题名称",
+      "primaryColor": "主色调",
+      "secondaryColor": "辅助色调", 
+      "backgroundColor": "背景颜色",
+      "textColor": "文本颜色",
+      "logo": "Logo",
+      "logoPlaceholder": "上传Logo图片",
+      "preview": "预览",
+      "save": "保存主题",
+      "list": "自定义主题",
+      "apply": "应用",
+      "noCustomThemes": "尚未创建自定义主题"
+    },
+    "success": {
+      "saved": "主题保存成功",
+      "deleted": "主题删除成功"
+    },
+    "error": {
+      "nameRequired": "主题名称是必需的",
+      "saveFailed": "保存主题失败",
+      "deleteFailed": "删除主题失败"
+    },
+    "permission": {
+      "required": "只有教师可以创建自定义主题"
+    }
   }
 }
