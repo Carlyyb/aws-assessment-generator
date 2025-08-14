@@ -33,6 +33,7 @@ interface DataStackProps extends NestedStackProps {
   documentProcessorLambda: NodejsFunction;
   postConfirmationLambda: NodejsFunction;
   kbTable: TableV2;
+  logQueryFunction?: NodejsFunction; // 添加可选的日志查询函数
 }
 
 export class DataStack extends NestedStack {
@@ -466,6 +467,18 @@ export class DataStack extends NestedStack {
       code: aws_appsync.Code.fromAsset('lib/resolvers/invokeLambda.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
+
+    ///////// 日志查询系统
+    if (props.logQueryFunction) {
+      const logQueryDs = api.addLambdaDataSource('LogQueryDs', props.logQueryFunction);
+
+      logQueryDs.createResolver('QueryLogsResolver', {
+        typeName: 'Query',
+        fieldName: 'queryLogs',
+        code: aws_appsync.Code.fromAsset('lib/resolvers/lambdaResolver.ts'),
+        runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+      });
+    }
 
     this.api = api;
   }

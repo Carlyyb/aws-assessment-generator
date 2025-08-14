@@ -17,6 +17,7 @@ import type { WithAuthenticatorProps } from '@aws-amplify/ui-react';
 import { withAuthenticator } from '@aws-amplify/ui-react';
 import { routes as routesList } from './routes';
 import { titlise } from './helpers';
+import { getText } from './i18n/lang';
 import { AlertType, DispatchAlertContext } from './contexts/alerts';
 import { UserProfile, UserProfileContext } from './contexts/userProfile';
 import { RoutesContext } from './contexts/routes';
@@ -34,7 +35,7 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
     setAlerts([
       ...alerts,
       {
-        content: newAlert.type === AlertType.SUCCESS ? 'Successful' : 'Unsuccessful, please try again',
+  content: newAlert.type === AlertType.SUCCESS ? getText('common.status.success') : getText('common.status.failed'),
         ...newAlert,
         id,
         dismissible: true,
@@ -73,15 +74,15 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
               <TopNavigation
                 identity={{
                   href: '#',
-                  // title: 'Gen Assess',
+                  title: getText('common.brand'),
                 }}
                 utilities={[
                   {
                     type: 'menu-dropdown',
-                    text: `${userProfile?.group?.toUpperCase()}: ${userProfile?.name}`,
-                    // description: `Profile: ${userProfile?.group?.toUpperCase()}`,
+                    text: `${getText(`common.role.${userProfile?.group}`)}: ${userProfile?.name}`,
+                    description: `${getText('common.profile')}: ${getText(`common.role.${userProfile?.group}`)}`,
                     iconName: 'user-profile',
-                    items: [{ id: 'signout', text: 'Sign out' }],
+                    items: [{ id: 'signout', text: getText('common.action.sign_out') }],
                     onItemClick: ({ detail }) => {
                       if (detail.id === 'signout') signOut && signOut();
                     },
@@ -94,8 +95,8 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
               breadcrumbs={
                 <BreadcrumbGroup
                   items={[
-                    { text: 'Home', href: '#' },
-                    { text: 'Service', href: '#' },
+                    { text: getText('common.breadcrumb.home'), href: '#' },
+                    { text: getText('common.breadcrumb.service'), href: '#' },
                   ]}
                 />
               }
@@ -105,7 +106,7 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
                   activeHref={activeHref}
                   header={{
                     href: '/',
-                    text: 'Gen Assess',
+                    text: getText('common.brand'),
                   }}
                   onFollow={(e) => {
                     e.preventDefault();
@@ -115,24 +116,23 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
                     if (children) {
                       return {
                         type: 'expandable-link-group',
-                        text: titlise(path),
+                        text: getText(`common.nav.${path}`),
                         href: `/${path}`,
-                        // href: path,
                         items: children.map(({ path: childPath }: any) => ({
                           type: 'link',
-                          text: titlise(childPath),
+                          text: getText(`common.nav.${childPath}`),
                           href: `/${path}/${childPath}`,
                         })),
                       };
                     } else {
-                      return { type: 'link', text: titlise(path), href: `/${path}` };
+                      return { type: 'link', text: getText(`common.nav.${path}`), href: `/${path}` };
                     }
                   })}
                 />
               }
               notifications={<Flashbar items={alerts}/>}
               toolsOpen={false}
-              tools={<HelpPanel header={<h2>Overview</h2>}>Help content</HelpPanel>}
+          tools={<HelpPanel header={<h2>{getText('common.help.overview')}</h2>}>{getText('common.help.content')}</HelpPanel>}
               content={<RouterProvider router={router}/>}
             />
           </I18nProvider>

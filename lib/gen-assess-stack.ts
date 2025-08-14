@@ -6,6 +6,7 @@ import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
 import { AuthStack } from './auth-stack';
 import { DataStack } from './data-stack';
 import { FrontendStack } from './frontend-stack';
+import { LoggingStack } from './logging-stack';
 import * as cr from 'aws-cdk-lib/custom-resources';
 import { RagPipelineStack } from './rag-pipeline/rag-pipeline-stack';
 
@@ -16,12 +17,16 @@ export class GenAssessStack extends Stack {
     const authStack = new AuthStack(this, 'AuthStack');
 
     const ragPipipelineStack = new RagPipelineStack(this, 'RagStack');
+    // 添加日志系统
+    const loggingStack = new LoggingStack(this, 'LoggingStack');
+
     const { api } = new DataStack(this, 'DataStack', {
       userPool: authStack.userPool,
       postConfirmationLambda: authStack.postConfirmationLambda,
       artifactsUploadBucket: ragPipipelineStack.artifactsUploadBucket,
       documentProcessorLambda: ragPipipelineStack.documentProcessor,
       kbTable: ragPipipelineStack.kbTable,
+      logQueryFunction: loggingStack.logQueryFunction, // 传递日志查询函数
     });
 
     const frontendStack = new FrontendStack(this, 'FrontendStack', { ...props, graphqlUrl: api.graphqlUrl });

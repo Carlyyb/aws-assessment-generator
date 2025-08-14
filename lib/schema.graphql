@@ -217,4 +217,101 @@ type Query {
   generateAssessment(input: GenerateAssessmentInput): ID
   getKnowledgeBase(courseId: ID): KnowledgeBase
   getIngestionJob(input: IngestionJobInput): IngestionJob
+  
+  # 日志系统查询
+  queryLogs(input: LogQueryInput): LogQueryResult
+}
+
+# 日志查询输入
+input LogQueryInput {
+  operation: LogOperation!
+  filters: LogFilters
+  searchQuery: String
+}
+
+enum LogOperation {
+  getLogs
+  getMetrics
+  getLogGroups
+  searchLogs
+  getSystemHealth
+}
+
+input LogFilters {
+  serviceName: String
+  level: String
+  userId: String
+  startTime: String
+  endTime: String
+  timeRange: String
+  limit: Int
+}
+
+# 日志查询结果
+union LogQueryResult = LogsResult | MetricsResult | LogGroupsResult | SystemHealthResult
+
+type LogsResult {
+  logs: [LogEntry!]!
+  nextToken: String
+}
+
+type MetricsResult {
+  metrics: [SystemMetric!]!
+}
+
+type LogGroupsResult {
+  logGroups: [LogGroup!]!
+}
+
+type SystemHealthResult {
+  totalRequests: Int!
+  errorRate: Float!
+  averageResponseTime: Float!
+  memoryUtilization: Float!
+  topErrors: [ErrorSummary!]!
+  serviceHealth: [ServiceHealth!]!
+}
+
+# 日志条目
+type LogEntry {
+  logId: ID!
+  timestamp: String!
+  message: String!
+  level: String!
+  serviceName: String
+  userId: String
+  requestId: String
+  errorType: String
+  stackTrace: String
+  duration: Int
+  memoryUsed: Int
+  billedDuration: Int
+}
+
+# 系统指标
+type SystemMetric {
+  metricKey: String!
+  timestamp: String!
+  metricType: String!
+  value: Float!
+  dimensions: String! # JSON string
+}
+
+# 日志组
+type LogGroup {
+  name: String!
+  status: String!
+}
+
+# 错误统计
+type ErrorSummary {
+  errorType: String!
+  count: Int!
+}
+
+# 服务健康状态
+type ServiceHealth {
+  serviceName: String!
+  status: String!
+  errorCount: Int!
 }

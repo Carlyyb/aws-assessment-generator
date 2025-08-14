@@ -7,6 +7,7 @@ import FindAssessments from './pages/FindAssessments';
 import StudentAssessments from './pages/StudentAssessments';
 import GenerateAssessments from './pages/GenerateAssessments';
 import EditAssessments from './pages/EditAssessments';
+import LogManagement from './pages/LogManagement';
 // import FindStudent from './pages/FindStudent';
 import MyDashboard from './pages/MyDashboard';
 import StudentAssessment from './pages/StudentAssessment';
@@ -38,6 +39,10 @@ export const routes = {
             {
               path: 'courses',
               element: <Courses />,
+            },
+            {
+              path: 'log-management',
+              element: <LogManagement />,
             },
           ],
         },
