@@ -5,6 +5,7 @@
     "gen-assess-app": "bin/gen-assess-app.js"
   },
   "scripts": {
+    "build": "tsc",
     "test": "jest",
     "cdk": "cdk",
     "precdk": "cd lib && npx @aws-amplify/cli codegen"

@@ -49,6 +49,7 @@ Key features (Teacher)
 - Assessment template creation: Teacher can define an assessment set with the number of questions for each level (easy, medium, hard)
 - Manage knowledge base: Teacher can upload reference material for a pre-defined course
 - Generate assessments: Teacher can generate assessments by using a predefined assessment template and course.
+- **Log Management**: Admin users can view system logs, monitor performance metrics, and track errors in real-time through a dedicated dashboard.
 
 Short clip depicting the teacher journey
 
@@ -64,11 +65,12 @@ https://github.com/aws-samples/assessment-generator/assets/5655093/706730e0-b167
 
 ## Architecture
 
-The architecture can be split into 3 key blocks:
+The architecture can be split into 4 key blocks:
 
 - Front-end architecture
 - Document ingestion architecture
 - Assessment generator architecture
+- **Logging and monitoring architecture**
 
 Architecture diagrams depicting key components in those blocks are provided below:
 
@@ -94,7 +96,9 @@ Request model access on Amazon Bedrock for the following:
 ## Deployment
 
 To deploy this project in your own AWS account, ensure your AWS region is set to the same region where you have Bedrock Model access.
-Then, run the following commands:
+
+### Standard Deployment
+Run the following commands:
 
 ```bash
 git clone git@github.com:aws-samples/assessment-generator.git
@@ -104,13 +108,36 @@ npx cdk bootstrap --qualifier gen-assess
 npm run cdk deploy
 ```
 
+### Deployment with Logging System
+To deploy with the comprehensive logging and monitoring system:
+
+```bash
+git clone git@github.com:aws-samples/assessment-generator.git
+cd assessment-generator
+npm ci
+npx cdk bootstrap --qualifier gen-assess
+chmod +x deploy-logging.sh
+./deploy-logging.sh
+```
+
+Or see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for detailed deployment instructions.
+
 After successfully deploying, you will be able to access the Frontend UI with the CloudFront URL in the CDK outputs.
+
+### Post-Deployment Setup
 Next:
 
 1. Create an account for student using the frontend with "Create Account" tab and Role as "students"
 2. Create an account for teacher using the frontend with "Create Account" tab and Role as "teachers"
 3. For teacher journey: Login with the created teacher account
 4. For student journey: Login with the created student account
+5. **For log management**: Admin users can access log management through "Settings > Log Management" in the dashboard
+
+### Log Management Features
+- **Real-time Monitoring**: View system performance and health metrics
+- **Error Tracking**: Monitor and analyze system errors and exceptions
+- **Log Analytics**: Search and filter logs by timestamp, level, and service
+- **Cost Optimization**: Automatic log retention with TTL to control storage costs
 
 ## Security
 

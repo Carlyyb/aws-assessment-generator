@@ -28,11 +28,7 @@ npm install
 npm run build
 cd ..
 
-# 编译TypeScript
-echo "🔨 编译后端代码..."
-npm run build
-
-# 部署CDK Stack
+# CDK项目不需要单独构建，直接部署
 echo "☁️ 部署AWS资源..."
 npx cdk bootstrap
 npx cdk deploy --all --require-approval never
