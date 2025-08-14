@@ -3,6 +3,7 @@ import { Table, Header, SpaceBetween, Container, ContentLayout, Box, Pagination,
 import { generateClient } from 'aws-amplify/api';
 import { listAssessTemplates } from '../graphql/queries';
 import { AssessTemplate } from '../graphql/API';
+import { getAssessTypeText, getTaxonomyText } from '../utils/enumTranslations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import CreateTemplate from '../components/CreateTemplate';
 import { getText } from '../i18n/lang';
@@ -79,12 +80,12 @@ export default () => {
             {
               id: 'assessType',
               header: getText('teachers.settings.templates.type'),
-              cell: (item) => item.assessType,
+              cell: (item) => item.assessType ? getAssessTypeText(item.assessType) : '-',
             },
             {
               id: 'taxonomy',
               header: getText('teachers.settings.templates.taxonomy'),
-              cell: (item) => item.taxonomy,
+              cell: (item) => item.taxonomy ? getTaxonomyText(item.taxonomy) : '-',
             },
             {
               id: 'easyQuestions',

@@ -5,13 +5,14 @@ import { createAssessTemplate } from '../graphql/mutations';
 import { Lang, AssessType, Taxonomy } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { optionise } from '../helpers';
+import { getAssessTypeOptions, getTaxonomyOptions } from '../utils/enumTranslations';
 import { getText } from '../i18n/lang';
 
 const client = generateClient();
 
 const langs = Object.values(Lang).map(optionise);
-const assessTypes = Object.values(AssessType).map(optionise);
-const taxonomies = Object.values(Taxonomy).map(optionise);
+const assessTypes = getAssessTypeOptions();
+const taxonomies = getTaxonomyOptions();
 
 type CreateTemplateProps = {
   onSubmit: () => void;

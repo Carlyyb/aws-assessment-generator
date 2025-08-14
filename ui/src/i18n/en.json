@@ -11,7 +11,8 @@
       "review": "Review",
       "edit": "Edit",
       "delete": "Delete",
-      "publish": "Publish"
+      "publish": "Publish",
+      "choose_file": "Choose file"
     },
     "status": {
       "success": "Operation successful",
@@ -24,6 +25,16 @@
       "show_more_files": "Show more files"
     },
     "brand": "Gen Assess",
+    "selected_values": "Selected Values",
+    "assessment_type": "Assessment Type",
+    "taxonomy": "Taxonomy",
+    "select_assessment_type": "Select Assessment Type",
+    "select_taxonomy": "Select Taxonomy",
+    "assessment_settings": "Assessment Settings",
+    "name": "Name",
+    "course": "Course",
+    "lecture_date": "Lecture Date",
+    "deadline": "Deadline",
     "profile": "Profile",
     "breadcrumb": {
       "home": "Home",
@@ -115,6 +126,13 @@
     "find_resources": "Find resources",
     "action": {
       "sign_out": "Sign Out"
+    },
+    "settings": {
+      "title": "User Settings",
+      "ui_language": "UI Language",
+      "doc_language": "Document Language",
+      "default_assessment_type": "Default Assessment Type",
+      "default_taxonomy": "Default Taxonomy"
     }
   },
   "components": {
@@ -154,11 +172,6 @@
       "settings_update_success": "Settings updated successfully"
     },
     "settings": {
-      "title": "User Settings",
-      "ui_language": "UI Language",
-      "doc_language": "Document Language",
-      "default_assessment_type": "Default Assessment Type",
-      "default_taxonomy": "Default Taxonomy",
       "update_success": "Settings updated successfully",
       "default_settings": {
         "title": "Default Settings",
@@ -244,10 +257,12 @@
           "templates": "Templates",
           "generate-assessments": "Generate Assessments",
           "courses": "Courses",
-          "log-management": "Log Management"
+          "log-management": "Log Management",
+          "template-settings": "Template Settings"
         },
         "assessments": "Assessment",
-        "settings": "Settings"
+        "settings": "Settings",
+        "management": "Management"
       }
     }
   },
@@ -308,7 +323,17 @@
     "application": "Application",
     "analysis": "Analysis",
     "synthesis": "Synthesis",
-    "evaluation": "Evaluation"
+    "evaluation": "Evaluation",
+    "Knowledge": "Knowledge",
+    "Comprehension": "Comprehension",
+    "Application": "Application",
+    "Analysis": "Analysis",
+    "Synthesis": "Synthesis",
+    "Evaluation": "Evaluation"
+  },
+  "assessType": {
+    "multiChoiceAssessment": "Multiple Choice Assessment",
+    "freeTextAssessment": "Free Text Assessment"
   },
   "formats": {
     "date": {

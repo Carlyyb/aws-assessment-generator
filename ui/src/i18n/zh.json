@@ -11,7 +11,8 @@
       "review": "查看",
       "edit": "编辑",
       "delete": "删除",
-      "publish": "发布"
+      "publish": "发布",
+      "choose_file": "Choose file"
     },
     "status": {
       "success": "操作成功",
@@ -23,7 +24,17 @@
       "show_fewer_files": "显示更少文件",
       "show_more_files": "显示更多文件"
     },
-    "brand": "智能评估系统",
+        "brand": "评估生成器",
+    "selected_values": "已选择的值",
+    "assessment_type": "评估类型",
+    "taxonomy": "分类法",
+    "select_assessment_type": "选择评估类型",
+    "select_taxonomy": "选择分类法",
+    "assessment_settings": "评估设置",
+    "name": "名称",
+    "course": "课程",
+    "lecture_date": "讲课日期",
+    "deadline": "截止日期",
     "profile": "个人信息",
     "breadcrumb": {
       "home": "首页",
@@ -115,6 +126,13 @@
     "find_resources": "查找资源",
     "action": {
       "sign_out": "登出"
+    },
+    "settings": {
+        "title": "用户设置",
+        "ui_language": "界面语言",
+        "doc_language": "文档语言",
+        "default_assessment_type": "默认评估类型",
+        "default_taxonomy": "默认分类法"
     }
   },
   "components": {
@@ -154,11 +172,6 @@
       "settings_update_success": "设置更新成功"
     },
     "settings": {
-      "title": "用户设置",
-      "ui_language": "界面语言",
-      "doc_language": "文档语言",
-      "default_assessment_type": "默认评估类型",
-      "default_taxonomy": "默认分类法",
       "update_success": "设置更新成功",
       "default_settings": {
         "title": "默认设置",
@@ -244,10 +257,12 @@
           "templates": "模板管理",
           "generate-assessments": "生成评估",
           "courses": "课程管理",
-          "log-management": "日志管理"
+          "log-management": "日志管理",
+          "template-settings": "模板设置"
         },
         "assessments": "评估",
-        "settings": "设置"
+        "settings": "设置",
+        "management": "管理"
       }
     }
   },
@@ -308,7 +323,17 @@
     "application": "应用",
     "analysis": "分析",
     "synthesis": "综合",
-    "evaluation": "评估"
+    "evaluation": "评估",
+    "Knowledge": "知识",
+    "Comprehension": "理解",
+    "Application": "应用",
+    "Analysis": "分析",
+    "Synthesis": "综合",
+    "Evaluation": "评估"
+  },
+  "assessType": {
+    "multiChoiceAssessment": "选择题评估",
+    "freeTextAssessment": "问答题评估"
   },
   "formats": {
     "date": {

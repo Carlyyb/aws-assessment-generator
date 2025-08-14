@@ -6,14 +6,15 @@ import { Lang } from '../graphql/Lang';
 import { getSettings } from '../graphql/queries';
 import { upsertSettings } from '../graphql/mutations';
 import { optionise } from '../helpers';
+import { getAssessTypeOptions, getTaxonomyOptions } from '../utils/enumTranslations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { setCurrentLang, getText } from '../i18n/lang';
 
 const client = generateClient();
 
 const langs = Object.values(Lang).map(optionise);
-const assessTypes = Object.values(AssessType).map(optionise);
-const taxonomies = Object.values(Taxonomy).map(optionise);
+const assessTypes = getAssessTypeOptions();
+const taxonomies = getTaxonomyOptions();
 
 export default () => {
   const dispatchAlert = useContext(DispatchAlertContext);
@@ -33,9 +34,14 @@ export default () => {
         setCurrentLang(settings.uiLang as Lang);
       }
       setDocLang(optionise(settings.docLang!));
-      setAssessType(optionise(settings.assessType!));
+      
+      // 为 assessType 找到对应的选项
+      const selectedAssessType = assessTypes.find(option => option.value === settings.assessType);
+      setAssessType(selectedAssessType || null);
+      
       if (settings.taxonomy) {
-        setTaxonomy(optionise(settings.taxonomy));
+        const selectedTaxonomy = taxonomies.find(option => option.value === settings.taxonomy);
+        setTaxonomy(selectedTaxonomy || null);
       }
     });
   }, []);
