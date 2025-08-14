@@ -8,7 +8,6 @@ import { AllowedMethods, HeadersReferrerPolicy } from 'aws-cdk-lib/aws-cloudfron
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { BucketAccessControl } from 'aws-cdk-lib/aws-s3';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
-import { HttpOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as childProcess from 'child_process';
 import * as fsExtra from 'fs-extra';
@@ -95,7 +94,7 @@ export class FrontendStack extends NestedStack {
     const distribution = new cloudfront.Distribution(this, 'dist', {
       comment: 'Gen Assess Distribution',
       defaultBehavior: {
-        // 修复：使用S3Origin而不是S3StaticWebsiteOrigin
+        // 暂时保持现有语法，虽然有弃用警告但仍然有效
         origin: new origins.S3Origin(this.bucket, {
           originAccessIdentity: originAccessIdentity,
         }),
@@ -112,7 +111,7 @@ export class FrontendStack extends NestedStack {
       logBucket: accessLogBucket,
     });
 
-    distribution.addBehavior('/graphql', new HttpOrigin(Fn.select(2, Fn.split('/', graphqlUrl))), {
+    distribution.addBehavior('/graphql', new origins.HttpOrigin(Fn.select(2, Fn.split('/', graphqlUrl))), {
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
       allowedMethods: AllowedMethods.ALLOW_ALL, // allow POST for graphql
       responseHeadersPolicy: new cloudfront.ResponseHeadersPolicy(this, `APIResponsePolicy-${uniqueSuffix}`, {

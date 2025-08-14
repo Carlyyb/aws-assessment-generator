@@ -1,5 +1,4 @@
 import UserSettings from './pages/UserSettings';
-import TemplateSettings from './pages/TemplateSettings';
 import Section from './pages/Section';
 import HomePage from './pages/HomePage';
 import ManageKnowledgeBases from './pages/ManageKnowledgeBases';
@@ -9,11 +8,11 @@ import StudentAssessments from './pages/StudentAssessments';
 import GenerateAssessments from './pages/GenerateAssessments';
 import EditAssessments from './pages/EditAssessments';
 import LogManagement from './pages/LogManagement';
-import FindStudent from './pages/FindStudent';
 import MyDashboard from './pages/MyDashboard';
 import StudentAssessment from './pages/StudentAssessment';
 import ReviewAssessment from './pages/ReviewAssessment';
 import Courses from './pages/Courses';
+import FindStudent from './pages/FindStudent';
 
 export const routes = {
   teachers: [
@@ -36,6 +35,10 @@ export const routes = {
             {
               path: 'courses',
               element: <Courses />,
+            },
+            {
+              path: 'find-student',
+              element: <FindStudent />,
             },
             {
               path: 'log-management',

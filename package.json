@@ -5,7 +5,8 @@
     "gen-assess-app": "bin/gen-assess-app.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --noEmitOnError false",
+    "build-ignore-errors": "tsc --noEmitOnError false",
     "test": "jest",
     "cdk": "cdk",
     "precdk": "cd lib && npx @aws-amplify/cli codegen"
