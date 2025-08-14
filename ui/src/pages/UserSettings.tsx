@@ -1,28 +1,21 @@
 import { useEffect, useState, useContext } from 'react';
 import { Container, Header, SpaceBetween, Button, Form, FormField, Box, Select, SelectProps } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
-import { AssessType, Taxonomy } from '../graphql/API';
 import { Lang } from '../graphql/Lang';
 import { getSettings } from '../graphql/queries';
 import { upsertSettings } from '../graphql/mutations';
 import { optionise } from '../helpers';
-import { getAssessTypeOptions, getTaxonomyOptions } from '../utils/enumTranslations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { setCurrentLang, getText } from '../i18n/lang';
 
 const client = generateClient();
 
 const langs = Object.values(Lang).map(optionise);
-const assessTypes = getAssessTypeOptions();
-const taxonomies = getTaxonomyOptions();
 
 export default () => {
   const dispatchAlert = useContext(DispatchAlertContext);
 
   const [uiLang, setUiLang] = useState<SelectProps.Option | null>(null);
-  const [docLang, setDocLang] = useState<SelectProps.Option | null>(null);
-  const [assessType, setAssessType] = useState<SelectProps.Option | null>(null);
-  const [taxonomy, setTaxonomy] = useState<SelectProps.Option | null>(null);
 
   useEffect(() => {
     client.graphql<any>({ query: getSettings }).then(({ data }) => {
@@ -32,16 +25,6 @@ export default () => {
       // 设置初始语言
       if (settings.uiLang) {
         setCurrentLang(settings.uiLang as Lang);
-      }
-      setDocLang(optionise(settings.docLang!));
-      
-      // 为 assessType 找到对应的选项
-      const selectedAssessType = assessTypes.find(option => option.value === settings.assessType);
-      setAssessType(selectedAssessType || null);
-      
-      if (settings.taxonomy) {
-        const selectedTaxonomy = taxonomies.find(option => option.value === settings.taxonomy);
-        setTaxonomy(selectedTaxonomy || null);
       }
     });
   }, []);
@@ -55,10 +38,7 @@ export default () => {
             query: upsertSettings,
             variables: { 
               input: { 
-                uiLang: uiLang?.value as Lang, 
-                docLang: docLang?.value as Lang, 
-                assessType: assessType?.value as AssessType,
-                taxonomy: taxonomy?.value as Taxonomy
+                uiLang: uiLang?.value as Lang
               } 
             },
           })
@@ -104,15 +84,6 @@ export default () => {
                     }
                   }} 
                 />
-              </FormField>
-              <FormField label={getText('common.settings.doc_language')}>
-                <Select options={langs} selectedOption={docLang} onChange={({ detail }) => setDocLang(detail.selectedOption)} />
-              </FormField>
-              <FormField label={getText('common.settings.default_assessment_type')}>
-                <Select options={assessTypes} selectedOption={assessType} onChange={({ detail }) => setAssessType(detail.selectedOption)} />
-              </FormField>
-              <FormField label={getText('common.settings.default_taxonomy')}>
-                <Select options={taxonomies} selectedOption={taxonomy} onChange={({ detail }) => setTaxonomy(detail.selectedOption)} />
               </FormField>
             </SpaceBetween>
           </Box>
