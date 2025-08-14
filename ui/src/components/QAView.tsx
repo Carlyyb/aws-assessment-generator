@@ -6,10 +6,10 @@ import { getText, getTextWithParams } from '../i18n/lang';
 type QAViewProps = {
   activeStepIndex: number;
   multiChoiceAssessment: MultiChoice;
-  updateAssessment: (props: { type: ActionTypes; stepIndex: number; key: string; content: any }) => void;
+  updateAssessment: (props: { type: ActionTypes; stepIndex: number; key: string; content: unknown }) => void;
 };
 
-export const QAView = ({ activeStepIndex, multiChoiceAssessment, updateAssessment }: QAViewProps) => {
+export function QAView({ activeStepIndex, multiChoiceAssessment, updateAssessment }: QAViewProps) {
   const { question, answerChoices, correctAnswer, explanation } = multiChoiceAssessment;
 
   return (
@@ -100,4 +100,6 @@ export const QAView = ({ activeStepIndex, multiChoiceAssessment, updateAssessmen
       </Container>
     </SpaceBetween>
   );
-};
+}
+
+export default QAView;

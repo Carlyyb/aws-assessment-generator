@@ -5,7 +5,7 @@ export type DashboardProps = {
   data: { x: Date; y: number }[];
 };
 
-export default (props: DashboardProps) => {
+export function Dashboard(props: DashboardProps) {
   const { data } = props;
 
   return (
@@ -53,4 +53,6 @@ export default (props: DashboardProps) => {
       }
     />
   );
-};
+}
+
+export default Dashboard;
