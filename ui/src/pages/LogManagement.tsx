@@ -14,8 +14,7 @@ import {
   Pagination,
   ColumnLayout,
   ProgressBar,
-  StatusIndicator,
-  Alert
+  StatusIndicator
 } from '@cloudscape-design/components';
 import { useCollection } from '@cloudscape-design/collection-hooks';
 
@@ -425,7 +424,50 @@ const LogManagement: React.FC = () => {
         {selectedTab === 'logs' && renderLogs()}
         {selectedTab === 'metrics' && (
           <Container header={<Header variant="h2">性能指标</Header>}>
-            <Alert>性能指标面板正在开发中...</Alert>
+            <Table
+              items={metrics}
+              columnDefinitions={[
+                {
+                  id: 'timestamp',
+                  header: '时间',
+                  cell: (item: SystemMetric) => new Date(item.timestamp).toLocaleString(),
+                  width: 180
+                },
+                {
+                  id: 'metricType',
+                  header: '指标类型',
+                  cell: (item: SystemMetric) => item.metricType,
+                  width: 150
+                },
+                {
+                  id: 'value',
+                  header: '数值',
+                  cell: (item: SystemMetric) => item.value.toFixed(2),
+                  width: 100
+                },
+                {
+                  id: 'dimensions',
+                  header: '维度',
+                  cell: (item: SystemMetric) => (
+                    <Box variant="span">
+                      {typeof item.dimensions === 'string' 
+                        ? item.dimensions 
+                        : JSON.stringify(item.dimensions)}
+                    </Box>
+                  )
+                }
+              ]}
+              loading={loading}
+              loadingText="加载指标中..."
+              empty={
+                <Box textAlign="center" color="inherit">
+                  <b>没有指标数据</b>
+                  <Box padding={{ bottom: 's' }} variant="p" color="inherit">
+                    当前时间范围内没有找到性能指标。
+                  </Box>
+                </Box>
+              }
+            />
           </Container>
         )}
       </SpaceBetween>

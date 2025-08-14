@@ -16,7 +16,6 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import type { WithAuthenticatorProps } from '@aws-amplify/ui-react';
 import { withAuthenticator } from '@aws-amplify/ui-react';
 import { routes as routesList } from './routes';
-import { titlise } from './helpers';
 import { getText } from './i18n/lang';
 import { AlertType, DispatchAlertContext } from './contexts/alerts';
 import { UserProfile, UserProfileContext } from './contexts/userProfile';
