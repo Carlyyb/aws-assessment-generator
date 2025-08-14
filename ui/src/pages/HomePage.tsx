@@ -12,8 +12,51 @@ export default () => {
   const navigate = useNavigate();
   const routes = useContext(RoutesContext);
 
+  // 添加安全检查
+  if (!routes || !routes[0] || !routes[0].children) {
+    return (
+      <ContentLayout>
+        <Container
+          header={
+            <SpaceBetween size="l">
+                <Header variant="h1">Loading...</Header>
+            </SpaceBetween>
+          }
+        >
+          <Box padding="xxxl">
+            <SpaceBetween size="l" alignItems="center">
+              <Box>No content available</Box>
+            </SpaceBetween>
+          </Box>
+        </Container>
+      </ContentLayout>
+    );
+  }
+
   const [{ children: childRoutes }] = routes;
-  const paths = childRoutes!.map(({ path }: any) => path);
+  
+  // 添加 childRoutes 的安全检查
+  if (!childRoutes || !Array.isArray(childRoutes)) {
+    return (
+      <ContentLayout>
+        <Container
+          header={
+            <SpaceBetween size="l">
+                <Header variant="h1">{getText('teachers.home.title')}</Header>
+            </SpaceBetween>
+          }
+        >
+          <Box padding="xxxl">
+            <SpaceBetween size="l" alignItems="center">
+              <Box>No sections available</Box>
+            </SpaceBetween>
+          </Box>
+        </Container>
+      </ContentLayout>
+    );
+  }
+  
+  const paths = childRoutes.map(({ path }: any) => path);
 
   return (
     <ContentLayout>

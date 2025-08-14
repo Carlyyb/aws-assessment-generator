@@ -14,15 +14,57 @@ export default (props: SectionProps) => {
   const navigate = useNavigate();
   const routes = useContext(RoutesContext);
 
+  // 添加安全检查
+  if (!routes || !routes[0] || !routes[0].children || !routes[0].children[props.id]) {
+    return (
+      <ContentLayout>
+        <Container
+          header={
+            <SpaceBetween size="l">
+              <Header variant="h1">Loading...</Header>
+            </SpaceBetween>
+          }
+        >
+          <Box padding="xxxl">
+            <SpaceBetween size="l" alignItems="center">
+              <Box>No content available</Box>
+            </SpaceBetween>
+          </Box>
+        </Container>
+      </ContentLayout>
+    );
+  }
+
   const { path: rootPath, children: childRoutes }: any = routes[0].children[props.id];
 
-  const paths = childRoutes!.map(({ path }: any) => path);
+  // 添加 childRoutes 的安全检查
+  if (!childRoutes || !Array.isArray(childRoutes)) {
+    return (
+      <ContentLayout>
+        <Container
+          header={
+            <SpaceBetween size="l">
+              <Header variant="h1">{getText(`teachers.section.${rootPath}`)}</Header>
+            </SpaceBetween>
+          }
+        >
+          <Box padding="xxxl">
+            <SpaceBetween size="l" alignItems="center">
+              <Box>No sub-sections available</Box>
+            </SpaceBetween>
+          </Box>
+        </Container>
+      </ContentLayout>
+    );
+  }
+
+  const paths = childRoutes.map(({ path }: any) => path);
   return (
     <ContentLayout>
       <Container
         header={
           <SpaceBetween size="l">
-            <Header variant="h1">{getText(`teachers.assessments.section.${rootPath}`)}</Header>
+            <Header variant="h1">{getText(`teachers.section.${rootPath}`)}</Header>
           </SpaceBetween>
         }
       >
@@ -32,7 +74,7 @@ export default (props: SectionProps) => {
               {paths?.map((path: any) => (
                 <Button key={`button-${path}`} onClick={() => navigate(path)}>
                   <Box variant="h2" padding="m">
-                    {getText(`teachers.assessments.section.buttons.${path}`) || titlise(path)}
+                    {getText(`teachers.section.buttons.${path}`) || titlise(path)}
                   </Box>
                 </Button>
               ))}
