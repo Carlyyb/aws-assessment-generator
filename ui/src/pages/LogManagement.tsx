@@ -14,9 +14,104 @@ import {
   Pagination,
   ColumnLayout,
   ProgressBar,
-  StatusIndicator
+  StatusIndicator,
+  Modal
 } from '@cloudscape-design/components';
 import { useCollection } from '@cloudscape-design/collection-hooks';
+import { generateClient } from 'aws-amplify/api';
+
+const client = generateClient();
+
+// GraphQL查询
+const QUERY_LOGS = `
+  query QueryLogs($input: LogQueryInput!) {
+    queryLogs(input: $input) {
+      ... on LogsResult {
+        logs {
+          logId
+          timestamp
+          message
+          level
+          serviceName
+          userId
+          requestId
+          errorType
+          stackTrace
+          duration
+          memoryUsed
+          billedDuration
+        }
+        nextToken
+      }
+      ... on SystemHealthResult {
+        totalRequests
+        errorRate
+        averageResponseTime
+        memoryUtilization
+        topErrors {
+          errorType
+          count
+        }
+        serviceHealth {
+          serviceName
+          status
+          errorCount
+          requestCount
+        }
+      }
+      ... on ErrorDetailResult {
+        errorDetail {
+          logId
+          timestamp
+          serviceName
+          errorType
+          message
+          stackTrace
+          requestId
+          userId
+          context {
+            duration
+            memoryUsed
+            billedDuration
+            relatedRequests {
+              logId
+              timestamp
+              message
+              level
+              serviceName
+              requestId
+            }
+          }
+        }
+      }
+      ... on ServiceStatsResult {
+        serviceStats {
+          serviceName
+          requestCount
+          errorCount
+          avgDuration
+          avgMemoryUsed
+          errorRate
+          lastActivity
+          peakMemory
+          slowestRequest
+        }
+      }
+      ... on RequestStatsResult {
+        requestStats {
+          serviceName
+          hourlyData {
+            hour
+            requestCount
+            errorCount
+            avgDuration
+            peakMemory
+          }
+        }
+      }
+    }
+  }
+`;
 
 interface LogEntry {
   logId: string;
@@ -44,13 +139,56 @@ interface SystemHealth {
   averageResponseTime: number;
   memoryUtilization: number;
   topErrors: Array<{ errorType: string; count: number }>;
-  serviceHealth: Array<{ serviceName: string; status: string; errorCount: number }>;
+  serviceHealth: Array<{ serviceName: string; status: string; errorCount: number; requestCount: number }>;
+}
+
+interface ServiceStats {
+  serviceName: string;
+  requestCount: number;
+  errorCount: number;
+  avgDuration: number;
+  avgMemoryUsed: number;
+  errorRate: number;
+  lastActivity: string;
+  peakMemory: number;
+  slowestRequest: number;
+}
+
+interface ErrorDetail {
+  logId: string;
+  timestamp: string;
+  serviceName: string;
+  errorType: string;
+  message: string;
+  stackTrace?: string;
+  requestId?: string;
+  userId?: string;
+  context: {
+    duration?: number;
+    memoryUsed?: number;
+    billedDuration?: number;
+    relatedRequests?: LogEntry[];
+  };
+}
+
+interface RequestStats {
+  serviceName: string;
+  hourlyData: Array<{
+    hour: string;
+    requestCount: number;
+    errorCount: number;
+    avgDuration: number;
+    peakMemory: number;
+  }>;
 }
 
 const LogManagement: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [metrics, setMetrics] = useState<SystemMetric[]>([]);
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
+  const [_serviceStats, setServiceStats] = useState<ServiceStats[]>([]);
+  const [_requestStats, setRequestStats] = useState<RequestStats[]>([]);
+  const [selectedErrorDetail, setSelectedErrorDetail] = useState<ErrorDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedTab, setSelectedTab] = useState('overview');
   
@@ -60,6 +198,7 @@ const LogManagement: React.FC = () => {
     serviceName: '',
     logLevel: '',
     userId: '',
+    searchText: '',
     dateRange: null
   });
 
@@ -91,81 +230,226 @@ const LogManagement: React.FC = () => {
     loadSystemHealth();
     loadLogs();
     loadMetrics();
+    loadServiceStats();
+    loadRequestStats();
   }, [filters]);
 
   const loadSystemHealth = async () => {
     setLoading(true);
     try {
-      // 这里应该调用实际的GraphQL查询
-      const mockHealth: SystemHealth = {
-        totalRequests: 15420,
-        errorRate: 2.3,
-        averageResponseTime: 245,
-        memoryUtilization: 68,
-        topErrors: [
-          { errorType: 'ValidationError', count: 23 },
-          { errorType: 'TimeoutError', count: 15 },
-          { errorType: 'DatabaseError', count: 8 }
-        ],
-        serviceHealth: [
-          { serviceName: 'questions-generator', status: 'HEALTHY', errorCount: 2 },
-          { serviceName: 'grade-assessment', status: 'HEALTHY', errorCount: 1 },
-          { serviceName: 'publish-assessment', status: 'WARNING', errorCount: 8 },
-          { serviceName: 'rag-pipeline', status: 'HEALTHY', errorCount: 0 }
-        ]
-      };
-      setSystemHealth(mockHealth);
+      const result = await client.graphql({
+        query: QUERY_LOGS,
+        variables: {
+          input: {
+            operation: 'getSystemHealth',
+            filters: {
+              timeRange: filters.timeRange
+            }
+          }
+        }
+      });
+
+      const response = (result as any).data?.queryLogs;
+      if (response && 'totalRequests' in response) {
+        setSystemHealth({
+          totalRequests: response.totalRequests,
+          errorRate: response.errorRate,
+          averageResponseTime: response.averageResponseTime,
+          memoryUtilization: response.memoryUtilization,
+          topErrors: response.topErrors || [],
+          serviceHealth: response.serviceHealth || []
+        });
+      }
     } catch (error) {
       console.error('Failed to load system health:', error);
+      // 如果API调用失败，显示默认数据
+      setSystemHealth({
+        totalRequests: 0,
+        errorRate: 0,
+        averageResponseTime: 0,
+        memoryUtilization: 0,
+        topErrors: [],
+        serviceHealth: []
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const loadLogs = async () => {
+    setLoading(true);
     try {
-      // 模拟日志数据
-      const mockLogs: LogEntry[] = [
-        {
-          logId: '1',
-          timestamp: new Date().toISOString(),
-          message: 'Assessment generation completed successfully',
-          level: 'INFO',
-          serviceName: 'questions-generator',
-          userId: 'user123',
-          requestId: 'req-456',
-          duration: 1250
-        },
-        {
-          logId: '2',
-          timestamp: new Date(Date.now() - 300000).toISOString(),
-          message: 'Failed to validate assessment template',
-          level: 'ERROR',
-          serviceName: 'questions-generator',
-          errorType: 'ValidationError'
+      const result = await client.graphql({
+        query: QUERY_LOGS,
+        variables: {
+          input: {
+            operation: 'getLogs',
+            filters: {
+              timeRange: filters.timeRange,
+              logLevel: filters.logLevel !== 'ALL' ? filters.logLevel : undefined,
+              serviceName: filters.serviceName !== 'ALL' ? filters.serviceName : undefined,
+              searchText: filters.searchText || undefined
+            },
+            limit: 100
+          }
         }
-      ];
-      setLogs(mockLogs);
+      });
+
+      const response = (result as any).data?.queryLogs;
+      if (response && Array.isArray(response.items)) {
+        setLogs(response.items.map((item: any) => ({
+          logId: item.logId,
+          timestamp: item.timestamp,
+          level: item.level,
+          serviceName: item.serviceName,
+          message: item.message,
+          requestId: item.requestId,
+          duration: item.duration,
+          errorType: item.errorType,
+          userId: item.userId
+        })));
+      }
     } catch (error) {
       console.error('Failed to load logs:', error);
+      // 如果API调用失败，显示空数组
+      setLogs([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadMetrics = async () => {
+    setLoading(true);
     try {
-      // 模拟指标数据
-      const mockMetrics: SystemMetric[] = [
-        {
-          metricKey: 'lambda_duration#service:questions-generator',
-          timestamp: new Date().toISOString(),
-          metricType: 'lambda_duration',
-          value: 1250,
-          dimensions: { service: 'questions-generator' }
+      const result = await client.graphql({
+        query: QUERY_LOGS,
+        variables: {
+          input: {
+            operation: 'getMetrics',
+            filters: {
+              timeRange: filters.timeRange,
+              serviceName: filters.serviceName !== 'ALL' ? filters.serviceName : undefined
+            },
+            limit: 100
+          }
         }
-      ];
-      setMetrics(mockMetrics);
+      });
+
+      const response = (result as any).data?.queryLogs;
+      if (response && Array.isArray(response.items)) {
+        setMetrics(response.items.map((item: any) => ({
+          metricKey: item.metricKey,
+          timestamp: item.timestamp,
+          metricType: item.metricType,
+          value: item.value,
+          dimensions: item.dimensions
+        })));
+      }
     } catch (error) {
       console.error('Failed to load metrics:', error);
+      // 如果API调用失败，显示空数组
+      setMetrics([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 获取错误详情
+  const loadErrorDetail = async (logId: string) => {
+    try {
+      setLoading(true);
+      const result = await client.graphql({
+        query: QUERY_LOGS,
+        variables: {
+          input: {
+            operation: 'getErrorDetail',
+            logId: logId
+          }
+        }
+      });
+
+      const response = (result as any).data?.queryLogs;
+      if (response) {
+        setSelectedErrorDetail({
+          logId: response.logId,
+          timestamp: response.timestamp,
+          serviceName: response.serviceName,
+          errorType: response.errorType,
+          message: response.message,
+          stackTrace: response.stackTrace,
+          requestId: response.requestId,
+          userId: response.userId,
+          context: response.context
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load error detail:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 获取服务统计
+  const loadServiceStats = async () => {
+    try {
+      const result = await client.graphql({
+        query: QUERY_LOGS,
+        variables: {
+          input: {
+            operation: 'getServiceStats',
+            filters: {
+              timeRange: filters.timeRange
+            }
+          }
+        }
+      });
+
+      const response = (result as any).data?.queryLogs;
+      if (response && Array.isArray(response.items)) {
+        setServiceStats(response.items.map((item: any) => ({
+          serviceName: item.serviceName,
+          requestCount: item.requestCount,
+          errorCount: item.errorCount,
+          avgDuration: item.avgDuration,
+          avgMemoryUsed: item.avgMemoryUsed,
+          errorRate: item.errorRate,
+          lastActivity: item.lastActivity,
+          peakMemory: item.peakMemory,
+          slowestRequest: item.slowestRequest
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to load service stats:', error);
+      setServiceStats([]);
+    }
+  };
+
+  // 获取请求统计
+  const loadRequestStats = async () => {
+    try {
+      const result = await client.graphql({
+        query: QUERY_LOGS,
+        variables: {
+          input: {
+            operation: 'getRequestStats',
+            filters: {
+              timeRange: filters.timeRange,
+              serviceName: filters.serviceName !== 'ALL' ? filters.serviceName : undefined
+            }
+          }
+        }
+      });
+
+      const response = (result as any).data?.queryLogs;
+      if (response && Array.isArray(response.items)) {
+        setRequestStats(response.items.map((item: any) => ({
+          serviceName: item.serviceName,
+          hourlyData: item.hourlyData || []
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to load request stats:', error);
+      setRequestStats([]);
     }
   };
 
@@ -228,6 +512,22 @@ const LogManagement: React.FC = () => {
       id: 'duration',
       header: '耗时(ms)',
       cell: (item: LogEntry) => item.duration ? `${item.duration}ms` : '-',
+      width: 100
+    },
+    {
+      id: 'actions',
+      header: '操作',
+      cell: (item: LogEntry) => (
+        item.level === 'ERROR' && item.errorType ? (
+          <Button 
+            variant="inline-link" 
+            onClick={() => loadErrorDetail(item.logId)}
+            disabled={loading}
+          >
+            查看详情
+          </Button>
+        ) : '-'
+      ),
       width: 100
     }
   ];
@@ -471,6 +771,71 @@ const LogManagement: React.FC = () => {
           </Container>
         )}
       </SpaceBetween>
+      
+      {/* 错误详情模态框 */}
+      {selectedErrorDetail && (
+        <Modal
+          visible={!!selectedErrorDetail}
+          onDismiss={() => setSelectedErrorDetail(null)}
+          header="错误详情"
+          size="large"
+        >
+          <SpaceBetween size="m">
+            <ColumnLayout columns={2} variant="text-grid">
+              <div>
+                <Box variant="awsui-key-label">错误类型</Box>
+                <div>{selectedErrorDetail.errorType}</div>
+              </div>
+              <div>
+                <Box variant="awsui-key-label">服务名称</Box>
+                <div>{selectedErrorDetail.serviceName}</div>
+              </div>
+              <div>
+                <Box variant="awsui-key-label">请求ID</Box>
+                <div>{selectedErrorDetail.requestId}</div>
+              </div>
+              <div>
+                <Box variant="awsui-key-label">用户ID</Box>
+                <div>{selectedErrorDetail.userId || '-'}</div>
+              </div>
+            </ColumnLayout>
+            
+            <div>
+              <Box variant="awsui-key-label">错误消息</Box>
+              <Box variant="code">{selectedErrorDetail.message}</Box>
+            </div>
+            
+            {selectedErrorDetail.stackTrace && (
+              <div>
+                <Box variant="awsui-key-label">堆栈跟踪</Box>
+                <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '12px', backgroundColor: '#f4f4f4', padding: '8px', borderRadius: '4px' }}>
+                  {selectedErrorDetail.stackTrace}
+                </div>
+              </div>
+            )}
+            
+            {selectedErrorDetail.context && (
+              <div>
+                <Box variant="awsui-key-label">上下文信息</Box>
+                <ColumnLayout columns={3} variant="text-grid">
+                  <div>
+                    <Box variant="awsui-key-label">执行时长</Box>
+                    <div>{selectedErrorDetail.context.duration}ms</div>
+                  </div>
+                  <div>
+                    <Box variant="awsui-key-label">内存使用</Box>
+                    <div>{selectedErrorDetail.context.memoryUsed}MB</div>
+                  </div>
+                  <div>
+                    <Box variant="awsui-key-label">计费时长</Box>
+                    <div>{selectedErrorDetail.context.billedDuration}ms</div>
+                  </div>
+                </ColumnLayout>
+              </div>
+            )}
+          </SpaceBetween>
+        </Modal>
+      )}
     </ContentLayout>
   );
 };

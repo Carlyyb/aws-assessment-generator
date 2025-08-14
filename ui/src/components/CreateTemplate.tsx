@@ -55,7 +55,8 @@ export default (props: CreateTemplateProps) => {
             dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.settings.templates.create_success') });
             onSubmit();
           })
-          .catch(() => {
+          .catch((error) => {
+            console.error('Error creating template:', error);
             dispatchAlert({ type: AlertType.ERROR });
             onCancel();
           });

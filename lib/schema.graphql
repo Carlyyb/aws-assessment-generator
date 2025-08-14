@@ -235,6 +235,9 @@ enum LogOperation {
   getLogGroups
   searchLogs
   getSystemHealth
+  getErrorDetail
+  getServiceStats
+  getRequestStats
 }
 
 input LogFilters {
@@ -245,10 +248,11 @@ input LogFilters {
   endTime: String
   timeRange: String
   limit: Int
+  logId: String  # 用于获取错误详情
 }
 
 # 日志查询结果
-union LogQueryResult = LogsResult | MetricsResult | LogGroupsResult | SystemHealthResult
+union LogQueryResult = LogsResult | MetricsResult | LogGroupsResult | SystemHealthResult | ErrorDetailResult | ServiceStatsResult | RequestStatsResult
 
 type LogsResult {
   logs: [LogEntry!]!
@@ -314,4 +318,69 @@ type ServiceHealth {
   serviceName: String!
   status: String!
   errorCount: Int!
+  requestCount: Int!
+}
+
+# 错误详情结果
+type ErrorDetailResult {
+  errorDetail: ErrorDetail
+}
+
+# 错误详情
+type ErrorDetail {
+  logId: ID!
+  timestamp: String!
+  serviceName: String!
+  errorType: String!
+  message: String!
+  stackTrace: String
+  requestId: String
+  userId: String
+  context: ErrorContext!
+}
+
+# 错误上下文
+type ErrorContext {
+  duration: Int
+  memoryUsed: Int
+  billedDuration: Int
+  relatedRequests: [LogEntry!]
+}
+
+# 服务统计结果
+type ServiceStatsResult {
+  serviceStats: [ServiceStats!]!
+}
+
+# 服务统计
+type ServiceStats {
+  serviceName: String!
+  requestCount: Int!
+  errorCount: Int!
+  avgDuration: Float!
+  avgMemoryUsed: Float!
+  errorRate: Float!
+  lastActivity: String!
+  peakMemory: Float!
+  slowestRequest: Float!
+}
+
+# 请求统计结果
+type RequestStatsResult {
+  requestStats: [RequestStats!]!
+}
+
+# 请求统计
+type RequestStats {
+  serviceName: String!
+  hourlyData: [HourlyStats!]!
+}
+
+# 小时统计
+type HourlyStats {
+  hour: String!
+  requestCount: Int!
+  errorCount: Int!
+  avgDuration: Float!
+  peakMemory: Float!
 }
