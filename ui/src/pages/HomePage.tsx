@@ -31,10 +31,10 @@ export default () => {
                   <Button 
                     key={`button-${path}`} 
                     onClick={() => navigate(path)}
-                    ariaLabel={getText(`teachers.home.buttons.${path}`) || titlise(path)}
+                    ariaLabel={getText(`common.nav.${path}`) || titlise(path)}
                     >
                     <Box variant="h2" padding="m">
-                      {getText(`teachers.home.buttons.${path}`) || titlise(path)}
+                      {getText(`common.nav.${path}`) || titlise(path)}
                     </Box>
                   </Button>
                 ))}

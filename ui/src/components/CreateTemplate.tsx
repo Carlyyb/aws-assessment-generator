@@ -35,15 +35,25 @@ export default (props: CreateTemplateProps) => {
     <form
       onSubmit={(e) => {
         e.preventDefault();
+        
+        // 验证所有必需字段
+        if (!docLang?.value || !assessType?.value || !taxonomy?.value) {
+          dispatchAlert({ 
+            type: AlertType.ERROR, 
+            content: getText('teachers.settings.templates.validation_error') 
+          });
+          return;
+        }
+        
         client
           .graphql<any>({
             query: createAssessTemplate,
             variables: {
               input: {
                 name,
-                docLang: docLang?.value as Lang,
-                assessType: assessType?.value as AssessType,
-                taxonomy: taxonomy?.value as Taxonomy,
+                docLang: docLang.value as Lang,
+                assessType: assessType.value as AssessType,
+                taxonomy: taxonomy.value as Taxonomy,
                 totalQuestions: +totalQuestions,
                 easyQuestions: +easyQuestions,
                 mediumQuestions: +mediumQuestions,

@@ -1,4 +1,5 @@
-import DefaultSettings from './pages/DefaultSettings';
+import UserSettings from './pages/UserSettings';
+import TemplateSettings from './pages/TemplateSettings';
 import Section from './pages/Section';
 import HomePage from './pages/HomePage';
 import ManageKnowledgeBases from './pages/ManageKnowledgeBases';
@@ -22,11 +23,15 @@ export const routes = {
       children: [
         {
           path: 'settings',
+          element: <UserSettings />,
+        },
+        {
+          path: 'management',
           element: <Section id={0} />,
           children: [
             {
-              path: 'default-settings',
-              element: <DefaultSettings />,
+              path: 'template-settings',
+              element: <TemplateSettings />,
             },
             {
               path: 'manage-knowledge-bases',
@@ -69,6 +74,10 @@ export const routes = {
       path: '/',
       element: <HomePage />,
       children: [
+        {
+          path: 'settings',
+          element: <UserSettings />,
+        },
         {
           path: 'dashboard',
           element: <MyDashboard />,
