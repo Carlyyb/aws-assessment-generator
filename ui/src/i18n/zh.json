@@ -16,6 +16,13 @@
     "status": {
       "success": "操作成功",
       "failed": "操作失败",
+      "loading": "加载中...",
+      "empty": "暂无数据",
+      "error": "错误",
+      "published": "已发布",
+      "show_fewer_files": "显示更少文件",
+      "show_more_files": "显示更多文件"
+    },
     "brand": "智能评估系统",
     "profile": "个人信息",
     "breadcrumb": {
@@ -41,14 +48,6 @@
     "help": {
       "overview": "系统概览",
       "content": "欢迎使用智能评估系统，如需帮助请联系管理员。"
-    },
-    "status": {
-      "loading": "加载中...",
-      "empty": "暂无数据",
-      "error": "错误",
-      "published": "已发布",
-      "show_fewer_files": "显示更少文件",
-      "show_more_files": "显示更多文件"
     },
     "labels": {
       "id": "编号",
@@ -259,6 +258,5 @@
   },
   "date_format": {
     "yyyy_mm_dd": "YYYY/MM/DD"
-  }
   }
 }

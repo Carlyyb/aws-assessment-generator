@@ -16,7 +16,8 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import type { WithAuthenticatorProps } from '@aws-amplify/ui-react';
 import { withAuthenticator } from '@aws-amplify/ui-react';
 import { routes as routesList } from './routes';
-import { getText } from './i18n/lang';
+import { getText, setCurrentLang } from './i18n/lang';
+import { Lang } from './graphql/Lang';
 import { AlertType, DispatchAlertContext } from './contexts/alerts';
 import { UserProfile, UserProfileContext } from './contexts/userProfile';
 import { RoutesContext } from './contexts/routes';
@@ -28,6 +29,12 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
   const [alerts, setAlerts] = useState<FlashbarProps.MessageDefinition[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | undefined>();
   const [activeHref, setActiveHref] = useState(window.location.pathname);
+
+  // 初始化语言设置
+  useEffect(() => {
+    const browserLang = navigator.language.startsWith('zh') ? Lang.zh : Lang.en;
+    setCurrentLang(browserLang);
+  }, []);
 
   const dispatchAlert = (newAlert: FlashbarProps.MessageDefinition) => {
     const id = Date.now().toString();

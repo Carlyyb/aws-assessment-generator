@@ -329,6 +329,7 @@ export class DataStack extends NestedStack {
 
     const publishFn = new aws_lambda_nodejs.NodejsFunction(this, 'PublishFn', {
       entry: 'lib/lambdas/publishAssessment.ts',
+      runtime: Runtime.NODEJS_20_X,
       environment: {
         region: this.region,
         studentsTable: studentsTable.tableName,

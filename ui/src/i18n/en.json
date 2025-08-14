@@ -16,6 +16,13 @@
     "status": {
       "success": "Operation successful",
       "failed": "Operation failed",
+      "loading": "Loading...",
+      "empty": "No data available",
+      "error": "Error",
+      "published": "Published",
+      "show_fewer_files": "Show fewer files",
+      "show_more_files": "Show more files"
+    },
     "brand": "Gen Assess",
     "profile": "Profile",
     "breadcrumb": {
@@ -41,14 +48,6 @@
     "help": {
       "overview": "Overview",
       "content": "Welcome to Gen Assess. For help, please contact the administrator."
-    },
-    "status": {
-      "loading": "Loading...",
-      "empty": "No data available",
-      "error": "Error",
-      "published": "Published",
-      "show_fewer_files": "Show fewer files",
-      "show_more_files": "Show more files"
     },
     "labels": {
       "id": "Id",
@@ -259,6 +258,5 @@
   },
   "date_format": {
     "yyyy_mm_dd": "YYYY/MM/DD"
-  }
   }
 }
