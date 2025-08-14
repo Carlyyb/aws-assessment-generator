@@ -250,7 +250,7 @@ const LogManagement: React.FC = () => {
       });
 
       const response = (result as any).data?.queryLogs;
-      if (response && 'totalRequests' in response) {
+      if (response && response.__typename === 'SystemHealthResult') {
         setSystemHealth({
           totalRequests: response.totalRequests,
           errorRate: response.errorRate,
@@ -286,18 +286,18 @@ const LogManagement: React.FC = () => {
             operation: 'getLogs',
             filters: {
               timeRange: filters.timeRange,
-              logLevel: filters.logLevel !== 'ALL' ? filters.logLevel : undefined,
-              serviceName: filters.serviceName !== 'ALL' ? filters.serviceName : undefined,
-              searchText: filters.searchText || undefined
+              level: filters.logLevel || undefined,
+              serviceName: filters.serviceName || undefined,
+              limit: 100
             },
-            limit: 100
+            searchQuery: filters.searchText || undefined
           }
         }
       });
 
       const response = (result as any).data?.queryLogs;
-      if (response && Array.isArray(response.items)) {
-        setLogs(response.items.map((item: any) => ({
+      if (response && response.__typename === 'LogsResult') {
+        setLogs(response.logs.map((item: any) => ({
           logId: item.logId,
           timestamp: item.timestamp,
           level: item.level,
@@ -328,16 +328,16 @@ const LogManagement: React.FC = () => {
             operation: 'getMetrics',
             filters: {
               timeRange: filters.timeRange,
-              serviceName: filters.serviceName !== 'ALL' ? filters.serviceName : undefined
-            },
-            limit: 100
+              serviceName: filters.serviceName || undefined,
+              limit: 100
+            }
           }
         }
       });
 
       const response = (result as any).data?.queryLogs;
-      if (response && Array.isArray(response.items)) {
-        setMetrics(response.items.map((item: any) => ({
+      if (response && response.__typename === 'MetricsResult') {
+        setMetrics(response.metrics.map((item: any) => ({
           metricKey: item.metricKey,
           timestamp: item.timestamp,
           metricType: item.metricType,
@@ -363,23 +363,26 @@ const LogManagement: React.FC = () => {
         variables: {
           input: {
             operation: 'getErrorDetail',
-            logId: logId
+            filters: {
+              logId: logId
+            }
           }
         }
       });
 
       const response = (result as any).data?.queryLogs;
-      if (response) {
+      if (response && response.__typename === 'ErrorDetailResult') {
+        const errorDetail = response.errorDetail;
         setSelectedErrorDetail({
-          logId: response.logId,
-          timestamp: response.timestamp,
-          serviceName: response.serviceName,
-          errorType: response.errorType,
-          message: response.message,
-          stackTrace: response.stackTrace,
-          requestId: response.requestId,
-          userId: response.userId,
-          context: response.context
+          logId: errorDetail.logId,
+          timestamp: errorDetail.timestamp,
+          serviceName: errorDetail.serviceName,
+          errorType: errorDetail.errorType,
+          message: errorDetail.message,
+          stackTrace: errorDetail.stackTrace,
+          requestId: errorDetail.requestId,
+          userId: errorDetail.userId,
+          context: errorDetail.context
         });
       }
     } catch (error) {
@@ -405,8 +408,8 @@ const LogManagement: React.FC = () => {
       });
 
       const response = (result as any).data?.queryLogs;
-      if (response && Array.isArray(response.items)) {
-        setServiceStats(response.items.map((item: any) => ({
+      if (response && response.__typename === 'ServiceStatsResult') {
+        setServiceStats(response.serviceStats.map((item: any) => ({
           serviceName: item.serviceName,
           requestCount: item.requestCount,
           errorCount: item.errorCount,
@@ -434,15 +437,15 @@ const LogManagement: React.FC = () => {
             operation: 'getRequestStats',
             filters: {
               timeRange: filters.timeRange,
-              serviceName: filters.serviceName !== 'ALL' ? filters.serviceName : undefined
+              serviceName: filters.serviceName || undefined
             }
           }
         }
       });
 
       const response = (result as any).data?.queryLogs;
-      if (response && Array.isArray(response.items)) {
-        setRequestStats(response.items.map((item: any) => ({
+      if (response && response.__typename === 'RequestStatsResult') {
+        setRequestStats(response.requestStats.map((item: any) => ({
           serviceName: item.serviceName,
           hourlyData: item.hourlyData || []
         })));
