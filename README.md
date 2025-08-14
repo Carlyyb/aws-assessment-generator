@@ -1,4 +1,44 @@
-# Welcome to GenAssess
+好的，这是给你学徒们看的版本：
+
+---
+
+### 从0开始使用 Git 和 VSCode 克隆并预览项目
+
+#### 第一步：安装 Git 和 VSCode
+1. **安装 Git**  
+   - 访问 [Git 官方网站](https://git-scm.com/)，下载并安装适合你操作系统的版本。
+   
+2. **安装 VSCode**  
+   - 访问 [VSCode 官网](https://code.visualstudio.com/)，下载并安装 VSCode。
+
+#### 第二步：配置 Git（第一次使用时需要配置）
+1. 打开终端（Terminal）或 Git Bash（Windows 用户）。
+2. 输入以下命令来配置你的 Git 用户名和邮箱：
+
+   ```bash
+   git config --global user.name "你的名字"
+   git config --global user.email "你的邮箱@example.com"
+   ```
+
+   配置好后，Git 会知道你的身份，确保后续的提交都是你的。
+
+#### 第三步：克隆项目
+1. 打开 VSCode。
+2. 点击 **终端 (Terminal)** > **新建终端 (New Terminal)**。
+3. 在 VSCode 中的终端输入以下命令来克隆项目：
+
+   ```bash
+   git clone https://github.com/Carlyyb/aws-assessment-generator.git
+   ```
+
+   这会把仓库里的代码下载到你的本地计算机。
+
+#### 第四步：打开项目
+1. 克隆完成后，项目会出现在你终端所在的目录下。
+2. 在 VSCode 中，点击 **文件 (File)** > **打开文件夹 (Open Folder)**，然后选择刚才克隆下来的项目文件夹（`aws-assessment-generator` 文件夹）。
+
+
+
 
 Assessment Generator is a sample application generating assessment questions for a provided reference material and lecture note(s).
 
