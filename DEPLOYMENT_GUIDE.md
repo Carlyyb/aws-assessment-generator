@@ -2,7 +2,14 @@
 
 ## 🚀 部署日志系统
 
-### 方法1：使用部署脚本（推荐）
+### 方法1：使用Windows PowerShell部署脚本（推荐Windows用户）
+
+```powershell
+# 运行PowerShell部署脚本
+.\deploy-logging.ps1
+```
+
+### 方法2：使用Linux/Mac Bash部署脚本
 
 ```bash
 # 给脚本添加执行权限
@@ -12,7 +19,7 @@ chmod +x deploy-logging.sh
 ./deploy-logging.sh
 ```
 
-### 方法2：手动部署
+### 方法3：手动部署（跨平台）
 
 ```bash
 # 1. 安装根目录依赖
@@ -37,13 +44,26 @@ npx cdk deploy --all --require-approval never
 
 ## ⚠️ 常见问题
 
-### 1. CDK Bootstrap 错误
+### 1. Windows PowerShell执行策略
+如果PowerShell脚本无法执行，可能需要调整执行策略：
+```powershell
+# 查看当前执行策略
+Get-ExecutionPolicy
+
+# 临时允许执行脚本（推荐）
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+
+# 或者为当前用户永久设置
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### 2. CDK Bootstrap 错误
 如果首次使用CDK，可能需要先运行：
 ```bash
 npx cdk bootstrap aws://ACCOUNT-NUMBER/REGION
 ```
 
-### 2. 权限问题
+### 3. 权限问题
 确保AWS凭证有以下权限：
 - CloudFormation
 - Lambda
@@ -51,7 +71,7 @@ npx cdk bootstrap aws://ACCOUNT-NUMBER/REGION
 - CloudWatch
 - S3
 
-### 3. 构建错误
+### 4. 构建错误
 如果遇到TypeScript错误，运行：
 ```bash
 npm run build

@@ -111,6 +111,16 @@ npm run cdk deploy
 ### Deployment with Logging System
 To deploy with the comprehensive logging and monitoring system:
 
+**Windows PowerShell:**
+```powershell
+git clone git@github.com:aws-samples/assessment-generator.git
+cd assessment-generator
+npm ci
+npx cdk bootstrap --qualifier gen-assess
+.\deploy-logging.ps1
+```
+
+**Linux/Mac:**
 ```bash
 git clone git@github.com:aws-samples/assessment-generator.git
 cd assessment-generator
