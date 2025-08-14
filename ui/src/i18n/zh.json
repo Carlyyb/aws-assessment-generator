@@ -257,8 +257,9 @@
         "question_progress": "第 {current} 题，共 {total} 题",
         "skip_to": "跳转到 {title}",
         "delete_question": "删除此问题"
-      },
-      "section": {
+      }
+    },
+    "section": {
         "buttons": {
           "manage-knowledge-bases": "知识库管理",
           "find-assessments": "查找评估",
@@ -272,7 +273,6 @@
         "settings": "设置",
         "management": "管理"
       }
-    }
   },
   "students": {
     "home": {

@@ -257,21 +257,21 @@
         "question_progress": "Question {current} of {total}",
         "skip_to": "Skip to {title}",
         "delete_question": "Delete this Question"
-      },
-      "section": {
-        "buttons": {
-          "manage-knowledge-bases": "Manage Knowledge Base",
-          "find-assessments": "Find Assessments",
-          "default-settings": "Default Settings",
-          "templates": "Templates",
-          "generate-assessments": "Generate Assessments",
-          "courses": "Courses",
-          "log-management": "Log Management"
-        },
-        "assessments": "Assessment",
-        "settings": "Settings",
-        "management": "Management"
       }
+    },
+    "section": {
+      "buttons": {
+        "manage-knowledge-bases": "Manage Knowledge Base",
+        "find-assessments": "Find Assessments",
+        "default-settings": "Default Settings",
+        "templates": "Templates",
+        "generate-assessments": "Generate Assessments",
+        "courses": "Courses",
+        "log-management": "Log Management"
+      },
+      "assessments": "Assessment",
+      "settings": "Settings",
+      "management": "Management"
     }
   },
   "students": {
