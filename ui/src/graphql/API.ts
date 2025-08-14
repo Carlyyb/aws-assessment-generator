@@ -2,6 +2,8 @@
 /* eslint-disable */
 //  This file was automatically generated and should not be edited.
 
+//CHANGELOG 2025-08-15 by 邱语堂:直接新增了单选/判断题型的定义，兼容新题型。具体改动：第22-23，108-125行
+
 export type UpsertSettingsInput = {
   uiLang: Lang,
   docLang: Lang,
@@ -17,6 +19,8 @@ export enum Lang {
 export enum AssessType {
   multiChoiceAssessment = "multiChoiceAssessment",
   freeTextAssessment = "freeTextAssessment",
+  trueFalseAssessment = "trueFalseAssessment",
+  singleChoiceAssessment = "singleChoiceAssessment",
 }
 
 
@@ -100,6 +104,24 @@ export type FreeTextInput = {
   title: string,
   question: string,
   rubric: Array< RubricInput >,
+};
+
+export type TrueFalse = {
+  __typename: "TrueFalse",
+  title: string,
+  question: string,
+  answerChoices: Array<string>, // ["True", "False"]
+  correctAnswer: string,        // "True" 或 "False"
+  explanation: string,
+};
+
+export type SingleChoice = {
+  __typename: "SingleChoice",
+  title: string,
+  question: string,
+  answerChoices: Array<string>, // 选项数组
+  correctAnswer: number,        // 正确选项的序号
+  explanation: string,
 };
 
 export type RubricInput = {

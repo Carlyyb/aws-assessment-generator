@@ -1,8 +1,10 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
+//CHANGELOG 2025-08-15 by 邱语堂:直接新增了单选/判断题型的定义，兼容新题型。具体改动：第46-66，114-137，161，212-234行
+
 import { AssessmentTemplate } from '../models/assessmentTemplate';
-import { AssessType, MultiChoice, FreeText } from '../../../../../ui/src/graphql/API';
+import { AssessType, MultiChoice, FreeText, TrueFalse , SingleChoice} from '../../../../../ui/src/graphql/API';
 import { ReferenceDocuments } from '../models/referenceDocuments';
 
 export function getInitialQuestionsPrompt(assessmentTemplate: AssessmentTemplate, topicsExtractionOutput: string) {
@@ -44,6 +46,27 @@ ${
 `
     : ''
 }
+
+${
+  assessmentTemplate.assessType === AssessType.trueFalseAssessment
+    ? `
+  The questions are true/false questions. Provide two options: True and False, and indicate the correct answer.
+  Articulate a reasoned and concise defense for your chosen answer without relying on direct references to the text labeled as "explanation" .
+`
+    : ''
+}
+
+${
+  assessmentTemplate.assessType === AssessType.singleChoiceAssessment
+    ? `  
+  The questions are single choice questions. Provide four options, and indicate the correct answer.
+  The answer choices must be around the topics covered in the lecture.
+  Ensure that only one answer is correct.
+  Articulate a reasoned and concise defense for your chosen answer without relying on direct references
+  to the text labeled as "explanation".
+`
+    : ''
+} 
 
 The question must be focused the topics covered in the lecture and not on general topics around the subject.
 Test the examinee's understanding of essential concepts mentioned in the transcript.
@@ -88,6 +111,30 @@ Structure your response in this format and do not include any additional text, r
     }
     </questions>
     <!-- all other questions below   -->
+    ${
+  assessmentTemplate.assessType === AssessType.trueFalseAssessment
+    ? `
+            <answerChoices>True</answerChoices>
+            <answerChoices>False</answerChoices>
+            <correctAnswer>[True/False]</correctAnswer>
+            <explanation>[Explanation for Correctness]</explanation>
+    `
+    : ''
+    }
+    ${
+      assessmentTemplate.assessType === AssessType.singleChoiceAssessment
+        ? `
+                <answerChoices>[Option 1]</answerChoices>
+                <answerChoices>[Option 2]</answerChoices>
+                <answerChoices>[Option 3]</answerChoices>
+                <answerChoices>[Option 4]</answerChoices>
+                <correctAnswer>[Correct Answer Number]</correctAnswer>
+                <explanation>[Explanation for Correctness]</explanation>
+        `
+        : ''
+    }
+  
+    
 </response>
 \`\`\`
     `;
@@ -111,7 +158,7 @@ For each topic, include a brief description of what was covered.
   return prompt;
 }
 
-export function getRelevantDocumentsPrompt(question: MultiChoice | FreeText) {
+export function getRelevantDocumentsPrompt(question: MultiChoice | FreeText | TrueFalse | SingleChoice) {     //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断兼容
   const kbQuery = `Find the relevant documents for the following quiz question:\n${JSON.stringify(question)}`;
   return kbQuery;
 }
@@ -163,6 +210,28 @@ Structure your response in this format and do not include any additional imput. 
           </rubric>
           <!-- all other rubric points below   -->
     `
+        : ''
+    }
+    ${
+      assessmentTemplate.assessType === AssessType.trueFalseAssessment
+        ? `
+            <answerChoices>True</answerChoices>
+            <answerChoices>False</answerChoices>
+            <correctAnswer>[True/False]</correctAnswer>
+            <explanation>[Explanation for Correctness]</explanation>
+        `
+        : ''
+    }
+    ${
+      assessmentTemplate.assessType === AssessType.singleChoiceAssessment
+        ? `
+            <answerChoices>[Option 1]</answerChoices>
+            <answerChoices>[Option 2]</answerChoices>
+            <answerChoices>[Option 3]</answerChoices>
+            <answerChoices>[Option 4]</answerChoices>
+            <correctAnswer>[Correct Answer Number]</correctAnswer>
+            <explanation>[Explanation for Correctness]</explanation>
+        `
         : ''
     }
 </question>

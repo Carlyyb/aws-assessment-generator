@@ -8,7 +8,8 @@ import { GeneratedQuestions } from '../models/generatedQuestions';
 import { BedrockAgentRuntime, KnowledgeBaseRetrievalResult } from '@aws-sdk/client-bedrock-agent-runtime';
 import { BedrockRuntime } from '@aws-sdk/client-bedrock-runtime';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
-import { MultiChoice, FreeText } from '../../../../../ui/src/graphql/API';
+import { MultiChoice, FreeText, TrueFalse, SingleChoice } from '../../../../../ui/src/graphql/API'; //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断
+
 import { getInitialQuestionsPrompt, getRelevantDocumentsPrompt, getTopicsPrompt, improveQuestionPrompt } from './prompts';
 
 const MODEL_ID = 'anthropic.claude-3-5-sonnet-20240620-v1:0';
@@ -40,7 +41,7 @@ export class GenAiService {
     return llmResponse;
   }
 
-  public async getRelevantDocuments(question: MultiChoice | FreeText) {
+  public async getRelevantDocuments(question: MultiChoice | FreeText | TrueFalse | SingleChoice) {//CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断兼容
     //logger.info(question as any);
 
     const kbQuery = getRelevantDocumentsPrompt(question);
@@ -59,7 +60,7 @@ export class GenAiService {
   public async improveQuestions(generatedQuestions: string, assessmentTemplate: AssessmentTemplate) {
     logger.debug(generatedQuestions);
     const parsedQuestions: GeneratedQuestions = parser.parse(generatedQuestions);
-    let improvedQuestions: MultiChoice | FreeText[] = [];
+    let improvedQuestions: Array<MultiChoice | FreeText | TrueFalse | SingleChoice> = []; //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断兼容
     logger.debug(JSON.stringify(parsedQuestions));
 
     for (let i = 0; i < parsedQuestions.response.questions.length; i++) {
@@ -102,9 +103,9 @@ export class GenAiService {
 
   private async improveQuestion(
     assessmentTemplate: AssessmentTemplate,
-    originalQuestion: MultiChoice | FreeText,
+    originalQuestion: MultiChoice | FreeText | TrueFalse | SingleChoice,    //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断兼容
     relevantDocs: KnowledgeBaseRetrievalResult[] | undefined
-  ): Promise<MultiChoice | FreeText> {
+  ): Promise<MultiChoice | FreeText | TrueFalse | SingleChoice> {   //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断兼容
     if (!(relevantDocs && relevantDocs.length > 0)) {
       return originalQuestion;
     }
@@ -119,7 +120,7 @@ export class GenAiService {
     logger.debug(prompt);
     const llmResponse = await this.callLLM(MODEL_ID, prompt);
     logger.debug(llmResponse);
-    const { question }: { question: MultiChoice | FreeText } = parser.parse(llmResponse);
+    const { question }: { question: MultiChoice | FreeText | TrueFalse | SingleChoice } = parser.parse(llmResponse);    //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断兼容
     return question;
   }
 }
