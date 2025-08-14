@@ -1,4 +1,5 @@
 import { Lang } from '../graphql/Lang';
+import { configureAuthI18n } from './auth-translations';
 
 /**
  * 国际化（i18n）命名规则：
@@ -43,7 +44,6 @@ export function setCurrentLang(lang: Lang) {
   currentLang = lang;
   // 同时更新认证组件的语言
   try {
-    const { configureAuthI18n } = require('./auth-translations');
     configureAuthI18n(lang === Lang.zh ? 'zh' : 'en');
   } catch (error) {
     console.warn('Failed to configure auth i18n:', error);

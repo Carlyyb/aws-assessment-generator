@@ -1,5 +1,6 @@
 // 认证组件的多语言配置
 import { translations } from '@aws-amplify/ui-react';
+import { I18n } from '@aws-amplify/core';
 
 // 中文翻译
 const zhTranslations = {
@@ -77,7 +78,6 @@ export const authTranslations = {
 
 // 配置 Amplify I18n
 export function configureAuthI18n(language: 'zh' | 'en' = 'en') {
-  const { I18n } = require('@aws-amplify/core');
   I18n.putVocabulariesForLanguage(language, authTranslations[language]);
   I18n.setLanguage(language);
 }
