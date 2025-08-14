@@ -21,6 +21,18 @@ echo "✅ 环境检查通过"
 echo "📦 安装项目依赖..."
 npm install
 
+# 检查并修复CDK版本兼容性
+echo "🔄 检查CDK版本兼容性..."
+CDK_LIB_VERSION=$(npm list aws-cdk-lib --depth=0 2>/dev/null | grep "aws-cdk-lib@" | sed 's/.*aws-cdk-lib@//' | cut -d' ' -f1)
+CDK_CLI_VERSION=$(npm list aws-cdk --depth=0 2>/dev/null | grep "aws-cdk@" | sed 's/.*aws-cdk@//' | cut -d' ' -f1)
+
+if [ -n "$CDK_LIB_VERSION" ] && [ -n "$CDK_CLI_VERSION" ] && [ "$CDK_LIB_VERSION" != "$CDK_CLI_VERSION" ]; then
+  echo "⚠️ 检测到CDK版本不匹配: CLI=$CDK_CLI_VERSION, Lib=$CDK_LIB_VERSION"
+  echo "🔧 正在更新CDK CLI版本..."
+  npm install aws-cdk@$CDK_LIB_VERSION --save-dev
+  echo "✅ CDK版本已同步"
+fi
+
 # 构建前端
 echo "🏗️ 构建前端代码..."
 cd ui

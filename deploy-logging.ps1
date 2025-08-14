@@ -51,6 +51,23 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# 检查并修复CDK版本兼容性
+Write-Host "🔄 检查CDK版本兼容性..." -ForegroundColor Yellow
+$cdkVersion = npm list aws-cdk-lib --depth=0 2>$null | Select-String "aws-cdk-lib@" | ForEach-Object { ($_ -split "@")[1] }
+$cliVersion = npm list aws-cdk --depth=0 2>$null | Select-String "aws-cdk@" | ForEach-Object { ($_ -split "@")[1] }
+
+if ($cdkVersion -and $cliVersion -and $cdkVersion -ne $cliVersion) {
+    Write-Host "⚠️ 检测到CDK版本不匹配: CLI=$cliVersion, Lib=$cdkVersion" -ForegroundColor Yellow
+    Write-Host "🔧 正在更新CDK CLI版本..." -ForegroundColor Cyan
+    npm install aws-cdk@$cdkVersion --save-dev
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "❌ CDK版本更新失败" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "✅ CDK版本已同步" -ForegroundColor Green
+}
+
 # 构建前端
 Write-Host "🏗️ 构建前端代码..." -ForegroundColor Yellow
 Set-Location ui

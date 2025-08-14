@@ -44,7 +44,30 @@ npx cdk deploy --all --require-approval never
 
 ## ⚠️ 常见问题
 
-### 1. Windows PowerShell执行策略
+### 1. CDK版本兼容性错误
+如果遇到 "Cloud assembly schema version mismatch" 错误，说明CDK CLI和库版本不匹配：
+
+**Windows PowerShell 快速修复：**
+```powershell
+.\fix-cdk-version.ps1
+```
+
+**Linux/Mac 快速修复：**
+```bash
+chmod +x fix-cdk-version.sh
+./fix-cdk-version.sh
+```
+
+**手动修复：**
+```bash
+# 检查版本
+npm list aws-cdk aws-cdk-lib
+
+# 更新CDK CLI版本以匹配库版本
+npm install aws-cdk@$(npm list aws-cdk-lib --depth=0 | grep "aws-cdk-lib@" | sed 's/.*aws-cdk-lib@//' | cut -d' ' -f1) --save-dev
+```
+
+### 2. Windows PowerShell执行策略
 如果PowerShell脚本无法执行，可能需要调整执行策略：
 ```powershell
 # 查看当前执行策略
