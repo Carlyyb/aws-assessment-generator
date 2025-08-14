@@ -9,7 +9,7 @@ import StudentAssessments from './pages/StudentAssessments';
 import GenerateAssessments from './pages/GenerateAssessments';
 import EditAssessments from './pages/EditAssessments';
 import LogManagement from './pages/LogManagement';
-// import FindStudent from './pages/FindStudent';
+import FindStudent from './pages/FindStudent';
 import MyDashboard from './pages/MyDashboard';
 import StudentAssessment from './pages/StudentAssessment';
 import ReviewAssessment from './pages/ReviewAssessment';
@@ -22,17 +22,9 @@ export const routes = {
       element: <HomePage />,
       children: [
         {
-          path: 'settings',
-          element: <UserSettings />,
-        },
-        {
           path: 'management',
           element: <Section id={0} />,
           children: [
-            {
-              path: 'template-settings',
-              element: <TemplateSettings />,
-            },
             {
               path: 'manage-knowledge-bases',
               element: <ManageKnowledgeBases />,
@@ -65,6 +57,10 @@ export const routes = {
             },
           ],
         },
+        {
+          path: 'settings',
+          element: <UserSettings />,
+        }
       ],
     },
     { path: 'edit-assessment/:id', element: <EditAssessments />, children: [] },
