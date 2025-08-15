@@ -227,7 +227,116 @@
         "title": "课程列表",
         "create_new": "创建新课程",
         "new_course": "新建课程",
-        "create_success": "课程创建成功"
+        "create_success": "课程创建成功",
+        "delete_success": "课程 \"{name}\" 删除成功",
+        "delete_failed": "删除课程失败，请重试",
+        "delete_confirm": "确认删除课程",
+        "delete_warning": "删除课程将同时删除相关的知识库和文档。此操作不可撤销。",
+        "knowledge_base_status": "知识库状态",
+        "manage_knowledge_base": "管理知识库",
+        "load_failed": "加载课程失败",
+        "status_created": "已创建",
+        "status_not_created": "未创建",
+        "dashboard": {
+          "title": "课程仪表板",
+          "overview": "概览",
+          "total_courses": "总课程数",
+          "courses_with_kb": "有知识库的课程",
+          "pending_jobs": "待处理任务",
+          "quick_actions": "快速操作",
+          "create_assessment": "创建测试",
+          "statistics": "统计信息",
+          "recent_activities": "最近活动",
+          "course_stats": "课程统计",
+          "knowledge_base_health": "知识库健康状态",
+          "document_count": "文档数量",
+          "ingestion_jobs": "摄取任务",
+          "active": "活跃",
+          "completed": "已完成",
+          "failed": "失败",
+          "no_activity": "无活动",
+          "today": "今天",
+          "days_ago": "天前",
+          "kb_ready": "知识库就绪",
+          "kb_missing": "缺少知识库",
+          "checking": "检查中",
+          "course_overview": "课程概览",
+          "total_courses_label": "总课程数",
+          "courses_with_kb_label": "有知识库",
+          "pending_tasks": "待处理任务",
+          "active_courses": "活跃课程",
+          "course_list": "课程列表",
+          "course_name": "课程名称",
+          "knowledge_base_status": "知识库状态",
+          "last_activity": "最后活动",
+          "actions": "操作"
+        }
+      },
+      "knowledge_base_manager": {
+        "title": "知识库管理器",
+        "upload": {
+          "title": "上传文档",
+          "description": "上传PDF或DOC文档到知识库",
+          "drop_zone": "拖拽文件到此处上传，或点击选择文件",
+          "supported_formats": "支持的格式：PDF, DOC, DOCX",
+          "max_size": "最大文件大小：10MB",
+          "uploading": "上传中...",
+          "success": "成功上传 {count} 个文件"
+        },
+        "documents": {
+          "title": "已上传文档",
+          "name": "文档名称",
+          "size": "大小",
+          "status": "状态",
+          "uploaded_at": "上传时间",
+          "actions": "操作",
+          "view": "查看",
+          "delete": "删除",
+          "delete_confirm": "确认删除文档",
+          "delete_warning": "删除文档将从知识库中移除，此操作不可撤销。",
+          "delete_success": "文档删除成功",
+          "empty": "暂无文档"
+        },
+        "ingestion": {
+          "title": "文档处理",
+          "status": {
+            "pending": "等待处理",
+            "processing": "处理中",
+            "completed": "已完成",
+            "failed": "处理失败"
+          },
+          "progress": "处理进度",
+          "retry": "重试",
+          "view_details": "查看详情",
+          "estimated_time": "预计时间",
+          "processing_steps": {
+            "extracting": "提取文本",
+            "chunking": "文本分段",
+            "embedding": "生成嵌入",
+            "indexing": "建立索引"
+          }
+        },
+        "status": {
+          "checking": "检查中...",
+          "available": "可用",
+          "missing": "未设置",
+          "error": "错误",
+          "creating": "创建中..."
+        },
+        "create": {
+          "title": "创建知识库",
+          "description": "为当前课程创建知识库",
+          "confirm": "创建知识库",
+          "creating": "正在创建知识库...",
+          "success": "知识库创建成功"
+        },
+        "errors": {
+          "upload_failed": "文件上传失败",
+          "delete_failed": "文件删除失败",
+          "status_check_failed": "状态检查失败",
+          "creation_failed": "知识库创建失败",
+          "network_error": "网络错误，请重试"
+        }
       }
     },
     "assessments": {

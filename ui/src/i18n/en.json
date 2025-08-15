@@ -227,7 +227,116 @@
         "title": "Course List",
         "create_new": "Create New Course",
         "new_course": "New Course",
-        "create_success": "Course created successfully"
+        "create_success": "Course created successfully",
+        "delete_success": "Course \"{name}\" deleted successfully",
+        "delete_failed": "Failed to delete course, please retry",
+        "delete_confirm": "Confirm Delete Course",
+        "delete_warning": "Deleting a course will also remove related knowledge base and documents. This action cannot be undone.",
+        "knowledge_base_status": "Knowledge Base Status",
+        "manage_knowledge_base": "Manage Knowledge Base",
+        "load_failed": "Failed to load courses",
+        "status_created": "Created",
+        "status_not_created": "Not Created",
+        "dashboard": {
+          "title": "Course Dashboard",
+          "overview": "Overview",
+          "total_courses": "Total Courses",
+          "courses_with_kb": "Courses with KB",
+          "pending_jobs": "Pending Jobs",
+          "quick_actions": "Quick Actions",
+          "create_assessment": "Create Assessment",
+          "statistics": "Statistics",
+          "recent_activities": "Recent Activities",
+          "course_stats": "Course Statistics",
+          "knowledge_base_health": "Knowledge Base Health",
+          "document_count": "Document Count",
+          "ingestion_jobs": "Ingestion Jobs",
+          "active": "Active",
+          "completed": "Completed",
+          "failed": "Failed",
+          "no_activity": "No Activity",
+          "today": "Today",
+          "days_ago": "days ago",
+          "kb_ready": "KB Ready",
+          "kb_missing": "KB Missing",
+          "checking": "Checking",
+          "course_overview": "Course Overview",
+          "total_courses_label": "Total Courses",
+          "courses_with_kb_label": "With Knowledge Base",
+          "pending_tasks": "Pending Tasks",
+          "active_courses": "Active Courses",
+          "course_list": "Course List",
+          "course_name": "Course Name",
+          "knowledge_base_status": "Knowledge Base Status",
+          "last_activity": "Last Activity",
+          "actions": "Actions"
+        }
+      },
+      "knowledge_base_manager": {
+        "title": "Knowledge Base Manager",
+        "upload": {
+          "title": "Upload Documents",
+          "description": "Upload PDF or DOC documents to the knowledge base",
+          "drop_zone": "Drop files here to upload, or click to select files",
+          "supported_formats": "Supported formats: PDF, DOC, DOCX",
+          "max_size": "Maximum file size: 10MB",
+          "uploading": "Uploading...",
+          "success": "Successfully uploaded {count} files"
+        },
+        "documents": {
+          "title": "Uploaded Documents",
+          "name": "Document Name",
+          "size": "Size",
+          "status": "Status",
+          "uploaded_at": "Uploaded At",
+          "actions": "Actions",
+          "view": "View",
+          "delete": "Delete",
+          "delete_confirm": "Confirm Delete Document",
+          "delete_warning": "Deleting a document will remove it from the knowledge base. This action cannot be undone.",
+          "delete_success": "Document deleted successfully",
+          "empty": "No documents found"
+        },
+        "ingestion": {
+          "title": "Document Processing",
+          "status": {
+            "pending": "Pending",
+            "processing": "Processing",
+            "completed": "Completed",
+            "failed": "Failed"
+          },
+          "progress": "Processing Progress",
+          "retry": "Retry",
+          "view_details": "View Details",
+          "estimated_time": "Estimated Time",
+          "processing_steps": {
+            "extracting": "Extracting Text",
+            "chunking": "Text Chunking",
+            "embedding": "Generating Embeddings",
+            "indexing": "Building Index"
+          }
+        },
+        "status": {
+          "checking": "Checking...",
+          "available": "Available",
+          "missing": "Not Set",
+          "error": "Error",
+          "creating": "Creating..."
+        },
+        "create": {
+          "title": "Create Knowledge Base",
+          "description": "Create a knowledge base for the current course",
+          "confirm": "Create Knowledge Base",
+          "creating": "Creating knowledge base...",
+          "success": "Knowledge base created successfully"
+        },
+        "errors": {
+          "upload_failed": "File upload failed",
+          "delete_failed": "File deletion failed",
+          "status_check_failed": "Status check failed",
+          "creation_failed": "Knowledge base creation failed",
+          "network_error": "Network error, please retry"
+        }
       }
     },
     "assessments": {

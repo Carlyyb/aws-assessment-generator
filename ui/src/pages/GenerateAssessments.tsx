@@ -21,7 +21,7 @@ import {
 import { uploadData } from 'aws-amplify/storage';
 import { generateClient } from 'aws-amplify/api';
 import { useNavigate } from 'react-router-dom';
-import { generateAssessment, listCourses, getAssessment, listAssessTemplates } from '../graphql/queries';
+import { generateAssessment, listCourses, getAssessment, listAssessTemplates, getKnowledgeBase } from '../graphql/queries';
 import { Course, AssessStatus, AssessTemplate } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { UserProfileContext } from '../contexts/userProfile';
@@ -44,6 +44,7 @@ export default () => {
   const [assessId, setAssessId] = useState('');
   const [assessTemplates, setAssessTemplates] = useState<SelectProps.Option[]>([]);
   const [assessTemplate, setAssessTemplate] = useState<SelectProps.Option | null>(null);
+  const [knowledgeBaseStatus, setKnowledgeBaseStatus] = useState<'checking' | 'available' | 'missing' | null>(null);
   
   // 进度和日志状态
   const [isGenerating, setIsGenerating] = useState(false);
@@ -67,6 +68,40 @@ export default () => {
     setProgress(progressValue);
     addLog(step);
   };
+
+  // 检查知识库状态
+  const checkKnowledgeBaseStatus = async (courseId: string) => {
+    if (!courseId) {
+      setKnowledgeBaseStatus(null);
+      return;
+    }
+    
+    setKnowledgeBaseStatus('checking');
+    try {
+      const kbResponse = await client.graphql<any>({
+        query: getKnowledgeBase,
+        variables: { courseId }
+      });
+      
+      const knowledgeBase = kbResponse.data.getKnowledgeBase;
+      if (knowledgeBase && knowledgeBase.knowledgeBaseId) {
+        setKnowledgeBaseStatus('available');
+      } else {
+        setKnowledgeBaseStatus('missing');
+      }
+    } catch (error) {
+      setKnowledgeBaseStatus('missing');
+    }
+  };
+
+  // 当课程改变时检查知识库状态
+  useEffect(() => {
+    if (course?.value) {
+      checkKnowledgeBaseStatus(course.value);
+    } else {
+      setKnowledgeBaseStatus(null);
+    }
+  }, [course]);
 
   useEffect(() => {
     client.graphql<any>({ query: listAssessTemplates }).then(({ data, errors }) => {
@@ -113,6 +148,27 @@ export default () => {
             setTimeout(() => {
               navigate(`/edit-assessment/${assessId}`);
             }, 1000);
+            return;
+          }
+          
+          // 处理失败状态
+          if (status === AssessStatus.FAILED) {
+            addLog('❌ 测试生成失败');
+            updateStep('❌ 测试生成失败', 0);
+            setIsGenerating(false);
+            setFailureCount(0); // 重置失败计数
+            
+            // 提供详细的错误信息和建议
+            const errorMessage = '测试生成失败。可能的原因：\n' +
+              '1. 未上传课程文件 - 请确保上传了相关的课程材料\n' +
+              '2. 知识库未创建 - 请先为该课程创建知识库\n' +
+              '3. Bedrock服务问题 - 请稍后重试\n\n' +
+              '建议：请确保已上传课程文件并等待知识库创建完成后再试';
+            
+            dispatchAlert({ 
+              type: AlertType.ERROR, 
+              content: errorMessage
+            });
             return;
           }
           
@@ -198,10 +254,35 @@ export default () => {
                       throw new Error('请选择课程');
                     }
                     if (files.length === 0) {
-                      throw new Error('请上传至少一个文件');
+                      throw new Error('请上传至少一个课程文件。\n\n系统需要基于上传的课程材料来生成测试题目。\n支持的文件格式：PDF、DOC、DOCX、TXT等');
                     }
                     
                     updateStep('📁 准备上传文件...', 10);
+                    
+                    // 检查知识库状态
+                    updateStep('🔍 检查课程知识库状态...', 12);
+                    addLog('正在检查课程知识库...');
+                    
+                    try {
+                      const kbResponse = await client.graphql<any>({
+                        query: getKnowledgeBase,
+                        variables: { courseId: course.value }
+                      });
+                      
+                      const knowledgeBase = kbResponse.data.getKnowledgeBase;
+                      if (!knowledgeBase || !knowledgeBase.knowledgeBaseId) {
+                        throw new Error(`该课程尚未创建知识库。\n\n请按以下步骤操作：\n1. 先上传课程文件到知识库\n2. 等待文档处理完成\n3. 再尝试生成测试\n\n提示：您可以在课程管理页面创建知识库`);
+                      }
+                      
+                      addLog(`✅ 知识库检查通过，ID: ${knowledgeBase.knowledgeBaseId}`);
+                    } catch (error: any) {
+                      // 如果是我们抛出的错误，直接抛出
+                      if (error.message.includes('该课程尚未创建知识库')) {
+                        throw error;
+                      }
+                      // 其他错误也视为知识库不存在
+                      throw new Error('无法访问课程知识库，请确保已为该课程创建知识库');
+                    }
                     
                     const data = files.map((file) => ({
                       key: `Assessments/${userProfile?.userId}/${course?.value}/${file.name}`,
@@ -260,7 +341,7 @@ export default () => {
                   }
                 }}
                 variant="primary"
-                disabled={isGenerating}
+                disabled={isGenerating || knowledgeBaseStatus === 'missing' || knowledgeBaseStatus === 'checking'}
               >
                 {isGenerating ? '生成中...' : getText('teachers.assessments.generate.title')}
               </Button>
@@ -289,7 +370,24 @@ export default () => {
                     <Input value={name} onChange={({ detail }) => setName(detail.value)} />
                   </FormField>
                   <FormField label={getText('teachers.assessments.generate.select_course')}>
-                    <Select options={courses} selectedOption={course} onChange={({ detail }) => setCourse(detail.selectedOption)} />
+                    <SpaceBetween size="s">
+                      <Select options={courses} selectedOption={course} onChange={({ detail }) => setCourse(detail.selectedOption)} />
+                      {knowledgeBaseStatus === 'checking' && (
+                        <Alert statusIconAriaLabel="Info" header="检查中">
+                          正在检查课程知识库状态...
+                        </Alert>
+                      )}
+                      {knowledgeBaseStatus === 'missing' && (
+                        <Alert type="warning" statusIconAriaLabel="Warning" header="缺少知识库">
+                          该课程尚未创建知识库。请先上传课程文件到知识库，然后等待处理完成后再生成测试。
+                        </Alert>
+                      )}
+                      {knowledgeBaseStatus === 'available' && (
+                        <Alert type="success" statusIconAriaLabel="Success" header="知识库就绪">
+                          课程知识库已创建，可以生成测试。
+                        </Alert>
+                      )}
+                    </SpaceBetween>
                   </FormField>
                   <FormField label={getText('teachers.assessments.generate.lecture_date')}>
                     <DatePicker onChange={({ detail }) => setLectureDate(detail.value)} value={lectureDate} placeholder={getText('date_format.yyyy_mm_dd')} />
@@ -297,14 +395,17 @@ export default () => {
                   <FormField label={getText('common.labels.deadline')}>
                     <DatePicker onChange={({ detail }) => setDeadline(detail.value)} value={deadline} placeholder={getText('date_format.yyyy_mm_dd')} />
                   </FormField>
-                  <FormField label={getText('teachers.assessments.generate.add_lecture_notes')}>
+                  <FormField 
+                    label={getText('teachers.assessments.generate.add_lecture_notes')}
+                    description="请上传课程相关的文档材料（如讲义、教材、作业等），系统将基于这些材料生成测试题目。支持PDF、DOC、DOCX、TXT等格式。"
+                  >
                     <FileUpload
                       multiple
                       onChange={({ detail }) => setFiles(detail.value)}
                       value={files}
                       i18nStrings={{
                         uploadButtonText: (e) => (e ? getText('common.upload.choose_files') : getText('common.upload.choose_file')),
-                        dropzoneText: (e) => (e ? getText('common.upload.drop_files') : getText('common.upload.drop_file')),
+                        dropzoneText: (e) => (e ? '拖拽多个课程文件到此处' : '拖拽课程文件到此处'),
                         removeFileAriaLabel: (e) => getTextWithParams('teachers.assessments.generate.remove_file', { index: e + 1 }),
                         limitShowFewer: getText('common.upload.show_fewer'),
                         limitShowMore: getText('common.upload.show_more'),
@@ -314,6 +415,7 @@ export default () => {
                       showFileSize
                       showFileThumbnail
                       tokenLimit={3}
+                      accept=".pdf,.doc,.docx,.txt,.md"
                     />
                   </FormField>
                 </SpaceBetween>
