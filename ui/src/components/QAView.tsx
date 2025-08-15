@@ -88,7 +88,7 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
       {(isMultiChoice || isSingleChoice) && (
         <Container header={<Header variant="h2">{getText('assessment.choose_answer')}</Header>}>
           <Tiles
-            value={(assessment.correctAnswer! - 1).toString()}
+            value={((assessment.correctAnswer as number) - 1).toString()}
             items={assessment.answerChoices.map((answerChoice, i) => ({ label: answerChoice, value: i.toString() }))}
             onChange={({ detail }) =>
               updateAssessment({
@@ -105,7 +105,7 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
       {isTrueFalse && (
         <Container header={<Header variant="h2">{getText('assessment.choose_answer')}</Header>}>
           <Tiles
-            value={assessment.correctAnswer}
+            value={assessment.correctAnswer as string}
             items={assessment.answerChoices.map((answerChoice) => ({ label: answerChoice, value: answerChoice }))}
             onChange={({ detail }) =>
               updateAssessment({

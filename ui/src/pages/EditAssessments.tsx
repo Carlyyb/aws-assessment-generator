@@ -2,7 +2,7 @@ import { useState, useReducer, useEffect, useContext } from 'react';
 import { Wizard } from '@cloudscape-design/components';
 import { useParams, useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
-import { Assessment, AssessType, MultiChoice, FreeText } from '../graphql/API'; // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断
+import { Assessment, AssessType, MultiChoice, FreeText, SingleChoice, TrueFalse } from '../graphql/API'; // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断
 import { getAssessment } from '../graphql/queries';
 import { upsertAssessment } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
@@ -72,7 +72,7 @@ export default () => {
         assessment.assessType === AssessType.multiChoiceAssessment ? (    // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断
         <QAView activeStepIndex={activeStepIndex} assessment={q as MultiChoice} updateAssessment={updateAssessment} />
       ) : assessment.assessType === AssessType.freeTextAssessment ? (
-        <FreeTextView activeStepIndex={activeStepIndex} assessment={q as FreeText} updateAssessment={updateAssessment} />
+        <FreeTextView activeStepIndex={activeStepIndex} freetextAssessment={q as FreeText} updateAssessment={updateAssessment} />
       ) : assessment.assessType === AssessType.singleChoiceAssessment ? (
         <QAView activeStepIndex={activeStepIndex} assessment={q as SingleChoice} updateAssessment={updateAssessment} />
       ) : assessment.assessType === AssessType.trueFalseAssessment ? (

@@ -16,7 +16,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
-import { MultiChoice, FreeText, AssessType, StudentAssessment } from '../graphql/API';
+import { MultiChoice, FreeText, TrueFalse, SingleChoice, AssessType, StudentAssessment } from '../graphql/API';
 import { getStudentAssessment } from '../graphql/queries';
 import { gradeStudentAssessment } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
@@ -31,7 +31,7 @@ export default () => {
   const [showSpinner, setShowSpinner] = useState(false);
 
   const [assessmentId, setAssessmentId] = useState<string>();
-  const [questions, setQuestions] = useState<MultiChoice[] | FreeText[]>([]);
+  const [questions, setQuestions] = useState<(MultiChoice | FreeText | TrueFalse | SingleChoice)[]>([]);
   const [assessType, setAssessType] = useState<AssessType>();
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);

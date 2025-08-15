@@ -49,7 +49,7 @@ export default () => {
 
     client
       .graphql<any>({
-        mutation: upsertSettings,  // 使用 mutation 而不是 query
+        query: upsertSettings,  // 使用 query 而不是 mutation
         variables: { 
           input: { 
             uiLang: uiLang.value as Lang  // 已经检查过 value 存在，可以安全使用
