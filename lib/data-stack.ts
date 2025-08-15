@@ -104,6 +104,13 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    coursesDs.createResolver('MutationDeleteCourseResolver', {
+      typeName: 'Mutation',
+      fieldName: 'deleteCourse',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteCourse.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     coursesDs.createResolver('AssessmentCourseResolver', {
       typeName: 'Assessment',
       fieldName: 'course',
@@ -360,6 +367,16 @@ export class DataStack extends NestedStack {
       typeName: 'Mutation',
       fieldName: 'createKnowledgeBase',
       code: aws_appsync.Code.fromAsset('lib/resolvers/invokeLambda.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    /////////// Get KnowledgeBase
+    const kbTableDs = api.addDynamoDbDataSource('KnowledgeBaseDataSource', kbTable);
+
+    kbTableDs.createResolver('GetKnowledgeBaseResolver', {
+      typeName: 'Query',
+      fieldName: 'getKnowledgeBase',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/getKnowledgeBase.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 

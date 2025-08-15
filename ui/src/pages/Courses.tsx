@@ -14,6 +14,7 @@ import {
 } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
 import { listCourses, getKnowledgeBase } from '../graphql/queries';
+import { deleteCourse } from '../graphql/mutations';
 import { Course } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import CreateCourse from '../components/CreateCourse';
@@ -36,17 +37,34 @@ export default () => {
   const checkAllKnowledgeBaseStatuses = async (courseList: Course[]) => {
     const statusPromises = courseList.map(async (course) => {
       try {
+        setKnowledgeBaseStatuses(prev => ({
+          ...prev,
+          [course.id]: 'loading'
+        }));
+
         const response = await client.graphql<any>({
           query: getKnowledgeBase,
           variables: { courseId: course.id }
         });
         
         const kb = (response as any).data?.getKnowledgeBase;
+        console.log(`Knowledge base for course ${course.id}:`, kb);
+        
+        // 检查知识库是否存在且状态为活跃
+        const hasKnowledgeBase = kb && (
+          kb.knowledgeBaseId || 
+          kb.status === 'ACTIVE' || 
+          kb.status === 'active' ||
+          kb.status === 'READY' ||
+          kb.status === 'ready'
+        );
+        
         return {
           courseId: course.id,
-          status: kb?.knowledgeBaseId ? 'available' : 'missing'
+          status: hasKnowledgeBase ? 'available' : 'missing'
         } as const;
       } catch (error) {
+        console.error(`Error checking knowledge base for course ${course.id}:`, error);
         return {
           courseId: course.id,
           status: 'missing'
@@ -60,6 +78,7 @@ export default () => {
       return acc;
     }, {} as {[courseId: string]: 'loading' | 'available' | 'missing'});
     
+    console.log('Knowledge base statuses:', statusMap);
     setKnowledgeBaseStatuses(statusMap);
   };
 
@@ -72,8 +91,11 @@ export default () => {
   // 删除课程
   const handleDeleteCourse = async (course: Course) => {
     try {
-      // 这里需要添加删除课程的API调用
-      // await client.graphql({ query: deleteCourse, variables: { id: course.id } });
+      // 调用删除课程的API
+      await client.graphql({ 
+        query: deleteCourse, 
+        variables: { id: course.id } 
+      });
       
       dispatchAlert({
         type: AlertType.SUCCESS,
@@ -122,12 +144,13 @@ export default () => {
         setCourses(courseList);
         await checkAllKnowledgeBaseStatuses(courseList);
       } catch (error) {
+        console.error('Error loading courses:', error);
         dispatchAlert({ type: AlertType.ERROR, content: getText('teachers.settings.courses.load_failed') });
       }
     };
 
     loadCoursesAndStatuses();
-  }, [showCreateModal]);
+  }, [showCreateModal, showKnowledgeBaseModal]);
 
   return (
     <ContentLayout>
@@ -152,7 +175,13 @@ export default () => {
           onDismiss={() => {
             setShowKnowledgeBaseModal(false);
             setSelectedCourse(null);
-            // 重新检查知识库状态
+            // 重新检查知识库状态，使用延迟确保状态变更已完成
+            setTimeout(() => {
+              checkAllKnowledgeBaseStatuses(courses);
+            }, 1000);
+          }}
+          onKnowledgeBaseUpdate={() => {
+            // 当知识库状态更新时，重新检查状态
             checkAllKnowledgeBaseStatuses(courses);
           }}
         />

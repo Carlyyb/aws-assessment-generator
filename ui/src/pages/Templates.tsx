@@ -29,7 +29,7 @@ export default () => {
           setTemplates(validTemplates);
           dispatchAlert({ 
             type: 'warning', 
-            content: getText('teachers.settings.templates.data_warning') || '部分模板数据存在问题，已过滤显示' 
+            content: getText('teachers.settings.templates.data_warning')
           });
         } else {
           setTemplates(data.listAssessTemplates || []);

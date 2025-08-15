@@ -20,6 +20,11 @@ export const upsertCourse = /* GraphQL */ `
     }
   }
 `;
+export const deleteCourse = /* GraphQL */ `
+  mutation DeleteCourse($id: ID!) {
+    deleteCourse(id: $id)
+  }
+`;
 export const createAssessTemplate = /* GraphQL */ `
   mutation CreateAssessTemplate($input: AssessTemplateInput) {
     createAssessTemplate(input: $input) {

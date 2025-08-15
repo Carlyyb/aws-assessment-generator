@@ -31,6 +31,7 @@ interface KnowledgeBaseManagerProps {
   courseName: string;
   visible: boolean;
   onDismiss: () => void;
+  onKnowledgeBaseUpdate?: () => void;
 }
 
 interface FileItem {
@@ -50,7 +51,8 @@ export default function KnowledgeBaseManager({
   courseId, 
   courseName, 
   visible, 
-  onDismiss 
+  onDismiss,
+  onKnowledgeBaseUpdate
 }: KnowledgeBaseManagerProps) {
   const dispatchAlert = useContext(DispatchAlertContext);
   const userProfile = useContext(UserProfileContext);
@@ -213,6 +215,11 @@ export default function KnowledgeBaseManager({
       setFiles([]);
       await loadKnowledgeBase();
 
+      // 通知父组件知识库状态已更新
+      if (onKnowledgeBaseUpdate) {
+        onKnowledgeBaseUpdate();
+      }
+
       setTimeout(() => {
         setShowCreateModal(false);
         setIsCreating(false);
@@ -337,6 +344,11 @@ export default function KnowledgeBaseManager({
       setFiles([]);
       await loadUploadedFiles();
       await triggerIngestion();
+      
+      // 通知父组件知识库状态可能已更新
+      if (onKnowledgeBaseUpdate) {
+        onKnowledgeBaseUpdate();
+      }
       
     } catch (error) {
       console.error('Upload error:', error);
