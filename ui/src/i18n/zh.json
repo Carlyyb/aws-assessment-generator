@@ -24,13 +24,13 @@
       "show_fewer_files": "显示更少文件",
       "show_more_files": "显示更多文件"
     },
-        "brand": "评估生成器",
+        "brand": "测试生成器",
     "selected_values": "已选择的值",
-    "assessment_type": "评估类型",
+    "assessment_type": "测试类型",
     "taxonomy": "分类法",
-    "select_assessment_type": "选择评估类型",
+    "select_assessment_type": "选择测试类型",
     "select_taxonomy": "选择分类法",
-    "assessment_settings": "评估设置",
+    "assessment_settings": "测试设置",
     "name": "名称",
     "course": "课程",
     "lecture_date": "讲课日期",
@@ -46,20 +46,20 @@
     },
     "nav": {
       "dashboard": "仪表盘",
-      "assessments": "评估",
+      "assessments": "测试",
       "settings": "用户设置",
       "management": "管理",
       "courses": "课程",
       "templates": "模板",
-      "find-assessments": "查找评估",
+      "find-assessments": "查找测试",
       "manage-knowledge-bases": "知识库管理",
-      "generate-assessments": "生成评估",
+      "generate-assessments": "生成测试",
       "log-management": "日志管理",
       "find-student": "查找学生"
     },
     "help": {
       "overview": "系统概览",
-      "content": "欢迎使用智能评估系统，如需帮助请联系管理员。"
+      "content": "欢迎使用智能测试系统，如需帮助请联系管理员。"
     },
     "auth": {
       "sign_in": "登录",
@@ -131,7 +131,7 @@
         "title": "用户设置",
         "ui_language": "界面语言",
         "doc_language": "文档语言",
-        "default_assessment_type": "默认评估类型",
+        "default_assessment_type": "默认测试类型",
         "default_taxonomy": "默认分类法"
     }
   },
@@ -163,7 +163,7 @@
       "title": "首页",
       "buttons": {
         "dashboard": "仪表盘",
-        "assessments": "评估",
+        "assessments": "测试",
         "settings": "设置"
       }
     },
@@ -185,7 +185,7 @@
         "update_success": "设置更新成功",
         "ui_language": "界面语言",
         "doc_language": "文档语言",
-        "default_assessment_type": "默认评估类型",
+        "default_assessment_type": "默认测试类型",
         "default_taxonomy": "默认分类法"
       },
       "knowledge_base": {
@@ -221,7 +221,7 @@
         "created_at": "创建时间",
         "name": "模板名称",
         "doc_lang": "文档语言",
-        "assess_type": "评估类型"
+        "assess_type": "测试类型"
       },
       "courses": {
         "title": "课程列表",
@@ -231,17 +231,17 @@
       }
     },
     "assessments": {
-      "title": "评估",
+      "title": "测试",
       "find": {
-        "title": "查找评估",
+        "title": "查找测试",
         "updated_at": "更新时间",
         "lecture_date": "起始日期"
       },
       "generate": {
-        "title": "生成评估",
-        "generate_success": "评估生成成功",
-        "failed_to_generate": "生成评估失败",
-        "select_template": "选择评估模板",
+        "title": "生成测试",
+        "generate_success": "测试生成成功",
+        "failed_to_generate": "生成测试失败",
+        "select_template": "选择测试模板",
         "use_default": "使用默认模板",
         "select_course": "选择课程",
         "add_lecture_notes": "添加讲义",
@@ -250,9 +250,9 @@
         "lecture_date": "起始日期"
       },
       "edit": {
-        "title": "编辑评估",
-        "current": "当前评估",
-        "update_success": "评估更新成功",
+        "title": "编辑测试",
+        "current": "当前测试",
+        "update_success": "测试更新成功",
         "question_number": "问题 {number}",
         "question_progress": "第 {current} 题，共 {total} 题",
         "skip_to": "跳转到 {title}",
@@ -262,14 +262,14 @@
     "section": {
         "buttons": {
           "manage-knowledge-bases": "知识库管理",
-          "find-assessments": "查找评估",
+          "find-assessments": "查找测试",
           "default-settings": "默认设置",
           "templates": "模板管理",
-          "generate-assessments": "生成评估",
+          "generate-assessments": "生成测试",
           "courses": "课程管理",
           "log-management": "日志管理"
         },
-        "assessments": "评估",
+        "assessments": "测试",
         "settings": "设置",
         "management": "管理"
       }
@@ -296,19 +296,19 @@
       "clear_filter": "清除筛选"
     },
     "assessment": {
-      "title": "评估",
-      "current": "当前评估"
+      "title": "测试",
+      "current": "当前测试"
     },
     "review": {
-      "title": "评估回顾",
-      "current": "评估回顾"
+      "title": "测试回顾",
+      "current": "测试回顾"
     },
     "assessments": {
       "list": {
-        "title": "学生评估",
-        "description": "学生评估列表",
-        "loading": "加载评估列表中...",
-        "empty": "暂无评估",
+        "title": "学生测试",
+        "description": "学生测试列表",
+        "loading": "加载测试列表中...",
+        "empty": "暂无测试",
         "table": {
           "name": "名称",
           "course": "课程",
@@ -339,11 +339,11 @@
     "Application": "应用",
     "Analysis": "分析",
     "Synthesis": "综合",
-    "Evaluation": "评估"
+    "Evaluation": "测试"
   },
   "assessType": {
-    "multiChoiceAssessment": "选择题评估",
-    "freeTextAssessment": "问答题评估"
+    "multiChoiceAssessment": "选择题测试",
+    "freeTextAssessment": "问答题测试"
   },
   "formats": {
     "date": {

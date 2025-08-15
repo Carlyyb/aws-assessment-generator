@@ -42,7 +42,7 @@ class I18nTextReplacer {
       '"Show more files"': 'getLangResource("common.show_more_files")',
       '"Find resources"': 'getLangResource("common.find_resources")',
       
-      // 评估相关
+      // 测试相关
       '"Answer"': 'getLangResource("assessment.answer")',
       '"Correct"': 'getLangResource("assessment.correct")',
       '"Incorrect"': 'getLangResource("assessment.incorrect")',

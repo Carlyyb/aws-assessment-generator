@@ -29,8 +29,8 @@
 
 ### AssessType 枚举值
 ```typescript
-AssessType.multiChoiceAssessment → "Multiple Choice Assessment" / "选择题评估"
-AssessType.freeTextAssessment → "Free Text Assessment" / "问答题评估"
+AssessType.multiChoiceAssessment → "Multiple Choice Assessment" / "选择题测试"
+AssessType.freeTextAssessment → "Free Text Assessment" / "问答题测试"
 ```
 
 ### Taxonomy 枚举值
@@ -40,7 +40,7 @@ Taxonomy.Comprehension → "Comprehension" / "理解"
 Taxonomy.Application → "Application" / "应用"
 Taxonomy.Analysis → "Analysis" / "分析"
 Taxonomy.Synthesis → "Synthesis" / "综合"
-Taxonomy.Evaluation → "Evaluation" / "评估"
+Taxonomy.Evaluation → "Evaluation" / "测试"
 ```
 
 ## 💡 使用方式

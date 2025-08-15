@@ -26,7 +26,7 @@
 - **首页**: `Home`
 - **设置页**: `Home > User Settings`
 - **管理页**: `Home > Management > Templates`
-- **评估页**: `Home > Assessments > Find Assessments`
+- **测试页**: `Home > Assessments > Find Assessments`
 - **编辑页**: `Home > Edit Assessment > Current Assessment`
 
 ### 2. 多语言支持

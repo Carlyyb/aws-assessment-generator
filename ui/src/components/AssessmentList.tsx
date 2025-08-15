@@ -10,7 +10,7 @@ interface AssessmentListProps {
 }
 
 /**
- * 评估列表组件 - 展示如何在表格中使用多语言化的枚举值
+ * 测试列表组件 - 展示如何在表格中使用多语言化的枚举值
  */
 export const AssessmentList: React.FC<AssessmentListProps> = ({
   assessments,

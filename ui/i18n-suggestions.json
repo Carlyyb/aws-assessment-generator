@@ -1,7 +1,7 @@
 {
   "assessments": {
     "en": "Assessments:",
-    "zh": "评估"
+    "zh": "测试"
   },
   "courses": {
     "en": "Courses:",
@@ -17,7 +17,7 @@
   },
   "find_assessments": {
     "en": "Find Assessments:",
-    "zh": "查找评估"
+    "zh": "查找测试"
   },
   "edit": {
     "en": "edit",
@@ -37,15 +37,15 @@
   },
   "assessment.generate_assessment": {
     "en": "Generate Assessment",
-    "zh": "生成评估"
+    "zh": "生成测试"
   },
   "generate_assessments": {
     "en": "Generate Assessments",
-    "zh": "生成评估"
+    "zh": "生成测试"
   },
   "select_assessment_template": {
     "en": "Select Assessment Template",
-    "zh": "选择评估模板"
+    "zh": "选择测试模板"
   },
   "use_default": {
     "en": "Use Default",
@@ -165,7 +165,7 @@
   },
   "pages.settings.default_assessment_type": {
     "en": "Default Assessment Type",
-    "zh": "默认评估类型"
+    "zh": "默认测试类型"
   },
   "pages.settings.default_taxonomy": {
     "en": "Default Taxonomy",

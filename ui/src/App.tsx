@@ -200,7 +200,7 @@ export default withAuthenticator(App, {
       return (
         <div style={{ padding: '20px', textAlign: 'center' }}>
           <h1 style={{ color: '#232f3e', margin: 0 }}>Gen Assess</h1>
-          <p style={{ color: '#687078', margin: '10px 0 0 0' }}>智能评估系统 / Intelligent Assessment System</p>
+          <p style={{ color: '#687078', margin: '10px 0 0 0' }}>智能测试系统 / Intelligent Assessment System</p>
           <LanguageSwitcher />
         </div>
       );

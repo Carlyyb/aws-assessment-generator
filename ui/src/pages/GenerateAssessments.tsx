@@ -106,7 +106,7 @@ export default () => {
           addLog(`当前状态: ${status}`);
           
           if (status === AssessStatus.CREATED) {
-            updateStep('✅ 评估生成完成！正在跳转到编辑页面...', 100);
+            updateStep('✅ 测试生成完成！正在跳转到编辑页面...', 100);
             setIsGenerating(false);
             setFailureCount(0); // 重置失败计数
             dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.generate_assessments.generate_success') });
@@ -124,7 +124,7 @@ export default () => {
             addLog('⚠️ 生成时间过长，可能遇到问题。请检查网络连接或稍后重试。');
             setIsGenerating(false);
             setFailureCount(0); // 重置失败计数
-            dispatchAlert({ type: AlertType.ERROR, content: '评估生成超时，请稍后重试' });
+            dispatchAlert({ type: AlertType.ERROR, content: '测试生成超时，请稍后重试' });
             return;
           }
           
@@ -188,11 +188,11 @@ export default () => {
                     setStatusCheckCount(0);
                     setFailureCount(0);
                     
-                    updateStep('🚀 开始生成评估...', 5);
+                    updateStep('🚀 开始生成测试...', 5);
                     
                     // 验证必填字段
                     if (!name.trim()) {
-                      throw new Error('请输入评估名称');
+                      throw new Error('请输入测试名称');
                     }
                     if (!course?.value) {
                       throw new Error('请选择课程');
@@ -227,7 +227,7 @@ export default () => {
                     updateStep('✅ 文件上传完成', 25);
                     addLog('所有文件上传成功');
                     
-                    updateStep('🤖 正在调用AI生成评估...', 30);
+                    updateStep('🤖 正在调用AI生成测试...', 30);
                     addLog('发送生成请求到后端服务...');
                     
                     const res = await client.graphql<any>({
@@ -247,8 +247,8 @@ export default () => {
                     const id = res.data.generateAssessment;
                     setAssessId(id);
                     
-                    addLog(`✅ 评估请求已提交，ID: ${id}`);
-                    updateStep('⏳ 正在后台生成评估内容...', 35);
+                    addLog(`✅ 测试请求已提交，ID: ${id}`);
+                    updateStep('⏳ 正在后台生成测试内容...', 35);
                     addLog('开始监控生成进度...');
                     
                   } catch (error: any) {
@@ -256,7 +256,7 @@ export default () => {
                     addLog(`❌ 生成失败: ${errorMessage}`);
                     setIsGenerating(false);
                     setFailureCount(0); // 重置失败计数
-                    dispatchAlert({ type: AlertType.ERROR, content: `生成评估失败: ${errorMessage}` });
+                    dispatchAlert({ type: AlertType.ERROR, content: `生成测试失败: ${errorMessage}` });
                   }
                 }}
                 variant="primary"
@@ -387,7 +387,7 @@ export default () => {
           <SpaceBetween size="s" alignItems="center">
             <Spinner size="big" />
             <Box textAlign="center">
-              <strong>正在生成评估</strong>
+              <strong>正在生成测试</strong>
               <br />
               <small>这可能需要几分钟时间，请耐心等待...</small>
             </Box>
