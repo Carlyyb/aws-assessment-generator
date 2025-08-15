@@ -248,7 +248,20 @@ export default function KnowledgeBaseManager({
         variables: { courseId }
       });
       
+      // 检查是否有错误或数据为null
+      if ((response as any).errors) {
+        console.error('GraphQL errors:', (response as any).errors);
+        setKnowledgeBase(null);
+        return;
+      }
+      
       const kb = (response as any).data?.getKnowledgeBase;
+      
+      // 如果知识库存在但status为null，设置默认状态
+      if (kb && !kb.status) {
+        kb.status = 'UNKNOWN';
+      }
+      
       setKnowledgeBase(kb);
       
       if (kb?.knowledgeBaseId) {
@@ -257,6 +270,7 @@ export default function KnowledgeBaseManager({
       }
     } catch (error) {
       console.error('Error loading knowledge base:', error);
+      setKnowledgeBase(null);
     } finally {
       setLoading(false);
     }

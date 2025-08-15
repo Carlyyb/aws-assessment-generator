@@ -47,6 +47,16 @@ export default () => {
           variables: { courseId: course.id }
         });
         
+        // 检查GraphQL错误
+        if ((response as any).errors) {
+          console.error(`Error checking knowledge base for course ${course.id}:`, (response as any).errors);
+          setKnowledgeBaseStatuses(prev => ({
+            ...prev,
+            [course.id]: 'missing'
+          }));
+          return;
+        }
+        
         const kb = (response as any).data?.getKnowledgeBase;
         console.log(`Knowledge base for course ${course.id}:`, kb);
         
@@ -74,7 +84,9 @@ export default () => {
 
     const results = await Promise.all(statusPromises);
     const statusMap = results.reduce((acc, result) => {
-      acc[result.courseId] = result.status;
+      if (result) {
+        acc[result.courseId] = result.status;
+      }
       return acc;
     }, {} as {[courseId: string]: 'loading' | 'available' | 'missing'});
     

@@ -1,7 +1,8 @@
 import { useEffect, useState, useContext } from 'react';
 import { Container, Header, SpaceBetween, Button, Form, FormField, Box, Select, SelectProps, Tabs } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
-import { Lang } from '../graphql/Lang';
+import { Lang } from '../graphql/API';
+import { AssessType } from '../graphql/API';
 import { getSettings } from '../graphql/queries';
 import { upsertSettings } from '../graphql/mutations';
 import { optionise } from '../helpers';
@@ -17,11 +18,13 @@ export default () => {
   const dispatchAlert = useContext(DispatchAlertContext);
   const [activeTabId, setActiveTabId] = useState('general');
   const [uiLang, setUiLang] = useState<SelectProps.Option | null>(null);
+  const [currentSettings, setCurrentSettings] = useState<any>(null);
 
   useEffect(() => {
     client.graphql<any>({ query: getSettings }).then(({ data }) => {
       const settings = data.getSettings;
       if (!settings) return;
+      setCurrentSettings(settings);
       setUiLang(optionise(settings.uiLang!));
       // 设置初始语言
       if (settings.uiLang) {
@@ -39,7 +42,7 @@ export default () => {
     e.preventDefault();
     
     // 检查语言选择是否有效
-    if (!uiLang?.value) {
+    if (!uiLang?.value || !currentSettings) {
       dispatchAlert({ 
         type: AlertType.ERROR, 
         content: getText('common.settings.language_required') 
@@ -49,10 +52,12 @@ export default () => {
 
     client
       .graphql<any>({
-        query: upsertSettings,  // 使用 query 而不是 mutation
+        query: upsertSettings,
         variables: { 
           input: { 
-            uiLang: uiLang.value as Lang  // 已经检查过 value 存在，可以安全使用
+            uiLang: uiLang.value as Lang,
+            docLang: currentSettings.docLang || Lang.zh, // 使用当前设置或默认值
+            assessType: currentSettings.assessType || AssessType.multiChoiceAssessment // 使用当前设置或默认值
           } 
         },
       })
