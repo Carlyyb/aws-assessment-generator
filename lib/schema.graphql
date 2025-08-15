@@ -208,6 +208,21 @@ input GenerateAssessmentInput {
   assessTemplateId: String
 }
 
+type DataCleanupResult {
+  success: Boolean!
+  message: String!
+  summary: DataCleanupSummary!
+}
+
+type DataCleanupSummary {
+  tableType: String!
+  totalRecords: Int!
+  cleanedRecords: Int!
+  invalidRecords: Int!
+  deletedRecords: Int!
+  issues: [String!]!
+}
+
 type KnowledgeBase {
   userId: String!
   courseId: String!
@@ -240,6 +255,7 @@ type Mutation {
   upsertStudentAssessment(input: StudentAssessmentInput): StudentAssessment
   gradeStudentAssessment(input: StudentAssessmentInput): StudentAssessment
   createKnowledgeBase(courseId: ID, locations: [String]): IngestionJob
+  cleanupData(tableType: String!): DataCleanupResult
 }
 
 type Query {

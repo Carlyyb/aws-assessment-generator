@@ -81,6 +81,14 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    // 数据清理resolver - 使用settings数据源作为基础
+    settingsDs.createResolver('MutationCleanupDataResolver', {
+      typeName: 'Mutation',
+      fieldName: 'cleanupData',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/cleanupData.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     /////////// Courses
 
     const coursesTable = new aws_dynamodb.TableV2(this, 'CoursesTable', {

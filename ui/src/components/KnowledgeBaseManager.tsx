@@ -19,7 +19,7 @@ import {
 import { generateClient } from 'aws-amplify/api';
 import { uploadData, list, remove } from 'aws-amplify/storage';
 import { getKnowledgeBase, getIngestionJob } from '../graphql/queries';
-import { createKnowledgeBase } from '../graphql/mutations';
+import { createKnowledgeBase, cleanupData } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { getText } from '../i18n/lang';
 import { UserProfileContext } from '../contexts/userProfile';
@@ -74,6 +74,11 @@ export default function KnowledgeBaseManager({
   const [createLogs, setCreateLogs] = useState<string[]>([]);
   const [currentCreateStep, setCurrentCreateStep] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  // 数据清理相关状态
+  const [isCleaningData, setIsCleaningData] = useState(false);
+  const [cleanupResults, setCleanupResults] = useState<any>(null);
+  const [showCleanupModal, setShowCleanupModal] = useState(false);
 
   // 添加创建日志函数
   const addCreateLog = (message: string) => {
@@ -456,6 +461,41 @@ export default function KnowledgeBaseManager({
     }
   };
 
+  // 数据清理函数
+  const handleDataCleanup = async (tableType: string) => {
+    setIsCleaningData(true);
+    try {
+      const response = await client.graphql<any>({
+        query: cleanupData,
+        variables: { tableType }
+      });
+
+      const result = (response as any).data?.cleanupData;
+      if (result?.success) {
+        setCleanupResults(result);
+        setShowCleanupModal(true);
+        
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: `${result.message}: 处理了 ${result.summary.totalRecords} 条记录，清理了 ${result.summary.cleanedRecords} 条记录`
+        });
+
+        // 刷新知识库状态
+        loadKnowledgeBase();
+      } else {
+        throw new Error('数据清理失败');
+      }
+    } catch (error) {
+      console.error('Error cleaning data:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '数据清理过程中发生错误，请稍后重试'
+      });
+    } finally {
+      setIsCleaningData(false);
+    }
+  };
+
   useEffect(() => {
     if (visible) {
       loadKnowledgeBase();
@@ -538,7 +578,28 @@ export default function KnowledgeBaseManager({
           ) : (
             <>
               {/* 知识库状态 */}
-              <Container header={<Header variant="h2">{getText('teachers.settings.knowledge_base_manager.kb_status.status')}</Header>}>
+              <Container 
+                header={
+                  <Header 
+                    variant="h2"
+                    actions={
+                      <SpaceBetween direction="horizontal" size="xs">
+                        <Button
+                          variant="normal"
+                          iconName="refresh"
+                          loading={isCleaningData}
+                          onClick={() => handleDataCleanup('knowledgeBases')}
+                          disabled={isCleaningData}
+                        >
+                          {isCleaningData ? '正在清理数据...' : '数据清理'}
+                        </Button>
+                      </SpaceBetween>
+                    }
+                  >
+                    {getText('teachers.settings.knowledge_base_manager.kb_status.status')}
+                  </Header>
+                }
+              >
                 <ColumnLayout columns={3}>
                   <div>
                     <Box variant="awsui-key-label">{getText('teachers.settings.knowledge_base_manager.kb_status.kb_id')}</Box>
@@ -810,6 +871,59 @@ export default function KnowledgeBaseManager({
         }
       >
         <p>{getText('teachers.settings.knowledge_base_manager.modal.delete_file_warning').replace('{filename}', getFileName(fileToDelete))}</p>
+      </Modal>
+
+      {/* 数据清理结果对话框 */}
+      <Modal
+        visible={showCleanupModal}
+        onDismiss={() => setShowCleanupModal(false)}
+        header="数据清理结果"
+        footer={
+          <Box float="right">
+            <Button variant="primary" onClick={() => setShowCleanupModal(false)}>
+              关闭
+            </Button>
+          </Box>
+        }
+      >
+        {cleanupResults && (
+          <SpaceBetween size="m">
+            <Alert type={cleanupResults.summary.issues.length > 0 ? "warning" : "success"}>
+              <strong>{cleanupResults.message}</strong>
+            </Alert>
+            
+            <Container header={<Header variant="h3">清理统计</Header>}>
+              <ColumnLayout columns={2}>
+                <div>
+                  <Box variant="awsui-key-label">表类型</Box>
+                  <Box>{cleanupResults.summary.tableType}</Box>
+                </div>
+                <div>
+                  <Box variant="awsui-key-label">总记录数</Box>
+                  <Box>{cleanupResults.summary.totalRecords}</Box>
+                </div>
+                <div>
+                  <Box variant="awsui-key-label">已清理记录</Box>
+                  <Box>{cleanupResults.summary.cleanedRecords}</Box>
+                </div>
+                <div>
+                  <Box variant="awsui-key-label">已删除记录</Box>
+                  <Box>{cleanupResults.summary.deletedRecords}</Box>
+                </div>
+              </ColumnLayout>
+            </Container>
+            
+            {cleanupResults.summary.issues.length > 0 && (
+              <Container header={<Header variant="h3">发现的问题</Header>}>
+                <SpaceBetween size="xs">
+                  {cleanupResults.summary.issues.map((issue: string, index: number) => (
+                    <Box key={index} variant="p">• {issue}</Box>
+                  ))}
+                </SpaceBetween>
+              </Container>
+            )}
+          </SpaceBetween>
+        )}
       </Modal>
     </>
   );

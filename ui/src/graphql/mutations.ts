@@ -172,3 +172,19 @@ export const createKnowledgeBase = /* GraphQL */ `
     }
   }
 `;
+export const cleanupData = /* GraphQL */ `
+  mutation CleanupData($tableType: String!) {
+    cleanupData(tableType: $tableType) {
+      success
+      message
+      summary {
+        tableType
+        totalRecords
+        cleanedRecords
+        invalidRecords
+        deletedRecords
+        issues
+      }
+    }
+  }
+`;
