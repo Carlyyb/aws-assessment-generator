@@ -93,7 +93,6 @@ async function freeTextMarking(assessment: FreeText, answer: any) {
 async function callLLM(prompt: string) {
   logger.info(prompt);
   const body = JSON.stringify({
-    anthropic_version: 'bedrock-2023-05-31',
     max_tokens: 4096,
     messages: [
       {
@@ -104,7 +103,7 @@ async function callLLM(prompt: string) {
   });
   const response = await bedrock.invokeModel({
     body: body,
-    modelId: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+    modelId: 'amazon.nova-lite-v1:0',
     accept: 'application/json',
     contentType: 'application/json',
   });

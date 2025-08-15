@@ -11,7 +11,7 @@ import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import { MultiChoice, FreeText } from '../../../../../ui/src/graphql/API';
 import { getInitialQuestionsPrompt, getRelevantDocumentsPrompt, getTopicsPrompt, improveQuestionPrompt } from './prompts';
 
-const MODEL_ID = 'anthropic.claude-3-5-sonnet-20240620-v1:0';
+const MODEL_ID = 'amazon.nova-lite-v1:0';
 const bedrock = new BedrockRuntime();
 const bedrockAgentRuntime = new BedrockAgentRuntime();
 const parser = new XMLParser();
@@ -59,7 +59,7 @@ export class GenAiService {
   public async improveQuestions(generatedQuestions: string, assessmentTemplate: AssessmentTemplate) {
     logger.debug(generatedQuestions);
     const parsedQuestions: GeneratedQuestions = parser.parse(generatedQuestions);
-    let improvedQuestions: MultiChoice | FreeText[] = [];
+    let improvedQuestions: (MultiChoice | FreeText)[] = [];
     logger.debug(JSON.stringify(parsedQuestions));
 
     for (let i = 0; i < parsedQuestions.response.questions.length; i++) {
@@ -75,7 +75,6 @@ export class GenAiService {
   private async callLLM(modelId, prompt): Promise<string> {
     logger.debug(prompt);
     const body = JSON.stringify({
-      anthropic_version: 'bedrock-2023-05-31',
       max_tokens: 4096,
       messages: [
         {
