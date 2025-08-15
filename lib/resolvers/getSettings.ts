@@ -32,7 +32,7 @@ export const response = (ctx) => {
       updatedAt: new Date().toISOString()
     };
     
-    console.log(`Created default settings for user ${ctx.identity.sub}`);
+    console.log('Created default settings for user ' + ctx.identity.sub);
     return result;
   }
   
@@ -42,19 +42,19 @@ export const response = (ctx) => {
   const validThemes = ['default', 'dark', 'light'];
   
   // 验证和修复语言设置
-  if (!result.lang || !validLanguages.includes(result.lang)) {
+  if (!result.lang || validLanguages.indexOf(result.lang) === -1) {
     const oldLang = result.lang;
     result.lang = 'zh'; // 默认中文
     dataUpdated = true;
-    console.log(`Invalid language '${oldLang}' found for user ${result.userId}, set to default 'zh'`);
+    console.log('Invalid language "' + oldLang + '" found for user ' + result.userId + ', set to default "zh"');
   }
   
   // 验证和修复主题设置
-  if (!result.theme || !validThemes.includes(result.theme)) {
+  if (!result.theme || validThemes.indexOf(result.theme) === -1) {
     const oldTheme = result.theme;
     result.theme = 'default';
     dataUpdated = true;
-    console.log(`Invalid theme '${oldTheme}' found for user ${result.userId}, set to default 'default'`);
+    console.log('Invalid theme "' + oldTheme + '" found for user ' + result.userId + ', set to default "default"');
   }
   
   // 确保必需的时间戳字段存在
@@ -70,7 +70,7 @@ export const response = (ctx) => {
   
   // 如果数据被修复，记录日志
   if (dataUpdated) {
-    console.log(`Settings data cleaned for user ${result.userId}: ${JSON.stringify(result)}`);
+    console.log('Settings data cleaned for user ' + result.userId + ': ' + JSON.stringify(result));
     
     // 这里可以触发一个异步更新来持久化修复的数据
     // 或者记录需要清理的记录ID供后续批处理

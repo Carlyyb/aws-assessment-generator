@@ -6,7 +6,13 @@ import * as ddb from '@aws-appsync/utils/dynamodb';
 import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
-  const courseId = ctx.source?.courseId || ctx.args?.courseId;
+  let courseId = null;
+  
+  if (ctx.source && ctx.source.courseId) {
+    courseId = ctx.source.courseId;
+  } else if (ctx.args && ctx.args.courseId) {
+    courseId = ctx.args.courseId;
+  }
   
   if (!courseId) {
     util.error('CourseId is required', 'BadRequest');
@@ -31,11 +37,12 @@ export const response = (ctx) => {
   
   // 验证必需字段
   const requiredFields = ['id', 'name'];
-  for (const field of requiredFields) {
+  for (let i = 0; i < requiredFields.length; i++) {
+    const field = requiredFields[i];
     if (!result[field]) {
-      console.error(`Course missing required field '${field}': ${JSON.stringify(result)}`);
+      console.error('Course missing required field "' + field + '": ' + JSON.stringify(result));
       if (field === 'name' && result.id) {
-        result.name = `Course ${result.id}`;
+        result.name = 'Course ' + result.id;
         dataUpdated = true;
       }
     }
@@ -43,8 +50,8 @@ export const response = (ctx) => {
   
   // 验证状态字段
   const validStatuses = ['ACTIVE', 'INACTIVE', 'DRAFT', 'ARCHIVED'];
-  if (result.status && !validStatuses.includes(result.status)) {
-    console.log(`Invalid course status '${result.status}' found, setting to ACTIVE`);
+  if (result.status && validStatuses.indexOf(result.status) === -1) {
+    console.log('Invalid course status "' + result.status + '" found, setting to ACTIVE');
     result.status = 'ACTIVE';
     dataUpdated = true;
   } else if (!result.status) {
@@ -65,19 +72,20 @@ export const response = (ctx) => {
   
   // 清理描述字段
   if (result.description === '') {
-    result.description = `课程描述 - ${result.name}`;
+    result.description = '课程描述 - ' + result.name;
     dataUpdated = true;
   }
   
   // 验证知识库相关字段
-  if (result.knowledgeBaseStatus && !['ACTIVE', 'INACTIVE', 'CREATING', 'FAILED', 'UNKNOWN'].includes(result.knowledgeBaseStatus)) {
-    console.log(`Invalid knowledgeBaseStatus '${result.knowledgeBaseStatus}' found, setting to UNKNOWN`);
+  const validKnowledgeBaseStatuses = ['ACTIVE', 'INACTIVE', 'CREATING', 'FAILED', 'UNKNOWN'];
+  if (result.knowledgeBaseStatus && validKnowledgeBaseStatuses.indexOf(result.knowledgeBaseStatus) === -1) {
+    console.log('Invalid knowledgeBaseStatus "' + result.knowledgeBaseStatus + '" found, setting to UNKNOWN');
     result.knowledgeBaseStatus = 'UNKNOWN';
     dataUpdated = true;
   }
   
   if (dataUpdated) {
-    console.log(`Course data cleaned for ${result.id}: ${JSON.stringify(result)}`);
+    console.log('Course data cleaned for ' + result.id + ': ' + JSON.stringify(result));
   }
   
   return result;
