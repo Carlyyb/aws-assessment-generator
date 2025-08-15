@@ -30,21 +30,46 @@ export default () => {
     });
   }, []);
 
+  interface GraphQLError {
+    message: string;
+    // 其他可能的错误字段
+  }
+
   const handleLanguageSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 检查语言选择是否有效
+    if (!uiLang?.value) {
+      dispatchAlert({ 
+        type: AlertType.ERROR, 
+        content: getText('common.settings.language_required') 
+      });
+      return;
+    }
+
     client
       .graphql<any>({
-        query: upsertSettings,
+        mutation: upsertSettings,  // 使用 mutation 而不是 query
         variables: { 
           input: { 
-            uiLang: uiLang?.value as Lang
+            uiLang: uiLang.value as Lang  // 已经检查过 value 存在，可以安全使用
           } 
         },
       })
-      .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: getText('common.settings.update_success') }))
-      .catch((error) => {
+      .then(() => {
+        dispatchAlert({ 
+          type: AlertType.SUCCESS, 
+          content: getText('common.settings.update_success') 
+        });
+      })
+      .catch((error: GraphQLError) => {
         console.error('Settings update error:', error);
-        dispatchAlert({ type: AlertType.ERROR, content: getText('common.status.error') });
+        // 显示更具体的错误信息
+        const errorMessage = error.message || getText('common.status.error');
+        dispatchAlert({ 
+          type: AlertType.ERROR, 
+          content: errorMessage 
+        });
       });
   };
 
