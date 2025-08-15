@@ -376,7 +376,8 @@
         "templates": "Templates",
         "generate-assessments": "Generate Assessments",
         "courses": "Courses",
-        "log-management": "Log Management"
+        "log-management": "Log Management",
+        "find-student": "Find Student"
       },
       "assessments": "Assessment",
       "settings": "Settings",
