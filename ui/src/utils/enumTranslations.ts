@@ -10,6 +10,10 @@ export const getAssessTypeText = (assessType: AssessType): string => {
       return getText('assessType.multiChoiceAssessment');
     case AssessType.freeTextAssessment:
       return getText('assessType.freeTextAssessment');
+    case AssessType.singleChoiceAssessment:
+      return getText('assessType.singleChoiceAssessment');
+    case AssessType.trueFalseAssessment:
+      return getText('assessType.trueFalseAssessment');
     default:
       return assessType;
   }

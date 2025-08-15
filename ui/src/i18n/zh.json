@@ -543,7 +543,9 @@
   },
   "assessType": {
     "multiChoiceAssessment": "选择题测试",
-    "freeTextAssessment": "问答题测试"
+    "freeTextAssessment": "问答题测试",
+    "singleChoiceAssessment": "单选题测试",
+    "trueFalseAssessment": "判断题测试"
   },
   "formats": {
     "date": {
