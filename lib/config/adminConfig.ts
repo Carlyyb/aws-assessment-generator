@@ -30,6 +30,7 @@ export enum AdminPermissionLevel {
  * 可以为不同的管理员配置不同的权限级别
  */
 export const ADMIN_PERMISSIONS: Record<string, AdminPermissionLevel> = {
+  'yibo.yan24@student.xjtlu.edu.cn': AdminPermissionLevel.SUPER_ADMIN,
   'admin@example.com': AdminPermissionLevel.SUPER_ADMIN,
   'system.admin@company.com': AdminPermissionLevel.SYSTEM_ADMIN,
   // 'log.viewer@company.com': AdminPermissionLevel.LOG_ADMIN,

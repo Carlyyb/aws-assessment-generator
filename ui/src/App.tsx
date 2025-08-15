@@ -27,6 +27,8 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { generateBreadcrumbs } from './utils/breadcrumbs';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Notifications } from '@mantine/notifications';
+import { useAdminPermissions } from './utils/adminPermissions';
+import { getAdminLevelDisplayName } from './utils/adminDisplayUtils';
 
 const LOCALE = 'en';
 
@@ -39,6 +41,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
   const [alerts, setAlerts] = useState<FlashbarProps.MessageDefinition[]>([]);
   const [activeHref, setActiveHref] = useState(window.location.pathname);
   const { currentTheme } = useTheme();
+  const { adminInfo } = useAdminPermissions();
 
   const dispatchAlert = (newAlert: FlashbarProps.MessageDefinition) => {
     const id = Date.now().toString();
@@ -60,6 +63,31 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
 
   router.subscribe(({ location }) => setActiveHref(location.pathname));
 
+  // 构建用户显示文本
+  const getUserDisplayText = () => {
+    const roleText = `${getText(`common.role.${userProfile?.group}`)}: ${userProfile?.name}`;
+    
+    // 只使用后端权限信息
+    const adminLevelText = adminInfo?.isAdmin 
+      ? ` (${getAdminLevelDisplayName(adminInfo.adminLevel)})`
+      : '';
+    
+    return roleText + adminLevelText;
+  };
+
+  // 构建用户描述文本
+  const getUserDescription = () => {
+    const baseDescription = `${getText('common.profile')}: ${getText(`common.role.${userProfile?.group}`)}`;
+    
+    // 只使用后端权限信息
+    if (adminInfo?.isAdmin) {
+      const adminLevel = getAdminLevelDisplayName(adminInfo.adminLevel);
+      return `${baseDescription} | ${getText('common.admin.permission_level')}: ${adminLevel}`;
+    }
+    
+    return baseDescription;
+  };
+
   return (
     <DispatchAlertContext.Provider value={dispatchAlert}>
       <UserProfileContext.Provider value={userProfile}>
@@ -75,8 +103,8 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
                 utilities={[
                   {
                     type: 'menu-dropdown',
-                    text: `${getText(`common.role.${userProfile?.group}`)}: ${userProfile?.name}`,
-                    description: `${getText('common.profile')}: ${getText(`common.role.${userProfile?.group}`)}`,
+                    text: getUserDisplayText(),
+                    description: getUserDescription(),
                     iconName: 'user-profile',
                     items: [{ id: 'signout', text: getText('common.action.sign_out') }],
                     onItemClick: ({ detail }) => {

@@ -6,8 +6,11 @@
  * 
  * 使用说明：
  * 1. 在前端组件中导入此文件
- * 2. 调用 checkIfUserIsAdmin 函数来检查当前用户是否为管理员
+ * 2. 调用 checkUserAdminPermissions 函数来检查当前用户是否为管理员
  * 3. 使用返回的权限信息来控制UI显示和功能访问
+ * 4. 所有权限验证都基于后端配置，确保安全性
+ * 
+ * 注意：此文件不包含任何前端权限配置，所有权限检查都通过后端进行
  */
 
 import React from 'react';
@@ -38,35 +41,6 @@ export interface AdminPermissionInfo {
     canManageUsers: boolean;
     canManageSystem: boolean;
   };
-}
-
-/**
- * 管理员邮箱配置（前端版本 - 仅用于快速检查）
- * 注意：这只是为了快速UI反馈，真正的权限验证在后端进行
- */
-const ADMIN_EMAILS: string[] = [
-  'yibo.yan24@student.xjtlu.edu.cn',
-  // 添加更多管理员邮箱
-];
-
-/**
- * 快速检查邮箱是否在管理员列表中（前端快速验证）
- * @param email 用户邮箱
- * @returns 是否可能是管理员
- */
-export function isEmailAdmin(email: string): boolean {
-  if (!email) return false;
-  return ADMIN_EMAILS.includes(email.toLowerCase());
-}
-
-/**
- * 从 Cognito 用户信息中检查是否为管理员
- * @param user Amplify Auth 用户对象
- * @returns 是否可能是管理员（基于邮箱）
- */
-export function isUserPotentialAdmin(user: any): boolean {
-  const email = user?.attributes?.email || user?.email;
-  return isEmailAdmin(email);
 }
 
 /**
@@ -155,22 +129,10 @@ function checkPermissionLevel(userLevel?: AdminPermissionLevel, requiredLevel: A
 }
 
 /**
- * 简化的管理员检查函数（基于邮箱的快速检查）
- * @param userEmail 用户邮箱
- * @returns 是否为管理员
- */
-export function isAdminByEmail(userEmail: string): boolean {
-  return isEmailAdmin(userEmail);
-}
-
-/**
  * 权限检查工具函数集合
  */
 export const AdminUtils = {
-  isEmailAdmin,
-  isUserPotentialAdmin,
   checkUserAdminPermissions,
   useAdminPermissions,
   checkPermissionLevel,
-  isAdminByEmail,
 };

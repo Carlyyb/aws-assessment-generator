@@ -44,6 +44,12 @@
       "teachers": "Teachers",
       "students": "Students"
     },
+    "admin": {
+      "super_admin": "Super Admin",
+      "system_admin": "System Admin",
+      "log_admin": "Log Admin", 
+      "permission_level": "Admin Permission"
+    },
     "nav": {
       "dashboard": "Dashboard",
       "assessments": "Assessments",
