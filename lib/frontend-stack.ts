@@ -11,6 +11,7 @@ import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as childProcess from 'child_process';
 import * as fsExtra from 'fs-extra';
+import * as path from 'path';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
@@ -137,16 +138,36 @@ export class FrontendStack extends NestedStack {
       sources: [
         s3deploy.Source.asset('ui', {
           bundling: {
-            image: DockerImage.fromRegistry('alpine'),
-            command: ['sh', '-c', 'echo "Docker build not supported. Please install esbuild."'],
+            image: DockerImage.fromRegistry('node:20-alpine'),
+            command: [
+              'sh', '-c', [
+                'npm ci',
+                'npm run build',
+                'cp -r dist/* /asset-output/'
+              ].join(' && ')
+            ],
             local: {
               tryBundle(outputDir: string) {
                 try {
-                  childProcess.execSync('esbuild --version', execOptions);
-                  childProcess.execSync('cd ui/node_modules || (cd ui && npm ci)', execOptions);
-                  childProcess.execSync('cd ui && npm run build', execOptions);
+                  // 确保在 ui 目录下执行命令
+                  const uiDir = 'ui';
+                  
+                  // 检查 node_modules 是否存在，如果不存在就安装依赖
+                  try {
+                    childProcess.execSync('npm list', { cwd: uiDir, stdio: 'ignore' });
+                  } catch {
+                    console.log('Installing UI dependencies...');
+                    childProcess.execSync('npm ci', { cwd: uiDir, stdio: 'inherit' });
+                  }
+                  
+                  console.log('Building UI...');
+                  childProcess.execSync('npm run build', { cwd: uiDir, stdio: 'inherit' });
 
-                  fsExtra.copySync('ui/dist', outputDir);
+                  // 复制构建结果到输出目录
+                  const distPath = path.join(uiDir, 'dist');
+                  fsExtra.copySync(distPath, outputDir);
+                  
+                  console.log('UI build completed successfully');
                   return true;
                 } catch {
                   return false;

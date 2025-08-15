@@ -50,8 +50,8 @@ export default () => {
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
   const [logs, setLogs] = useState<string[]>([]);
-  const [statusCheckCount, setStatusCheckCount] = useState(0); // eslint-disable-line @typescript-eslint/no-unused-vars
-  const [failureCount, setFailureCount] = useState(0); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [_statusCheckCount, setStatusCheckCount] = useState(0);
+  const [_failureCount, setFailureCount] = useState(0);
 
   // 添加日志函数
   const addLog = (message: string) => {
