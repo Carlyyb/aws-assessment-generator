@@ -13,3 +13,12 @@ cdk.out
 yas-ai.cn.ppk
 yas-ai.cn.pem
 .env.development.local
+lib/resolvers/batchDeleteAssessTemplates.ts
+clear-templates-execute.js
+quick-clear-templates.js
+test_delete_complete.js
+.gitignore
+test_delete.js
+.gitignore
+clear-templates-smart.js
+migration-clear-templates.js

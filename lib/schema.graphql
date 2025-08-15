@@ -236,7 +236,7 @@ type Mutation {
   upsertCourse(input: CourseInput): Course
   deleteCourse(id: ID!): Boolean
   createAssessTemplate(input: AssessTemplateInput): AssessTemplate
-  deleteAssessTemplate(id: ID!): Boolean
+  deleteAssessTemplate(id: ID!, userId: ID!): Boolean
   upsertAssessment(input: AssessmentInput): Assessment
   upsertStudentAssessment(input: StudentAssessmentInput): StudentAssessment
   gradeStudentAssessment(input: StudentAssessmentInput): StudentAssessment

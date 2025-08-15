@@ -6,6 +6,7 @@ import { deleteAssessTemplate } from '../graphql/mutations';
 import { AssessTemplate } from '../graphql/API';
 import { getAssessTypeText, getTaxonomyText } from '../utils/enumTranslations';
 import { DispatchAlertContext } from '../contexts/alerts';
+import { UserProfileContext } from '../contexts/userProfile';
 import CreateTemplate from '../components/CreateTemplate';
 import { getText } from '../i18n/lang';
 
@@ -13,6 +14,7 @@ const client = generateClient();
 
 export default () => {
   const dispatchAlert = useContext(DispatchAlertContext);
+  const userProfile = useContext(UserProfileContext);
   const [templates, setTemplates] = useState<AssessTemplate[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedItems, setSelectedItems] = useState<AssessTemplate[]>([]);
@@ -69,14 +71,25 @@ export default () => {
 
   // 确认删除
   const confirmDelete = async () => {
+    if (!userProfile?.userId) {
+      dispatchAlert({
+        type: 'error',
+        content: getText('common.error.user_not_authenticated')
+      });
+      return;
+    }
+
     setIsDeleting(true);
     
     try {
       if (deleteTarget === 'single' && templateToDelete) {
-        // 删除单个模板
+        // 删除单个模板 - 使用当前用户的userId
         await client.graphql({
           query: deleteAssessTemplate,
-          variables: { id: templateToDelete.id }
+          variables: { 
+            id: templateToDelete.id,
+            userId: userProfile.userId
+          }
         });
         
         dispatchAlert({
@@ -85,11 +98,14 @@ export default () => {
         });
         
       } else if (deleteTarget === 'multiple') {
-        // 批量删除模板 - 逐个删除
+        // 批量删除模板 - 逐个删除，使用当前用户的userId
         const deletePromises = selectedItems.map(item => 
           client.graphql({
             query: deleteAssessTemplate,
-            variables: { id: item.id }
+            variables: { 
+              id: item.id,
+              userId: userProfile.userId
+            }
           })
         );
         

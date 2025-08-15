@@ -1,7 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
  
-//import { util } from '@aws-appsync/utils';
+import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
   // 所有用户都能看到所有模板

@@ -174,6 +174,13 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    assessTemplateDs.createResolver('MutationDeleteAssessTemplateResolver', {
+      typeName: 'Mutation',
+      fieldName: 'deleteAssessTemplate',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteAssessTemplate.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     /////////// Assessments
 
     const assessmentsTable = new aws_dynamodb.TableV2(this, 'AssessmentsTable', {

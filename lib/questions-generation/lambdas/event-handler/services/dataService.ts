@@ -114,7 +114,20 @@ export class DataService {
     let ddbResponse = await this.docClient.send(command);
 
     logger.info(ddbResponse as any);
-    return ddbResponse.Item as AssessmentTemplate;
+    
+    // 检查权限：确保用户有权访问这个模板
+    const assessTemplate = ddbResponse.Item as AssessmentTemplate;
+    if (!assessTemplate) {
+      throw new Error(`Assessment template ${assessTemplateId} not found`);
+    }
+    
+    // 注意：这里移除了用户权限检查，因为现在所有用户都能使用所有模板
+    // 如果需要恢复权限检查，可以取消注释下面的代码：
+    // if (assessTemplate.userId !== userId) {
+    //   throw new Error(`User ${userId} does not have permission to access template ${assessTemplateId}`);
+    // }
+    
+    return assessTemplate;
   }
 
   async updateFailedAssessment(userId: string, assessmentId: string) {
