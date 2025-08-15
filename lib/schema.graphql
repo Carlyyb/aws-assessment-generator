@@ -201,7 +201,7 @@ input StudentAssessmentInput {
 
 input GenerateAssessmentInput {
   name: String!
-  courseId: String!
+  courseIds: [String!]!   # CHANGELOG 2025-08-16 by 邱语堂: 支持批量课程ID
   lectureDate: AWSDate!
   deadline: AWSDate!
   locations: [String]!
@@ -269,7 +269,7 @@ type Query {
   listStudentAssessments: [StudentAssessment]
   listMyStudentAssessments(studentId: ID!): [StudentAssessment]
   publishAssessment(assessmentId: ID!): Boolean
-  generateAssessment(input: GenerateAssessmentInput): ID
+  generateAssessment(input: GenerateAssessmentInput): [ID!]!   # CHANGELOG 2025-08-16 by 邱语堂: 支持批量返回评估ID
   getKnowledgeBase(courseId: ID): KnowledgeBase
   getIngestionJob(input: IngestionJobInput): IngestionJob
   

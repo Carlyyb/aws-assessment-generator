@@ -8,6 +8,7 @@ import {
   FormField,
   Box,
   Select,
+  Multiselect,
   SelectProps,
   Checkbox,
   FileUpload,
@@ -39,12 +40,16 @@ export default () => {
   const [deadline, setDeadline] = useState('');
   const [useDefault, setUseDefault] = useState(true);
   const [courses, setCourses] = useState<SelectProps.Option[]>([]);
-  const [course, setCourse] = useState<SelectProps.Option | null>(null);
+  // CHANGELOG 2025-08-15 by 邱语堂: 课程选择由单选改为多选
+  const [selectedCourses, setSelectedCourses] = useState<SelectProps.Option[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [assessId, setAssessId] = useState('');
   const [assessTemplates, setAssessTemplates] = useState<SelectProps.Option[]>([]);
   const [assessTemplate, setAssessTemplate] = useState<SelectProps.Option | null>(null);
+  // 单课程状态（兼容旧逻辑）
   const [knowledgeBaseStatus, setKnowledgeBaseStatus] = useState<'checking' | 'available' | 'missing' | null>(null);
+  // 批量课程知识库状态
+  const [knowledgeBaseStatusMap, setKnowledgeBaseStatusMap] = useState<Record<string, 'checking' | 'available' | 'missing'>>({});
   
   // 进度和日志状态
   const [isGenerating, setIsGenerating] = useState(false);
@@ -71,37 +76,37 @@ export default () => {
 
   // 检查知识库状态
   const checkKnowledgeBaseStatus = async (courseId: string) => {
-    if (!courseId) {
-      setKnowledgeBaseStatus(null);
-      return;
-    }
-    
-    setKnowledgeBaseStatus('checking');
+    if (!courseId) return;
+    // 批量状态：先置为 checking
+    setKnowledgeBaseStatusMap(prev => ({ ...prev, [courseId]: 'checking' }));
     try {
       const kbResponse = await client.graphql<any>({
         query: getKnowledgeBase,
         variables: { courseId }
       });
-      
       const knowledgeBase = kbResponse.data.getKnowledgeBase;
-      if (knowledgeBase && knowledgeBase.knowledgeBaseId) {
-        setKnowledgeBaseStatus('available');
-      } else {
-        setKnowledgeBaseStatus('missing');
-      }
+      setKnowledgeBaseStatusMap(prev => ({
+        ...prev,
+        [courseId]: knowledgeBase && knowledgeBase.knowledgeBaseId ? 'available' : 'missing',
+      }));
     } catch (error) {
-      setKnowledgeBaseStatus('missing');
+      setKnowledgeBaseStatusMap(prev => ({ ...prev, [courseId]: 'missing' }));
     }
   };
 
   // 当课程改变时检查知识库状态
+  // CHANGELOG 2025-08-15 by 邱语堂: 批量为每个课程检查知识库
   useEffect(() => {
-    if (course?.value) {
-      checkKnowledgeBaseStatus(course.value);
+    if (selectedCourses.length > 0) {
+      // 批量检查每个课程的知识库状态
+      selectedCourses.forEach((course: SelectProps.Option) => {
+        checkKnowledgeBaseStatus(course.value as string);
+      });
     } else {
       setKnowledgeBaseStatus(null);
+      setKnowledgeBaseStatusMap({});
     }
-  }, [course]);
+  }, [selectedCourses]);
 
   useEffect(() => {
     client.graphql<any>({ query: listAssessTemplates }).then(({ data, errors }) => {
@@ -241,62 +246,88 @@ export default () => {
                     setIsGenerating(true);
                     setProgress(0);
                     setLogs([]);
+                    <Button
+                      onClick={async () => {
+                        // CHANGELOG 2025-08-15 by 邱语堂: 批量生成逻辑整体包裹进 try/catch，修复类型声明
+                        try
+                         {
+                          // 重置状态
+                          setIsGenerating(true);
+                          setProgress(0);
+                          setLogs([]);
+                          setStatusCheckCount(0);
+                          setFailureCount(0);
+
+                          updateStep('🚀 开始生成测试...', 5);
+              <Button
+                onClick={async () => {
+                  try {
+                    // 重置状态
+                    setIsGenerating(true);
+                    setProgress(0);
+                    setLogs([]);
                     setStatusCheckCount(0);
                     setFailureCount(0);
-                    
+
                     updateStep('🚀 开始生成测试...', 5);
-                    
+
                     // 验证必填字段
                     if (!name.trim()) {
                       throw new Error('请输入测试名称');
                     }
-                    if (!course?.value) {
+                    if (selectedCourses.length === 0) {
                       throw new Error('请选择课程');
                     }
                     if (files.length === 0) {
                       throw new Error('请上传至少一个课程文件。\n\n系统需要基于上传的课程材料来生成测试题目。\n支持的文件格式：PDF、DOC、DOCX、TXT等');
                     }
-                    
+
                     updateStep('📁 准备上传文件...', 10);
-                    
+
                     // 检查知识库状态
                     updateStep('🔍 检查课程知识库状态...', 12);
                     addLog('正在检查课程知识库...');
-                    
-                    try {
-                      const kbResponse = await client.graphql<any>({
-                        query: getKnowledgeBase,
-                        variables: { courseId: course.value }
-                      });
-                      
-                      const knowledgeBase = kbResponse.data.getKnowledgeBase;
-                      if (!knowledgeBase || !knowledgeBase.knowledgeBaseId) {
-                        throw new Error(`该课程尚未创建知识库。\n\n请按以下步骤操作：\n1. 先上传课程文件到知识库\n2. 等待文档处理完成\n3. 再尝试生成测试\n\n提示：您可以在课程管理页面创建知识库`);
+
+                    for (const course of selectedCourses) {
+                      try {
+                        const kbResponse = await client.graphql<any>({
+                          query: getKnowledgeBase,
+                          variables: { courseId: course.value }
+                        });
+                        const knowledgeBase = kbResponse.data.getKnowledgeBase;
+                        if (!knowledgeBase || !knowledgeBase.knowledgeBaseId) {
+                          throw new Error(`课程 ${course.label} 尚未创建知识库。\n\n请按以下步骤操作：\n1. 先上传课程文件到知识库\n2. 等待文档处理完成\n3. 再尝试生成测试\n\n提示：您可以在课程管理页面创建知识库`);
+                        }
+                        addLog(`✅ 课程 ${course.label} 知识库检查通过，ID: ${knowledgeBase.knowledgeBaseId}`);
+                      } catch (error: unknown) {
+                        const err = error as Error;
+                        if (err.message && err.message.includes('尚未创建知识库')) {
+                          throw err;
+                        }
+                        throw new Error(`无法访问课程 ${course.label} 的知识库，请确保已为该课程创建知识库`);
                       }
-                      
-                      addLog(`✅ 知识库检查通过，ID: ${knowledgeBase.knowledgeBaseId}`);
-                    } catch (error: any) {
-                      // 如果是我们抛出的错误，直接抛出
-                      if (error.message.includes('该课程尚未创建知识库')) {
-                        throw error;
-                      }
-                      // 其他错误也视为知识库不存在
-                      throw new Error('无法访问课程知识库，请确保已为该课程创建知识库');
                     }
-                    
-                    const data = files.map((file) => ({
-                      key: `Assessments/${userProfile?.userId}/${course?.value}/${file.name}`,
-                      file,
-                    }));
-                    
-                    addLog(`准备上传 ${files.length} 个文件`);
-                    
+
+                    // 批量生成每个课程的文件路径
+                    type UploadData = { key: string; file: File };
+                    const data: UploadData[] = [];
+                    selectedCourses.forEach(course => {
+                      files.forEach(file => {
+                        data.push({
+                          key: `Assessments/${userProfile?.userId}/${course.value}/${file.name}`,
+                          file,
+                        });
+                      });
+                    });
+
+                    addLog(`准备上传 ${data.length} 个文件`);
+
                     updateStep('📤 正在上传文件到云存储...', 15);
-                    
+
                     await Promise.all(
                       data.map(
                         ({ key, file }, index) => {
-                          addLog(`上传文件 ${index + 1}/${files.length}: ${file.name}`);
+                          addLog(`上传文件 ${index + 1}/${data.length}: ${file.name}`);
                           return uploadData({
                             key,
                             data: file,
@@ -304,36 +335,39 @@ export default () => {
                         }
                       )
                     );
-                    
+
                     updateStep('✅ 文件上传完成', 25);
                     addLog('所有文件上传成功');
-                    
+
                     updateStep('🤖 正在调用AI生成测试...', 30);
                     addLog('发送生成请求到后端服务...');
-                    
-                    const res = await client.graphql<any>({
-                      query: generateAssessment,
-                      variables: {
-                        input: {
-                          name,
-                          lectureDate,
-                          deadline,
-                          courseId: course.value,
-                          assessTemplateId: assessTemplate?.value,
-                          locations: data.map(({ key }) => key),
+
+                    for (const course of selectedCourses) {
+                      const res = await client.graphql<any>({
+                        query: generateAssessment,
+                        variables: {
+                          input: {
+                            name,
+                            lectureDate,
+                            deadline,
+                            courseId: course.value,
+                            assessTemplateId: assessTemplate?.value,
+                            locations: data
+                              .filter(d => d.key.includes(`/${course.value}/`))
+                              .map(d => d.key),
+                          },
                         },
-                      },
-                    });
-                    
-                    const id = res.data.generateAssessment;
-                    setAssessId(id);
-                    
-                    addLog(`✅ 测试请求已提交，ID: ${id}`);
-                    updateStep('⏳ 正在后台生成测试内容...', 35);
-                    addLog('开始监控生成进度...');
-                    
-                  } catch (error: any) {
-                    const errorMessage = error.message || '未知错误';
+                      });
+                      const id = res.data.generateAssessment;
+                      setAssessId(id);
+                      addLog(`✅ 课程 ${course.label} 测试请求已提交，ID: ${id}`);
+                      updateStep(`⏳ 正在后台为课程 ${course.label} 生成测试内容...`, 35);
+                      addLog(`开始监控课程 ${course.label} 的生成进度...`);
+                    }
+
+                  } catch (error: unknown) {
+                    const err = error as Error;
+                    const errorMessage = err.message || '未知错误';
                     addLog(`❌ 生成失败: ${errorMessage}`);
                     setIsGenerating(false);
                     setFailureCount(0); // 重置失败计数
@@ -345,47 +379,46 @@ export default () => {
               >
                 {isGenerating ? '生成中...' : getText('teachers.assessments.generate.title')}
               </Button>
-            </SpaceBetween>
-          }
-          header={<Header variant="h1">{getText('teachers.assessments.generate.title')}</Header>}
-        >
-          <Container header={<Header variant="h1">{getText('teachers.assessments.generate.title')}</Header>}>
-            <SpaceBetween size="l" alignItems="center">
-              <Box padding="xxxl">
-                <SpaceBetween size="xxl" direction="horizontal">
-                  <FormField label={getText('teachers.assessments.generate.select_template')}>
-                    <SpaceBetween size="l" direction="horizontal" alignItems="center">
-                      <Checkbox checked={useDefault} onChange={({ detail }) => setUseDefault(detail.checked)}>
-                        {getText('teachers.assessments.generate.use_default')}
-                      </Checkbox>
-                      <Select
-                        options={assessTemplates}
-                        selectedOption={assessTemplate}
-                        onChange={({ detail }) => setAssessTemplate(detail.selectedOption)}
-                        disabled={useDefault}
-                      />
-                    </SpaceBetween>
-                  </FormField>
-                  <FormField label={getText('common.labels.name')}>
-                    <Input value={name} onChange={({ detail }) => setName(detail.value)} />
-                  </FormField>
-                  <FormField label={getText('teachers.assessments.generate.select_course')}>
                     <SpaceBetween size="s">
-                      <Select options={courses} selectedOption={course} onChange={({ detail }) => setCourse(detail.selectedOption)} />
-                      {knowledgeBaseStatus === 'checking' && (
-                        <Alert statusIconAriaLabel="Info" header="检查中">
-                          正在检查课程知识库状态...
-                        </Alert>
-                      )}
-                      {knowledgeBaseStatus === 'missing' && (
-                        <Alert type="warning" statusIconAriaLabel="Warning" header="缺少知识库">
-                          该课程尚未创建知识库。请先上传课程文件到知识库，然后等待处理完成后再生成测试。
-                        </Alert>
-                      )}
-                      {knowledgeBaseStatus === 'available' && (
-                        <Alert type="success" statusIconAriaLabel="Success" header="知识库就绪">
-                          课程知识库已创建，可以生成测试。
-                        </Alert>
+                      <Multiselect
+                        options={courses}
+                        selectedOptions={selectedCourses}
+                        onChange={(
+                          { detail }: { detail: { selectedOptions: SelectProps.Option[] } }
+                        ) => setSelectedCourses(detail.selectedOptions)}
+                        placeholder={getText('teachers.assessments.generate.select_course') + '（可多选）'}
+                      />
+                      {/* 知识库状态提示可根据第一个选中的课程显示 */}
+                      {/* 批量显示所有选中课程的知识库状态 */}
+                      {selectedCourses.length > 0 && (
+                        <Box>
+                          {selectedCourses.map((course: SelectProps.Option) => {
+                            const status = knowledgeBaseStatusMap[course.value as string];
+                            if (!status) return null;
+                            if (status === 'checking') {
+                              return (
+                                <Alert key={course.value} statusIconAriaLabel="Info" header={`课程 ${course.label}：检查中`}>
+                                  正在检查课程知识库状态...
+                                </Alert>
+                              );
+                            }
+                            if (status === 'missing') {
+                              return (
+                                <Alert key={course.value} type="warning" statusIconAriaLabel="Warning" header={`课程 ${course.label}：缺少知识库`}>
+                                  该课程尚未创建知识库。请先上传课程文件到知识库，然后等待处理完成后再生成测试。
+                                </Alert>
+                              );
+                            }
+                            if (status === 'available') {
+                              return (
+                                <Alert key={course.value} type="success" statusIconAriaLabel="Success" header={`课程 ${course.label}：知识库就绪`}>
+                                  课程知识库已创建，可以生成测试。
+                                </Alert>
+                              );
+                            }
+                            return null;
+                          })}
+                        </Box>
                       )}
                     </SpaceBetween>
                   </FormField>

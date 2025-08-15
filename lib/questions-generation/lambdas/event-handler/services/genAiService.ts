@@ -19,6 +19,26 @@ const parser = new XMLParser();
 const builder = new XMLBuilder();
 
 export class GenAiService {
+  /**
+   * 批量为多个课程生成评估
+   * @param courseIds 课程ID数组
+   * @param topicsExtractionOutput 主题抽取结果
+   * @param assessmentTemplate 评估模板
+   * @returns 所有课程的评估结果数组
+   * CHANGELOG 2025-08-16 by 邱语堂: 新增批量生成评估方法
+   */
+  public async generateAssessmentsForCourses(courseIds: string[], topicsExtractionOutput: string, assessmentTemplate: AssessmentTemplate) {
+    const results: Array<{ courseId: string; questions: any }> = [];
+    for (const courseId of courseIds) {
+      // 可根据实际业务传递 courseId 到 prompt 或其它参数
+      // 这里假设每个课程都用同样的 topicsExtractionOutput 和 assessmentTemplate
+      const prompt = getInitialQuestionsPrompt(assessmentTemplate, topicsExtractionOutput);
+      const llmResponse = await this.callLLM(MODEL_ID, prompt);
+      // 可根据实际业务解析 llmResponse
+      results.push({ courseId, questions: llmResponse });
+    }
+    return results;
+  }
   private knowledgeBaseId: string;
 
   constructor(knowledgeBaseId: string) {

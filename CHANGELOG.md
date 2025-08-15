@@ -1,6 +1,32 @@
 # CHANGELOG
 
-## 2025-08-15 by 邱语堂
+
+## 2025-08-16 by 邱语堂
+
+### 新增与优化
+- 支持批量选择课程，前端多选控件（Cloudscape Multiselect）支持搜索、全选、反选。
+- 后端支持批量生成评估，返回每个课程的生成结果和状态，前端可批量展示。
+
+### 主要修改文件及内容
+
+1. `lib/schema.graphql`
+   - GenerateAssessmentInput 新增 courseIds 字段，Query generateAssessment 支持批量返回评估ID。
+
+2. `lib/questions-generation/lambdas/event-handler/index.ts`
+   - handler 和 processEvent 支持批量处理 courseIds，返回每个课程的 assessmentId 和状态。
+   - 兼容单/多课程输入，类型安全处理。
+
+3. `lib/questions-generation/lambdas/event-handler/services/dataService.ts`
+   - 新增 storeEmptyAssessmentsForCourses 方法，支持批量存储评估。
+   - updateAssessment 支持多题型数组赋值。
+
+4. `ui/src/pages/GenerateAssessments.tsx`
+   - 课程选择由单选改为多选，使用 Cloudscape Multiselect。
+   - 生成后批量展示每个课程的生成状态和结果。
+
+### 影响范围
+- 课程批量选择、批量生成评估、批量结果展示，提升用户体验和操作效率。
+- 相关后端接口和前端页面均已适配批量逻辑。
 
 ### 新增与优化
 - 新增题型支持：单选题（SingleChoice）、判断题（TrueFalse）。
