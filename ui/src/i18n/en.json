@@ -333,9 +333,96 @@
         "errors": {
           "upload_failed": "File upload failed",
           "delete_failed": "File deletion failed",
-          "status_check_failed": "Status check failed",
-          "creation_failed": "Knowledge base creation failed",
-          "network_error": "Network error, please retry"
+          "create_failed": "Knowledge base creation failed",
+          "load_failed": "Loading failed"
+        },
+        "modal": {
+          "close": "Close",
+          "cancel": "Cancel",
+          "confirm_delete": "Confirm Delete",
+          "delete_file_warning": "Are you sure you want to delete file \"{filename}\"? This action cannot be undone."
+        },
+        "alerts": {
+          "not_created": "Knowledge Base Not Created",
+          "select_files_first": "Please select files to upload first",
+          "upload_new_docs_processing": "Processing newly uploaded documents, this may take a few minutes",
+          "create_kb_description": "This course does not have an associated knowledge base yet. Please select course material files and click \"Create Knowledge Base\" button."
+        },
+        "file_selection": {
+          "select_course_files": "Select Course Files",
+          "supported_formats_description": "Supports PDF, DOC, DOCX, TXT, MD and other course material formats",
+          "select_files": "Select Files",
+          "select_multiple_files": "Select Multiple Files",
+          "drop_files_here": "Drop files here",
+          "drop_multiple_files": "Drop multiple files here",
+          "remove_file": "Remove File",
+          "show_fewer": "Show Fewer",
+          "show_more": "Show More",
+          "error_icon": "Error"
+        },
+        "creation_process": {
+          "starting": "🚀 Starting knowledge base creation...",
+          "preparing_files": "📁 Preparing file upload...",
+          "uploading_to_cloud": "📤 Uploading files to cloud storage...",
+          "upload_complete": "✅ File upload complete",
+          "creating_kb": "🤖 Creating knowledge base...",
+          "processing_kb": "⏳ Processing knowledge base...",
+          "kb_complete": "✅ Knowledge base creation complete!",
+          "kb_failed": "❌ Knowledge base creation failed",
+          "preparing_upload": "Preparing to upload {count} files",
+          "uploading_file": "Uploading file {current}/{total}: {filename}",
+          "all_files_uploaded": "All files uploaded successfully",
+          "calling_api": "Calling knowledge base creation API...",
+          "request_submitted": "Knowledge base creation request submitted, task ID: {jobId}",
+          "checking_status": "Checking processing status... (attempt {attempt})",
+          "current_status": "Current status: {status}",
+          "processing_complete": "✅ Document processing complete",
+          "processing_failed": "Document processing failed",
+          "processing_timeout": "Processing timeout, please check knowledge base status later",
+          "status_check_error": "Status check error: {error}",
+          "creation_failed_error": "❌ Creation failed: {error}",
+          "cancel_creation": "Cancel Creation",
+          "confirm_cancel": "Are you sure you want to cancel creation?"
+        },
+        "progress": {
+          "waiting": "Waiting to start...",
+          "preparing": "Preparing...",
+          "creating": "Creating knowledge base",
+          "please_wait": "This may take a few minutes, please be patient...",
+          "completed_percentage": "{progress}% complete",
+          "creation_logs": "Creation Logs"
+        },
+        "kb_status": {
+          "kb_id": "Knowledge Base ID",
+          "status": "Status",
+          "file_count": "File Count",
+          "files_count": "{count} files",
+          "ready": "Ready",
+          "processing": "Processing",
+          "failed": "Failed",
+          "unknown": "Unknown"
+        },
+        "upload_section": {
+          "upload_new_files": "Upload New Files",
+          "upload_files": "Upload Files",
+          "uploading": "Uploading...",
+          "upload_progress": "{progress}% complete",
+          "uploading_files": "Uploading files..."
+        },
+        "files_table": {
+          "uploaded_files": "Uploaded Files",
+          "filename": "File Name",
+          "size": "Size",
+          "upload_time": "Upload Time",
+          "actions": "Actions",
+          "unknown_size": "Unknown",
+          "unknown_time": "Unknown",
+          "no_files": "No files",
+          "upload_materials": "Upload course materials to start using knowledge base features"
+        },
+        "ingestion_jobs": {
+          "document_processing_status": "Document Processing Status",
+          "job_id": "Job ID"
         }
       }
     },

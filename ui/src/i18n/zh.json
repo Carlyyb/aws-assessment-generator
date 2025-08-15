@@ -333,6 +333,96 @@
         "errors": {
           "upload_failed": "文件上传失败",
           "delete_failed": "文件删除失败",
+          "create_failed": "知识库创建失败",
+          "load_failed": "加载失败"
+        },
+        "modal": {
+          "close": "关闭",
+          "cancel": "取消",
+          "confirm_delete": "确认删除",
+          "delete_file_warning": "确定要删除文件 \"{filename}\" 吗？此操作不可撤销。"
+        },
+        "alerts": {
+          "not_created": "知识库未创建",
+          "select_files_first": "请先选择要上传的文件",
+          "upload_new_docs_processing": "正在处理新上传的文档，这可能需要几分钟时间",
+          "create_kb_description": "该课程还没有关联的知识库。请选择课程材料文件，然后点击\"创建知识库\"按钮。"
+        },
+        "file_selection": {
+          "select_course_files": "选择课程文件",
+          "supported_formats_description": "支持PDF、DOC、DOCX、TXT、MD等格式的课程材料",
+          "select_files": "选择文件",
+          "select_multiple_files": "选择多个文件",
+          "drop_files_here": "拖拽文件到此处",
+          "drop_multiple_files": "拖拽多个文件到此处",
+          "remove_file": "删除文件",
+          "show_fewer": "显示更少",
+          "show_more": "显示更多",
+          "error_icon": "错误"
+        },
+        "creation_process": {
+          "starting": "🚀 开始创建知识库...",
+          "preparing_files": "📁 准备上传文件...",
+          "uploading_to_cloud": "📤 正在上传文件到云存储...",
+          "upload_complete": "✅ 文件上传完成",
+          "creating_kb": "🤖 正在创建知识库...",
+          "processing_kb": "⏳ 正在处理知识库...",
+          "kb_complete": "✅ 知识库创建完成！",
+          "kb_failed": "❌ 知识库创建失败",
+          "preparing_upload": "准备上传 {count} 个文件",
+          "uploading_file": "上传文件 {current}/{total}: {filename}",
+          "all_files_uploaded": "所有文件上传成功",
+          "calling_api": "调用知识库创建API...",
+          "request_submitted": "知识库创建请求已提交，任务ID: {jobId}",
+          "checking_status": "检查处理状态... (第 {attempt} 次)",
+          "current_status": "当前状态: {status}",
+          "processing_complete": "✅ 文档处理完成",
+          "processing_failed": "文档处理失败",
+          "processing_timeout": "处理超时，请稍后检查知识库状态",
+          "status_check_error": "状态检查出错: {error}",
+          "creation_failed_error": "❌ 创建失败: {error}",
+          "cancel_creation": "取消创建",
+          "confirm_cancel": "确定要取消创建吗？"
+        },
+        "progress": {
+          "waiting": "等待开始...",
+          "preparing": "准备中...",
+          "creating": "正在创建知识库",
+          "please_wait": "这可能需要几分钟时间，请耐心等待...",
+          "completed_percentage": "{progress}% 完成",
+          "creation_logs": "创建日志"
+        },
+        "kb_status": {
+          "kb_id": "知识库ID",
+          "status": "状态",
+          "file_count": "文件数量",
+          "files_count": "{count} 个文件",
+          "ready": "就绪",
+          "processing": "处理中",
+          "failed": "失败",
+          "unknown": "未知"
+        },
+        "upload_section": {
+          "upload_new_files": "上传新文件",
+          "upload_files": "上传文件",
+          "uploading": "上传中...",
+          "upload_progress": "{progress}% 完成",
+          "uploading_files": "正在上传文件..."
+        },
+        "files_table": {
+          "uploaded_files": "已上传文件",
+          "filename": "文件名",
+          "size": "大小",
+          "upload_time": "上传时间",
+          "actions": "操作",
+          "unknown_size": "Unknown",
+          "unknown_time": "未知",
+          "no_files": "暂无文件",
+          "upload_materials": "上传课程材料以开始使用知识库功能"
+        },
+        "ingestion_jobs": {
+          "document_processing_status": "文档处理状态",
+          "job_id": "任务ID",
           "status_check_failed": "状态检查失败",
           "creation_failed": "知识库创建失败",
           "network_error": "网络错误，请重试"
