@@ -15,27 +15,35 @@ export default () => {
   const [templates, setTemplates] = useState<AssessTemplate[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  useEffect(() => {
-    client
-      .graphql<any>({ query: listAssessTemplates })
-      .then(({ data, errors }) => {
-        if (errors && errors.length > 0) {
-          console.warn('GraphQL errors:', errors);
-          // 即使有错误，也尝试使用可用的数据
-          const validTemplates = (data?.listAssessTemplates || []).filter((template: AssessTemplate) => {
-            // 过滤掉无效的模板记录
-            return template && template.id;
-          });
-          setTemplates(validTemplates);
+useEffect(() => {
+  client
+    .graphql<any>({ query: listAssessTemplates })
+    .then(({ data, errors }) => {
+      if (errors && errors.length > 0) {
+        console.warn('GraphQL errors:', errors);
+        // 即使有错误，也尝试使用可用的数据
+        const validTemplates = (data?.listAssessTemplates || []).filter((template: AssessTemplate) => {
+          // 检查是否存在 docLang 并且是否是有效的枚举值
+          const validDocLang = template.docLang === 'zh' || template.docLang === 'en'; // 这里假设合法的枚举值只有 'zh' 和 null
+          return template && template.id && validDocLang;
+        });
+
+        if (validTemplates.length === 0) {
+          // 如果没有有效数据，可能需要显示一个提示
           dispatchAlert({ 
             type: 'warning', 
             content: getText('teachers.settings.templates.data_warning')
           });
-        } else {
-          setTemplates(data.listAssessTemplates || []);
         }
-      });
-  }, [showCreateModal]);
+
+        setTemplates(validTemplates);
+      } else {
+        // 如果没有错误，直接设置数据
+        setTemplates(data?.listAssessTemplates || []);
+      }
+    });
+}, [showCreateModal]);
+
 
   return (
     <ContentLayout>
