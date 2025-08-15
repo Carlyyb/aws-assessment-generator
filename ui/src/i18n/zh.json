@@ -202,10 +202,12 @@
         "create_new": "创建新模板",
         "create_success": "模板创建成功",
         "validation_error": "请填写所有必需字段",
+        "validation_questions_sum_error": "总问题数应该等于三种难度问题数之和",
         "id": "编号",
         "lang": "语言",
         "type": "类型",
         "taxonomy": "分类法",
+        "data_warning": "无有效数据",
         "difficulty": {
           "easy": "简单",
           "medium": "中等",

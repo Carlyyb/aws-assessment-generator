@@ -202,10 +202,12 @@
         "create_new": "Create New Template",
         "create_success": "Template created successfully",
         "validation_error": "Please fill in all required fields",
+        "validation_questions_sum_error": "Total questions should equal the sum of easy, medium, and hard questions",
         "id": "Id",
         "lang": "Language",
         "type": "Type",
         "taxonomy": "Taxonomy",
+        "data_warning": "No valid data",
         "difficulty": {
           "easy": "Easy",
           "medium": "Medium",

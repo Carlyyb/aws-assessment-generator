@@ -70,7 +70,7 @@ type AssessTemplate {
 }
 
 input AssessTemplateInput {
-  name: String
+  name: String!
   docLang: Lang!
   assessType: AssessType!
   taxonomy: Taxonomy!
@@ -257,6 +257,9 @@ type Query {
   getKnowledgeBase(courseId: ID): KnowledgeBase
   getIngestionJob(input: IngestionJobInput): IngestionJob
   
+  # 管理员权限查询
+  checkAdminPermissions: AdminPermissionResult
+  
   # 日志系统查询
   queryLogs(input: LogQueryInput): LogQueryResult
 }
@@ -422,4 +425,21 @@ type HourlyStats {
   errorCount: Int!
   avgDuration: Float!
   peakMemory: Float!
+}
+
+# 管理员权限结果
+type AdminPermissionResult {
+  userId: String!
+  email: String!
+  group: String!
+  isAdmin: Boolean!
+  adminLevel: String
+  permissions: AdminPermissions!
+}
+
+# 管理员权限详情
+type AdminPermissions {
+  canAccessLogManagement: Boolean!
+  canManageUsers: Boolean!
+  canManageSystem: Boolean!
 }
