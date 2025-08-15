@@ -11,7 +11,6 @@ import { setCurrentLang, getText } from '../i18n/lang';
 import { ThemeSettings } from '../components/ThemeSettings';
 
 const client = generateClient();
-
 const langs = Object.values(Lang).map(optionise);
 
 export default () => {
@@ -35,7 +34,6 @@ export default () => {
 
   interface GraphQLError {
     message: string;
-    // 其他可能的错误字段
   }
 
   const handleLanguageSubmit = (e: React.FormEvent) => {
@@ -98,13 +96,14 @@ export default () => {
                         formAction="none" 
                         variant="link" 
                         ariaLabel={getText('common.actions.cancel')}
-                        >
+                        onClick={() => setActiveTabId('general')}  // 添加取消按钮的行为
+                      >
                         {getText('common.actions.cancel')}
                       </Button>
                       <Button 
                         variant="primary" 
                         ariaLabel={getText('common.actions.submit')}
-                        >
+                      >
                         {getText('common.actions.submit')}
                       </Button>
                     </SpaceBetween>
