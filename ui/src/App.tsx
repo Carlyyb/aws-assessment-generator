@@ -42,16 +42,27 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
 
   const dispatchAlert = (newAlert: FlashbarProps.MessageDefinition) => {
     const id = Date.now().toString();
-    setAlerts([
-      ...alerts,
-      {
-        content: newAlert.type === AlertType.SUCCESS ? getText('common.status.success') : getText('common.status.failed'),
-        ...newAlert,
-        id,
-        dismissible: true,
-        onDismiss: () => setAlerts((alerts) => alerts.filter((currentAlert) => currentAlert.id !== id)),
-      },
-    ]);
+    
+    // 创建新的 alert 对象
+    const alert: FlashbarProps.MessageDefinition = {
+      content: newAlert.type === AlertType.SUCCESS ? getText('common.status.success') : getText('common.status.failed'),
+      ...newAlert,
+      id,
+      dismissible: true,
+      onDismiss: () => setAlerts((currentAlerts: FlashbarProps.MessageDefinition[]) => 
+        currentAlerts.filter((alert: FlashbarProps.MessageDefinition) => alert.id !== id)
+      ),
+    };
+
+    // 添加新的 alert
+    setAlerts((currentAlerts: FlashbarProps.MessageDefinition[]) => [...currentAlerts, alert]);
+
+    // 30 秒后自动移除
+    setTimeout(() => {
+      setAlerts((currentAlerts: FlashbarProps.MessageDefinition[]) => 
+        currentAlerts.filter((alert: FlashbarProps.MessageDefinition) => alert.id !== id)
+      );
+    }, 30000);
   };
 
   const routes = (routesList as any)[userProfile.group];
