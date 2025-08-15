@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { Table, Header, SpaceBetween, Container, ContentLayout, Box, Pagination, Button, Modal } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
 import { listAssessTemplates } from '../graphql/queries';
+import { deleteAssessTemplate } from '../graphql/mutations';
 import { AssessTemplate } from '../graphql/API';
 import { getAssessTypeText, getTaxonomyText } from '../utils/enumTranslations';
 import { DispatchAlertContext } from '../contexts/alerts';
@@ -14,41 +15,154 @@ export default () => {
   const dispatchAlert = useContext(DispatchAlertContext);
   const [templates, setTemplates] = useState<AssessTemplate[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<AssessTemplate[]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<'single' | 'multiple'>('single');
+  const [templateToDelete, setTemplateToDelete] = useState<AssessTemplate | null>(null);
 
-useEffect(() => {
-  client
-    .graphql<any>({ query: listAssessTemplates })
-    .then(({ data, errors }) => {
-      if (errors && errors.length > 0) {
-        console.warn('GraphQL errors:', errors);
-        // 即使有错误，也尝试使用可用的数据
-        const validTemplates = (data?.listAssessTemplates || []).filter((template: AssessTemplate) => {
-          // 检查是否存在 docLang 并且是否是有效的枚举值
-          const validDocLang = template.docLang === 'zh' || template.docLang === 'en'; // 这里假设合法的枚举值只有 'zh' 和 null
-          return template && template.id && validDocLang;
+  // 加载模板列表
+  const loadTemplates = () => {
+    client
+      .graphql<any>({ query: listAssessTemplates })
+      .then(({ data, errors }) => {
+        if (errors && errors.length > 0) {
+          console.warn('GraphQL errors:', errors);
+          const validTemplates = (data?.listAssessTemplates || []).filter((template: AssessTemplate) => {
+            const validDocLang = template.docLang === 'zh' || template.docLang === 'en';
+            return template && template.id && validDocLang;
+          });
+
+          if (validTemplates.length === 0) {
+            dispatchAlert({ 
+              type: 'warning', 
+              content: getText('teachers.settings.templates.data_warning')
+            });
+          }
+
+          setTemplates(validTemplates);
+        } else {
+          setTemplates(data?.listAssessTemplates || []);
+        }
+      });
+  };
+
+  // 删除单个模板
+  const handleDeleteSingle = async (template: AssessTemplate) => {
+    setTemplateToDelete(template);
+    setDeleteTarget('single');
+    setShowDeleteModal(true);
+  };
+
+  // 删除多个模板
+  const handleDeleteMultiple = () => {
+    if (selectedItems.length === 0) {
+      dispatchAlert({
+        type: 'warning',
+        content: getText('teachers.settings.templates.no_templates_selected')
+      });
+      return;
+    }
+    setDeleteTarget('multiple');
+    setShowDeleteModal(true);
+  };
+
+  // 确认删除
+  const confirmDelete = async () => {
+    setIsDeleting(true);
+    
+    try {
+      if (deleteTarget === 'single' && templateToDelete) {
+        // 删除单个模板
+        await client.graphql({
+          query: deleteAssessTemplate,
+          variables: { id: templateToDelete.id }
         });
-
-        if (validTemplates.length === 0) {
-          // 如果没有有效数据，可能需要显示一个提示
-          dispatchAlert({ 
-            type: 'warning', 
-            content: getText('teachers.settings.templates.data_warning')
+        
+        dispatchAlert({
+          type: 'success',
+          content: getText('teachers.settings.templates.delete_success')
+        });
+        
+      } else if (deleteTarget === 'multiple') {
+        // 批量删除模板 - 逐个删除
+        const deletePromises = selectedItems.map(item => 
+          client.graphql({
+            query: deleteAssessTemplate,
+            variables: { id: item.id }
+          })
+        );
+        
+        const results = await Promise.allSettled(deletePromises);
+        const successCount = results.filter(r => r.status === 'fulfilled').length;
+        const failedCount = results.filter(r => r.status === 'rejected').length;
+        
+        if (failedCount === 0) {
+          dispatchAlert({
+            type: 'success',
+            content: getText('teachers.settings.templates.delete_success')
+          });
+        } else {
+          dispatchAlert({
+            type: 'warning',
+            content: getText('teachers.settings.templates.delete_partial_success')
+              .replace('{deletedCount}', successCount.toString())
+              .replace('{failedCount}', failedCount.toString())
           });
         }
-
-        setTemplates(validTemplates);
-      } else {
-        // 如果没有错误，直接设置数据
-        setTemplates(data?.listAssessTemplates || []);
+        
+        setSelectedItems([]);
       }
-    });
+      
+      // 重新加载列表
+      loadTemplates();
+      
+    } catch (error) {
+      console.error('Delete error:', error);
+      dispatchAlert({
+        type: 'error',
+        content: getText('teachers.settings.templates.delete_error')
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+      setTemplateToDelete(null);
+    }
+  };
+
+useEffect(() => {
+  loadTemplates();
 }, [showCreateModal]);
 
 
   return (
     <ContentLayout>
-  <Modal header={getText('teachers.settings.templates.create_new')} visible={showCreateModal} onDismiss={() => setShowCreateModal(false)}>
+      <Modal header={getText('teachers.settings.templates.create_new')} visible={showCreateModal} onDismiss={() => setShowCreateModal(false)}>
         <CreateTemplate onSubmit={() => setShowCreateModal(false)} onCancel={() => setShowCreateModal(false)} />
+      </Modal>
+      
+      <Modal
+        header={getText('teachers.settings.templates.delete_confirm')}
+        visible={showDeleteModal}
+        onDismiss={() => setShowDeleteModal(false)}
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button variant="link" onClick={() => setShowDeleteModal(false)}>
+                {getText('common.cancel')}
+              </Button>
+              <Button variant="primary" loading={isDeleting} onClick={confirmDelete}>
+                {getText('common.delete')}
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        {deleteTarget === 'single' && templateToDelete ? (
+          <p>{getText('teachers.settings.templates.delete_confirm_single')}</p>
+        ) : (
+          <p>{getText('teachers.settings.templates.delete_confirm_multiple').replace('{count}', selectedItems.length.toString())}</p>
+        )}
       </Modal>
       <Container
         header={
@@ -58,11 +172,28 @@ useEffect(() => {
         }
       >
         <Table
+          selectionType="multi"
+          selectedItems={selectedItems}
+          onSelectionChange={({ detail }) => setSelectedItems(detail.selectedItems)}
           header={
-            <Header>
-              <Button iconName="add-plus" onClick={() => setShowCreateModal(true)}>
-                {getText('teachers.settings.templates.create_new')}
-              </Button>
+            <Header
+              counter={selectedItems.length > 0 ? `(${selectedItems.length})` : undefined}
+              actions={
+                <SpaceBetween direction="horizontal" size="xs">
+                  <Button 
+                    iconName="remove" 
+                    disabled={selectedItems.length === 0}
+                    onClick={handleDeleteMultiple}
+                  >
+                    {getText('teachers.settings.templates.delete_selected')}
+                  </Button>
+                  <Button iconName="add-plus" onClick={() => setShowCreateModal(true)}>
+                    {getText('teachers.settings.templates.create_new')}
+                  </Button>
+                </SpaceBetween>
+              }
+            >
+              {getText('teachers.settings.templates.title')}
             </Header>
           }
           columnDefinitions={[
@@ -116,6 +247,18 @@ useEffect(() => {
               header: getText('teachers.settings.templates.created_at'),
               cell: (item) => item.createdAt,
             },
+            {
+              id: 'actions',
+              header: getText('teachers.settings.templates.actions'),
+              cell: (item) => (
+                <Button
+                  iconName="remove"
+                  variant="icon"
+                  onClick={() => handleDeleteSingle(item)}
+                  ariaLabel={getText('teachers.settings.templates.delete_template')}
+                />
+              ),
+            },
           ]}
           columnDisplay={[
             { id: 'name', visible: true },
@@ -127,6 +270,7 @@ useEffect(() => {
             { id: 'mediumQuestions', visible: true },
             { id: 'hardQuestions', visible: true },
             { id: 'createdAt', visible: true },
+            { id: 'actions', visible: true },
           ]}
           items={templates}
           loadingText={getText('common.status.loading')}

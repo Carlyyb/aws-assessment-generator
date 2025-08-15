@@ -41,6 +41,11 @@ export const createAssessTemplate = /* GraphQL */ `
     }
   }
 `;
+export const deleteAssessTemplate = /* GraphQL */ `
+  mutation DeleteAssessTemplate($id: ID!) {
+    deleteAssessTemplate(id: $id)
+  }
+`;
 export const upsertAssessment = /* GraphQL */ `
   mutation UpsertAssessment($input: AssessmentInput) {
     upsertAssessment(input: $input) {
