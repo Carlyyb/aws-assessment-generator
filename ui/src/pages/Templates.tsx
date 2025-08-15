@@ -4,7 +4,7 @@ import { generateClient } from 'aws-amplify/api';
 import { listAssessTemplates } from '../graphql/queries';
 import { AssessTemplate } from '../graphql/API';
 import { getAssessTypeText, getTaxonomyText } from '../utils/enumTranslations';
-import { DispatchAlertContext, AlertType } from '../contexts/alerts';
+import { DispatchAlertContext } from '../contexts/alerts';
 import CreateTemplate from '../components/CreateTemplate';
 import { getText } from '../i18n/lang';
 
@@ -34,10 +34,6 @@ export default () => {
         } else {
           setTemplates(data.listAssessTemplates || []);
         }
-      })
-      .catch((error) => {
-        console.error('Error fetching templates:', error);
-        dispatchAlert({ type: AlertType.ERROR });
       });
   }, [showCreateModal]);
 
