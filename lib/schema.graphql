@@ -15,6 +15,8 @@ enum Taxonomy {
 enum AssessType {
   multiChoiceAssessment
   freeTextAssessment
+  trueFalseAssessment
+  singleChoiceAssessment
 }
 
 enum AssessStatus {
@@ -108,7 +110,39 @@ type MultiChoice {
   explanation: String!
 }
 
+type TrueFalse {
+  title: String!
+  question: String!
+  answerChoices: [String!]!
+  correctAnswer: String!
+  explanation: String!
+}
+
+type SingleChoice {
+  title: String!
+  question: String!
+  answerChoices: [String!]!
+  correctAnswer: Int!
+  explanation: String!
+}
+
 input MultiChoiceInput {
+  title: String!
+  question: String!
+  answerChoices: [String]
+  correctAnswer: Int
+  explanation: String!
+}
+
+input TrueFalseInput {
+  title: String!
+  question: String!
+  answerChoices: [String]
+  correctAnswer: String
+  explanation: String!
+}
+
+input SingleChoiceInput {
   title: String!
   question: String!
   answerChoices: [String]
@@ -126,6 +160,8 @@ type Assessment {
   assessType: AssessType!
   multiChoiceAssessment: [MultiChoice!]
   freeTextAssessment: [FreeText!]
+  trueFalseAssessment: [TrueFalse!]
+  singleChoiceAssessment: [SingleChoice!]
   published: Boolean!
   status: AssessStatus!
   course: Course
@@ -140,6 +176,8 @@ input AssessmentInput {
   assessType: AssessType!
   multiChoiceAssessment: [MultiChoiceInput]
   freeTextAssessment: [FreeTextInput]
+  trueFalseAssessment: [TrueFalseInput]
+  singleChoiceAssessment: [SingleChoiceInput]
   published: Boolean
   status: AssessStatus!
 }

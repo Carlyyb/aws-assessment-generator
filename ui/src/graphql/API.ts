@@ -2,6 +2,8 @@
 /* eslint-disable */
 //  This file was automatically generated and should not be edited.
 
+//CHANGELOG 2025-08-15 by 邱语堂:直接新增了单选/判断题型的定义，兼容新题型。具体改动：第22-23，108-125行
+
 export type UpsertSettingsInput = {
   uiLang: Lang,
   docLang: Lang,
@@ -17,6 +19,8 @@ export enum Lang {
 export enum AssessType {
   multiChoiceAssessment = "multiChoiceAssessment",
   freeTextAssessment = "freeTextAssessment",
+  trueFalseAssessment = "trueFalseAssessment",
+  singleChoiceAssessment = "singleChoiceAssessment",
 }
 
 
@@ -84,6 +88,8 @@ export type AssessmentInput = {
   assessType: AssessType,
   multiChoiceAssessment?: Array< MultiChoiceInput | null > | null,
   freeTextAssessment?: Array< FreeTextInput | null > | null,
+  trueFalseAssessment?: Array< TrueFalseInput | null > | null,
+  singleChoiceAssessment?: Array< SingleChoiceInput | null > | null,
   published?: boolean | null,
   status: AssessStatus,
 };
@@ -100,6 +106,40 @@ export type FreeTextInput = {
   title: string,
   question: string,
   rubric: Array< RubricInput >,
+};
+
+export type TrueFalseInput = {
+  title: string,
+  question: string,
+  answerChoices?: Array< string | null > | null,
+  correctAnswer?: string | null,
+  explanation: string,
+};
+
+export type SingleChoiceInput = {
+  title: string,
+  question: string,
+  answerChoices?: Array< string | null > | null,
+  correctAnswer?: number | null,
+  explanation: string,
+};
+
+export type TrueFalse = {
+  __typename: "TrueFalse",
+  title: string,
+  question: string,
+  answerChoices: Array<string>, // ["True", "False"]
+  correctAnswer: string,        // "True" 或 "False"
+  explanation: string,
+};
+
+export type SingleChoice = {
+  __typename: "SingleChoice",
+  title: string,
+  question: string,
+  answerChoices: Array<string>, // 选项数组
+  correctAnswer: number,        // 正确选项的序号
+  explanation: string,
 };
 
 export type RubricInput = {
@@ -126,6 +166,8 @@ export type Assessment = {
   assessType: AssessType,
   multiChoiceAssessment?:  Array<MultiChoice > | null,
   freeTextAssessment?:  Array<FreeText > | null,
+  trueFalseAssessment?:  Array<TrueFalse > | null,
+  singleChoiceAssessment?:  Array<SingleChoice > | null,
   published: boolean,
   status: AssessStatus,
   course?: Course | null,
@@ -290,6 +332,22 @@ export type UpsertAssessmentMutation = {
         point: string,
       } >,
     } > | null,
+    trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+    } > | null,
+    singleChoiceAssessment?:  Array< {
+      __typename: "SingleChoice",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: number,
+      explanation: string,
+    } > | null,
     published: boolean,
     status: AssessStatus,
     course?:  {
@@ -418,6 +476,14 @@ export type CreateKnowledgeBaseMutation = {
     dataSourceId: string,
     status: string,
   } | null,
+};
+
+export type DeleteCourseMutationVariables = {
+  id: string,
+};
+
+export type DeleteCourseMutation = {
+  deleteCourse?: boolean | null,
 };
 
 export type GetSettingsQuery = {
