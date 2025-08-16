@@ -38,6 +38,8 @@ type Course {
   id: ID!
   name: String
   description: String
+  createdBy: String
+  createdAt: AWSDateTime
 }
 
 input CourseInput {
@@ -62,6 +64,7 @@ type AssessTemplate {
   easyQuestions: Int
   mediumQuestions: Int
   hardQuestions: Int
+  createdBy: String
   createdAt: AWSDateTime
 }
 
@@ -161,6 +164,7 @@ type Assessment {
   published: Boolean!
   status: AssessStatus!
   course: Course
+  createdBy: String
 }
 
 input AssessmentInput {
@@ -234,6 +238,7 @@ type Mutation {
   createAssessTemplate(input: AssessTemplateInput): AssessTemplate
   deleteAssessTemplate(id: ID!, userId: ID!): Boolean
   upsertAssessment(input: AssessmentInput): Assessment
+  deleteAssessment(id: ID!): Boolean
   upsertStudentAssessment(input: StudentAssessmentInput): StudentAssessment
   gradeStudentAssessment(input: StudentAssessmentInput): StudentAssessment
   createKnowledgeBase(courseId: ID, locations: [String]): IngestionJob
@@ -250,6 +255,7 @@ type Query {
   listStudentAssessments: [StudentAssessment]
   listMyStudentAssessments(studentId: ID!): [StudentAssessment]
   publishAssessment(assessmentId: ID!): Boolean
+  unpublishAssessment(assessmentId: ID!): Boolean
   generateAssessment(input: GenerateAssessmentInput): ID
   getKnowledgeBase(courseId: ID): KnowledgeBase
   getIngestionJob(input: IngestionJobInput): IngestionJob

@@ -175,3 +175,15 @@ export const createKnowledgeBase = /* GraphQL */ `
     }
   }
 `;
+
+export const deleteAssessment = /* GraphQL */ `
+  mutation DeleteAssessment($id: ID!) {
+    deleteAssessment(id: $id)
+  }
+`;
+
+export const unpublishAssessment = /* GraphQL */ `
+  mutation UnpublishAssessment($assessmentId: ID!) {
+    unpublishAssessment(assessmentId: $assessmentId)
+  }
+`;

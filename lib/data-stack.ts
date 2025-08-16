@@ -367,6 +367,41 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    /////////// Unpublish Assessment
+
+    const unpublishFn = new aws_lambda_nodejs.NodejsFunction(this, 'UnpublishFn', {
+      entry: 'lib/lambdas/unpublishAssessment.ts',
+      runtime: Runtime.NODEJS_20_X,
+      environment: {
+        region: this.region,
+        assessmentsTable: assessmentsTable.tableName,
+        studentAssessmentsTable: studentAssessmentsTable.tableName,
+      },
+      bundling: {
+        minify: true,
+        externalModules: ['@aws-sdk/client-dynamodb'],
+      },
+    });
+    assessmentsTable.grantReadWriteData(unpublishFn);
+    studentAssessmentsTable.grantReadWriteData(unpublishFn);
+    const unpublishAssessmentDs = api.addLambdaDataSource('UnpublishAssessmentDataSource', unpublishFn);
+
+    unpublishAssessmentDs.createResolver('UnpublishAssessmentResolver', {
+      typeName: 'Mutation',
+      fieldName: 'unpublishAssessment',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/unpublishAssessment.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    /////////// Delete Assessment
+
+    assessmentsDs.createResolver('DeleteAssessmentResolver', {
+      typeName: 'Mutation',
+      fieldName: 'deleteAssessment',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteAssessment.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     /////////// Create KnowledgeBase
     const createKnowledgeBaseDs = api.addLambdaDataSource('CreateKnowledgeBaseDs', documentProcessorLambda);
 

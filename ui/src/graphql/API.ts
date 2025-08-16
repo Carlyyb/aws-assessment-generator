@@ -917,3 +917,19 @@ export type GetIngestionJobQuery = {
     status: string,
   } | null,
 };
+
+export type DeleteAssessmentMutationVariables = {
+  id: string,
+};
+
+export type DeleteAssessmentMutation = {
+  deleteAssessment?: boolean | null,
+};
+
+export type UnpublishAssessmentMutationVariables = {
+  assessmentId: string,
+};
+
+export type UnpublishAssessmentMutation = {
+  unpublishAssessment?: boolean | null,
+};
