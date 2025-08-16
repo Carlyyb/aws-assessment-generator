@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { logger } from '../../../../rag-pipeline/lambdas/event-handler/utils/pt';
-import { Assessment, AssessStatus, GenerateAssessmentInput, MultiChoice, FreeText, AssessType } from '../../../../../ui/src/graphql/API';
+import { Assessment, AssessStatus, GenerateAssessmentInput, MultiChoice, FreeText, AssessType, TrueFalse, SingleChoice } from '../../../../../ui/src/graphql/API';
 import { AssessmentTemplate } from '../models/assessmentTemplate';
 
 const ASSESSMENT_TABLE = process.env.ASSESSMENTS_TABLE;
@@ -20,9 +20,27 @@ export class DataService {
     this.docClient = DynamoDBDocumentClient.from(client);
   }
 
-  async updateAssessment(improvedQuestions: MultiChoice[] | FreeText[], userId: string, assessmentId: string) {
+  async updateAssessment(improvedQuestions: MultiChoice[] | FreeText[] | TrueFalse[] | SingleChoice[], userId: string, assessmentId: string) {
     const currentAssessment = await this.getExistingAssessment(userId, assessmentId);
-    currentAssessment[currentAssessment.assessType] = improvedQuestions;
+    
+    // 根据评估类型安全地分配问题数组
+    switch (currentAssessment.assessType) {
+      case 'multiChoiceAssessment':
+        currentAssessment.multiChoiceAssessment = improvedQuestions as MultiChoice[];
+        break;
+      case 'freeTextAssessment':
+        currentAssessment.freeTextAssessment = improvedQuestions as FreeText[];
+        break;
+      case 'trueFalseAssessment':
+        currentAssessment.trueFalseAssessment = improvedQuestions as TrueFalse[];
+        break;
+      case 'singleChoiceAssessment':
+        currentAssessment.singleChoiceAssessment = improvedQuestions as SingleChoice[];
+        break;
+      default:
+        throw new Error(`Unsupported assessment type: ${currentAssessment.assessType}`);
+    }
+    
     currentAssessment.status = AssessStatus.CREATED;
     currentAssessment.published = false;
     currentAssessment.updatedAt = new Date().toISOString();

@@ -6,8 +6,6 @@ export const upsertSettings = /* GraphQL */ `
   mutation UpsertSettings($input: UpsertSettingsInput) {
     upsertSettings(input: $input) {
       uiLang
-      docLang
-      assessType
     }
   }
 `;

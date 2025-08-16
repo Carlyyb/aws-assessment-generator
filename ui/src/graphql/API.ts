@@ -261,9 +261,7 @@ export type UpsertSettingsMutationVariables = {
 export type UpsertSettingsMutation = {
   upsertSettings?:  {
     __typename: "Settings",
-    uiLang?: Lang | null,
-    docLang?: Lang | null,
-    assessType?: AssessType | null,
+    uiLang?: Lang,
   } | null,
 };
 
@@ -394,6 +392,22 @@ export type UpsertStudentAssessmentMutation = {
           point: string,
         } >,
       } > | null,
+      trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+      } > | null,
+      singleChoiceAssessment?:  Array< {
+        __typename: "SingleChoice",
+        title: string,
+        question: string,
+        answerChoices: Array< string >,
+        correctAnswer: number,
+        explanation: string,
+      } > | null,
       published: boolean,
       status: AssessStatus,
       course?:  {
@@ -446,6 +460,22 @@ export type GradeStudentAssessmentMutation = {
           point: string,
         } >,
       } > | null,
+      trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+      } > | null,
+      singleChoiceAssessment?:  Array< {
+        __typename: "SingleChoice",
+        title: string,
+        question: string,
+        answerChoices: Array< string >,
+        correctAnswer: number,
+        explanation: string,
+      } > | null,
       published: boolean,
       status: AssessStatus,
       course?:  {
@@ -490,8 +520,6 @@ export type GetSettingsQuery = {
   getSettings?:  {
     __typename: "Settings",
     uiLang?: Lang | null,
-    docLang?: Lang | null,
-    assessType?: AssessType | null,
   } | null,
 };
 
@@ -545,6 +573,22 @@ export type GetAssessmentQuery = {
         point: string,
       } >,
     } > | null,
+    trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+      } > | null,
+    singleChoiceAssessment?:  Array< {
+      __typename: "SingleChoice",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: number,
+      explanation: string,
+    } > | null,
     published: boolean,
     status: AssessStatus,
     course?:  {
@@ -583,6 +627,22 @@ export type ListAssessmentsQuery = {
         weight: number,
         point: string,
       } >,
+    } > | null,
+    trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+    } > | null,
+    singleChoiceAssessment?:  Array< {
+      __typename: "SingleChoice",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: number,
+      explanation: string,
     } > | null,
     published: boolean,
     status: AssessStatus,
@@ -646,6 +706,22 @@ export type GetStudentAssessmentQuery = {
           point: string,
         } >,
       } > | null,
+      trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+    } > | null,
+    singleChoiceAssessment?:  Array< {
+      __typename: "SingleChoice",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: number,
+      explanation: string,
+    } > | null,
       published: boolean,
       status: AssessStatus,
       course?:  {
@@ -694,6 +770,22 @@ export type ListStudentAssessmentsQuery = {
           point: string,
         } >,
       } > | null,
+      trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+    } > | null,
+    singleChoiceAssessment?:  Array< {
+      __typename: "SingleChoice",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: number,
+      explanation: string,
+    } > | null,
       published: boolean,
       status: AssessStatus,
       course?:  {
@@ -746,6 +838,22 @@ export type ListMyStudentAssessmentsQuery = {
           point: string,
         } >,
       } > | null,
+      trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+    } > | null,
+    singleChoiceAssessment?:  Array< {
+      __typename: "SingleChoice",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: number,
+      explanation: string,
+    } > | null,
       published: boolean,
       status: AssessStatus,
       course?:  {

@@ -6,8 +6,6 @@ export const getSettings = /* GraphQL */ `
   query GetSettings {
     getSettings {
       uiLang
-      docLang
-      assessType
     }
   }
 `;

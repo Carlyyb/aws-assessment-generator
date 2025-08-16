@@ -22,7 +22,7 @@ import { logger, tracer } from '../../../rag-pipeline/lambdas/event-handler/util
 import { ReferenceDocuments } from './models/referenceDocuments';
 import { DataService } from './services/dataService';
 import { GenAiService } from './services/genAiService';
-import { GenerateAssessmentInput, GenerateAssessmentQueryVariables } from '../../../../ui/src/graphql/API';
+import { GenerateAssessmentInput, GenerateAssessmentQueryVariables, MultiChoice, FreeText, TrueFalse, SingleChoice } from '../../../../ui/src/graphql/API';
 import { AppSyncIdentityCognito } from 'aws-lambda/trigger/appsync-resolver';
 
 class WrappedAppSyncEvent {
@@ -76,7 +76,11 @@ class Lambda implements LambdaInterface {
     // Refine questions/answers and include relevant documents
     const improvedQuestions = await genAiService.improveQuestions(generatedQuestions, referenceDocuments.assessmentTemplate);
 
-    assessmentId = await this.dataService.updateAssessment(improvedQuestions, userId, assessmentId);
+    assessmentId = await this.dataService.updateAssessment(
+      improvedQuestions as MultiChoice[] | FreeText[] | TrueFalse[] | SingleChoice[], 
+      userId, 
+      assessmentId
+    );
     logger.info(`Assessment generated: ${assessmentId}`);
     return assessmentId;
   }
