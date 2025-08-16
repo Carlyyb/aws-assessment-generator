@@ -450,7 +450,8 @@
       "find": {
         "title": "Find Assessments",
         "updated_at": "Update At",
-        "lecture_date": "Lecture Date"
+        "lecture_date": "Lecture Date",
+        "published_successfully": "Published Successfully"
       },
       "generate": {
         "title": "Generate Assessment",

@@ -3,7 +3,7 @@ import { Wizard, Container, Header, SpaceBetween, Box, Table } from '@cloudscape
 import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
-import { StudentAssessment as RawStudentAssessment, AssessType, MultiChoice } from '../graphql/API';
+import { StudentAssessment as RawStudentAssessment, AssessType, MultiChoice, SingleChoice, TrueFalse } from '../graphql/API';
 import { getStudentAssessment } from '../graphql/queries';
 import { getText, getTextWithParams } from '../i18n/lang';
 
@@ -34,6 +34,23 @@ export default () => {
 
   const assessType = studentAssessment.assessment.assessType;
 
+  const getQuestions = () => {
+    if (!studentAssessment?.assessment || !assessType) return [];
+    
+    switch (assessType) {
+      case AssessType.multiChoiceAssessment:
+        return studentAssessment.assessment.multiChoiceAssessment || [];
+      case AssessType.freeTextAssessment:
+        return studentAssessment.assessment.freeTextAssessment || [];
+      case AssessType.singleChoiceAssessment:
+        return studentAssessment.assessment.singleChoiceAssessment || [];
+      case AssessType.trueFalseAssessment:
+        return studentAssessment.assessment.trueFalseAssessment || [];
+      default:
+        return [];
+    }
+  };
+
   return (
     <Wizard
       onSubmit={() => navigate('/assessments')}
@@ -52,8 +69,7 @@ export default () => {
       }}
       activeStepIndex={activeStepIndex}
       allowSkipTo
-      steps={
-        studentAssessment.assessment[assessType]?.map((assessment) => ({
+      steps={getQuestions().map((assessment) => ({
           title: assessment.title,
           content: (
             <SpaceBetween size="l">
@@ -62,15 +78,35 @@ export default () => {
               </Container>
               <Container header={<Header variant="h2">{getText('teachers.assessments.review.answer')}</Header>}>
                 <SpaceBetween size="l">
-                  {assessType === AssessType.multiChoiceAssessment ? (
-                    (assessment as MultiChoice).answerChoices.map((answerChoice, i) => (
+                  {assessType === AssessType.multiChoiceAssessment || assessType === AssessType.singleChoiceAssessment ? (
+                    (assessment as MultiChoice | SingleChoice).answerChoices.map((answerChoice, i) => (
                       <div
+                        key={i}
                         style={{
                           border:
-                            (assessment as MultiChoice).correctAnswer! - 1 === i
+                            (assessment as MultiChoice | SingleChoice).correctAnswer! - 1 === i
                               ? `3px solid green`
                               : studentAssessment.answers![activeStepIndex] === i + 1 &&
-                                studentAssessment.answers![activeStepIndex] !== (assessment as MultiChoice).correctAnswer
+                                studentAssessment.answers![activeStepIndex] !== (assessment as MultiChoice | SingleChoice).correctAnswer
+                              ? `3px solid red`
+                              : '',
+                        }}
+                      >
+                        <Container>
+                          <Box variant="p">{answerChoice}</Box>
+                        </Container>
+                      </div>
+                    ))
+                  ) : assessType === AssessType.trueFalseAssessment ? (
+                    (assessment as TrueFalse).answerChoices.map((answerChoice, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          border:
+                            (assessment as TrueFalse).correctAnswer === answerChoice
+                              ? `3px solid green`
+                              : studentAssessment.answers![activeStepIndex] === answerChoice &&
+                                studentAssessment.answers![activeStepIndex] !== (assessment as TrueFalse).correctAnswer
                               ? `3px solid red`
                               : '',
                         }}
@@ -110,13 +146,12 @@ export default () => {
                 </>
               ) : (
                 <Container header={<Header variant="h2">{getText('teachers.assessments.review.explanation')}</Header>}>
-                  <Box variant="p">{(assessment as MultiChoice).explanation}</Box>
+                  <Box variant="p">{(assessment as MultiChoice | SingleChoice | TrueFalse).explanation}</Box>
                 </Container>
               )}
             </SpaceBetween>
           ),
-        })) || []
-      }
+        }))}
     />
   );
 };

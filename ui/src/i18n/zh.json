@@ -453,7 +453,8 @@
       "find": {
         "title": "查找测试",
         "updated_at": "更新时间",
-        "lecture_date": "起始日期"
+        "lecture_date": "起始日期",
+        "published_successfully": "发布成功"
       },
       "generate": {
         "title": "生成测试",

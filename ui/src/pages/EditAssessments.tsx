@@ -27,18 +27,65 @@ const reducer: Reducer = (state, actions) => {
     case ActionTypes.Put:
       return content;
     case ActionTypes.Delete: {
-      // @ts-ignore
-      const newQuestions = state[state.assessType]?.toSpliced(stepIndex!, 1);
-      return { ...state, [state.assessType]: newQuestions };
+      let newQuestions: any[] = [];
+      switch (state.assessType) {
+        case AssessType.multiChoiceAssessment:
+          newQuestions = state.multiChoiceAssessment?.filter((_, i) => i !== stepIndex!) || [];
+          return { ...state, multiChoiceAssessment: newQuestions };
+        case AssessType.freeTextAssessment:
+          newQuestions = state.freeTextAssessment?.filter((_, i) => i !== stepIndex!) || [];
+          return { ...state, freeTextAssessment: newQuestions };
+        case AssessType.singleChoiceAssessment:
+          newQuestions = state.singleChoiceAssessment?.filter((_, i) => i !== stepIndex!) || [];
+          return { ...state, singleChoiceAssessment: newQuestions };
+        case AssessType.trueFalseAssessment:
+          newQuestions = state.trueFalseAssessment?.filter((_, i) => i !== stepIndex!) || [];
+          return { ...state, trueFalseAssessment: newQuestions };
+        default:
+          return state;
+      }
     }
     case ActionTypes.Update: {
-      const newQuestions = state[state.assessType]!.map((section, i) => {
-        if (stepIndex !== i) return section;
-        const newSection: any = { ...section };
-        newSection[key!] = content;
-        return newSection;
-      });
-      return { ...state, [state.assessType]: newQuestions };
+      switch (state.assessType) {
+        case AssessType.multiChoiceAssessment: {
+          const newQuestions = state.multiChoiceAssessment?.map((section, i) => {
+            if (stepIndex !== i) return section;
+            const newSection: any = { ...section };
+            newSection[key!] = content;
+            return newSection;
+          }) || [];
+          return { ...state, multiChoiceAssessment: newQuestions };
+        }
+        case AssessType.freeTextAssessment: {
+          const newQuestions = state.freeTextAssessment?.map((section, i) => {
+            if (stepIndex !== i) return section;
+            const newSection: any = { ...section };
+            newSection[key!] = content;
+            return newSection;
+          }) || [];
+          return { ...state, freeTextAssessment: newQuestions };
+        }
+        case AssessType.singleChoiceAssessment: {
+          const newQuestions = state.singleChoiceAssessment?.map((section, i) => {
+            if (stepIndex !== i) return section;
+            const newSection: any = { ...section };
+            newSection[key!] = content;
+            return newSection;
+          }) || [];
+          return { ...state, singleChoiceAssessment: newQuestions };
+        }
+        case AssessType.trueFalseAssessment: {
+          const newQuestions = state.trueFalseAssessment?.map((section, i) => {
+            if (stepIndex !== i) return section;
+            const newSection: any = { ...section };
+            newSection[key!] = content;
+            return newSection;
+          }) || [];
+          return { ...state, trueFalseAssessment: newQuestions };
+        }
+        default:
+          return state;
+      }
     }
     default:
       throw Error('Unknown Action');
@@ -65,8 +112,24 @@ export default () => {
       .catch(() => {});
   }, []);
 
-  const steps =
-    assessment[assessment.assessType]?.map((q) => ({
+  const getQuestions = () => {
+    if (!assessment || !assessment.assessType) return [];
+    
+    switch (assessment.assessType) {
+      case AssessType.multiChoiceAssessment:
+        return assessment.multiChoiceAssessment || [];
+      case AssessType.freeTextAssessment:
+        return assessment.freeTextAssessment || [];
+      case AssessType.singleChoiceAssessment:
+        return assessment.singleChoiceAssessment || [];
+      case AssessType.trueFalseAssessment:
+        return assessment.trueFalseAssessment || [];
+      default:
+        return [];
+    }
+  };
+
+  const steps = getQuestions().map((q) => ({
       title: q.title,
       content:
         assessment.assessType === AssessType.multiChoiceAssessment ? (    // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断
@@ -78,7 +141,7 @@ export default () => {
       ) : assessment.assessType === AssessType.trueFalseAssessment ? (
         <QAView activeStepIndex={activeStepIndex} assessment={q as TrueFalse} updateAssessment={updateAssessment} />
       ) : null,
-    })) || [];
+    }));
 
   return (
     <Wizard

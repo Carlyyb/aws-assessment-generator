@@ -69,6 +69,20 @@ export const upsertAssessment = /* GraphQL */ `
           point
         }
       }
+      singleChoiceAssessment {
+        title
+        question
+        answerChoices
+        correctAnswer
+        explanation
+      }
+      trueFalseAssessment {
+        title
+        question
+        answerChoices
+        correctAnswer
+        explanation
+      }
       published
       status
       course {
@@ -105,6 +119,20 @@ export const upsertStudentAssessment = /* GraphQL */ `
             weight
             point
           }
+        }
+        singleChoiceAssessment {
+          title
+          question
+          answerChoices
+          correctAnswer
+          explanation
+        }
+        trueFalseAssessment {
+          title
+          question
+          answerChoices
+          correctAnswer
+          explanation
         }
         published
         status
@@ -148,6 +176,20 @@ export const gradeStudentAssessment = /* GraphQL */ `
             weight
             point
           }
+        }
+        singleChoiceAssessment {
+          title
+          question
+          answerChoices
+          correctAnswer
+          explanation
+        }
+        trueFalseAssessment {
+          title
+          question
+          answerChoices
+          correctAnswer
+          explanation
         }
         published
         status

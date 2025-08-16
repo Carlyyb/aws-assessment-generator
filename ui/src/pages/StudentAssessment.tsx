@@ -44,7 +44,20 @@ export default () => {
         const result: StudentAssessment = data.getStudentAssessment;
         setAssessmentId(result.parentAssessId);
         setAssessType(result.assessment?.assessType);
-        setQuestions(result.assessment![result.assessment!.assessType]!);
+        
+        // 根据评估类型获取正确的问题数组
+        let questionArray: (MultiChoice | FreeText | TrueFalse | SingleChoice)[] = [];
+        if (result.assessment?.assessType === AssessType.multiChoiceAssessment && result.assessment.multiChoiceAssessment) {
+          questionArray = result.assessment.multiChoiceAssessment;
+        } else if (result.assessment?.assessType === AssessType.freeTextAssessment && result.assessment.freeTextAssessment) {
+          questionArray = result.assessment.freeTextAssessment;
+        } else if (result.assessment?.assessType === AssessType.trueFalseAssessment && result.assessment.trueFalseAssessment) {
+          questionArray = result.assessment.trueFalseAssessment;
+        } else if (result.assessment?.assessType === AssessType.singleChoiceAssessment && result.assessment.singleChoiceAssessment) {
+          questionArray = result.assessment.singleChoiceAssessment;
+        }
+        
+        setQuestions(questionArray);
       })
       .catch(() => {});
   }, []);
@@ -53,7 +66,7 @@ export default () => {
     <>
       <Modal
         visible={score !== undefined}
-        header={getText('pages.student_assessment.your_score')}
+        header={getText('student.assessments.detail.your_score')}
         footer={
           <Box float="right">
             <Button variant="primary" onClick={() => navigate('/assessments')}>
@@ -68,8 +81,8 @@ export default () => {
             hideLegend
             variant="donut"
             data={[
-              { title: getText('students.assessments.correct'), value: score! },
-              { title: getText('students.assessments.incorrect'), value: 100 - score! },
+              { title: getText('assessment.correct'), value: score! },
+              { title: getText('assessment.incorrect'), value: 100 - score! },
             ]}
             innerMetricValue={`${score}%`}
           />
@@ -99,14 +112,14 @@ export default () => {
             .finally(() => setShowSpinner(false));
         }}
         i18nStrings={{
-          stepNumberLabel: (stepNumber) => getTextWithParams('pages.student_assessment.question_number', { number: stepNumber }),
-          collapsedStepsLabel: (stepNumber, stepsCount) => getTextWithParams('pages.student_assessment.question_progress', { current: stepNumber, total: stepsCount }),
-          skipToButtonLabel: (step, _stepNumber) => getTextWithParams('pages.student_assessment.skip_to', { title: step.title }),
+          stepNumberLabel: (stepNumber) => getTextWithParams('student.assessments.detail.question_number', { number: stepNumber }),
+          collapsedStepsLabel: (stepNumber, stepsCount) => getTextWithParams('student.assessments.detail.question_progress', { current: stepNumber, total: stepsCount }),
+          skipToButtonLabel: (step, _stepNumber) => getTextWithParams('student.assessments.detail.skip_to', { title: step.title }),
           cancelButton: getText('common.actions.cancel'),
           previousButton: getText('common.actions.previous'),
           nextButton: getText('common.actions.next'),
           submitButton: getText('common.actions.submit'),
-          optional: getText('common.optional'),
+          optional: getText('common.labels.optional'),
         }}
         onCancel={() => navigate('/assessments')}
         onNavigate={({ detail }) => {
@@ -119,12 +132,12 @@ export default () => {
             title: q.title,
             content: (
               <SpaceBetween size="l">
-                <Container header={<Header variant="h2">{getTextWithParams('pages.student_assessment.question_title', { number: activeStepIndex + 1 })}</Header>}>
+                <Container header={<Header variant="h2">{getTextWithParams('student.assessments.detail.question_title', { number: activeStepIndex + 1 })}</Header>}>
                   <Box variant="p">{q.question}</Box>
                 </Container>
                 <Container header={<Header variant="h2">{getText('assessment.answer')}</Header>}>
                   {assessType === AssessType.freeTextAssessment ? (
-                    <FormField label={getText('pages.student_assessment.provide_answer')}>
+                    <FormField label={getText('student.assessments.detail.provide_answer')}>
                       <Textarea
                         value={answers[activeStepIndex]}
                         onChange={({ detail }) => {
@@ -135,11 +148,11 @@ export default () => {
                       />
                     </FormField>
                   ) : (
-                    <FormField label={getText('pages.student_assessment.choose_answer')}>
+                    <FormField label={getText('student.assessments.detail.choose_answer')}>
                       <Tiles
                         columns={1}
                         value={answers[activeStepIndex]}
-                        items={(q as MultiChoice).answerChoices!.map((answerChoice, i) => ({ label: answerChoice, value: i.toString() }))}
+                        items={(q as MultiChoice | SingleChoice | TrueFalse).answerChoices!.map((answerChoice, i) => ({ label: answerChoice, value: i.toString() }))}
                         onChange={({ detail }) => {
                           const newAnswers = [...answers];
                           newAnswers[activeStepIndex] = detail.value;
@@ -154,7 +167,7 @@ export default () => {
           };
         })}
       />
-      <Modal visible={showSpinner} header={<Header>{getText('pages.student_assessment.grading')}</Header>}>
+      <Modal visible={showSpinner} header={<Header>{getText('student.assessments.detail.grading')}</Header>}>
         <SpaceBetween size="s" alignItems="center">
           <Spinner size="big" />
         </SpaceBetween>
