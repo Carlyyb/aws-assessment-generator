@@ -15,14 +15,36 @@ import {
   ColumnLayout,
   ProgressBar,
   StatusIndicator,
-  Modal
+  Modal,
+  Alert
 } from '@cloudscape-design/components';
 import { useCollection } from '@cloudscape-design/collection-hooks';
 import { generateClient } from 'aws-amplify/api';
+import { UserProfileContext } from '../contexts/userProfile';
+import { useContext } from 'react';
 
 const client = generateClient();
 
-// GraphQL查询
+// GraphQL查询 - 移到queries.ts中并且使用更简单的查询
+const SIMPLE_LOG_QUERY = `
+  query {
+    __typename
+  }
+`;
+
+const CHECK_ADMIN_PERMISSIONS = `
+  query CheckAdminPermissions {
+    checkAdminPermissions {
+      userId
+      email
+      isAdmin
+      permissions {
+        canAccessLogManagement
+      }
+    }
+  }
+`;
+
 const QUERY_LOGS = `
   query QueryLogs($input: LogQueryInput!) {
     queryLogs(input: $input) {
@@ -113,6 +135,19 @@ const QUERY_LOGS = `
   }
 `;
 
+interface DebugInfo {
+  graphqlConnection?: string;
+  adminPermission?: string;
+  adminError?: any;
+  queryResult?: any;
+  error?: any;
+  timestamp?: string;
+  userInfo?: any;
+  hasLogAccess?: boolean;
+  userEmail?: string;
+  isAdmin?: boolean;
+}
+
 interface LogEntry {
   logId: string;
   timestamp: string;
@@ -183,6 +218,7 @@ interface RequestStats {
 }
 
 const LogManagement: React.FC = () => {
+  const userProfile = useContext(UserProfileContext);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [metrics, setMetrics] = useState<SystemMetric[]>([]);
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
@@ -191,6 +227,8 @@ const LogManagement: React.FC = () => {
   const [selectedErrorDetail, setSelectedErrorDetail] = useState<ErrorDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedTab, setSelectedTab] = useState('overview');
+  const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   
   // 过滤器状态
   const [filters, setFilters] = useState({
@@ -236,7 +274,54 @@ const LogManagement: React.FC = () => {
 
   const loadSystemHealth = async () => {
     setLoading(true);
+    setError(null);
     try {
+      console.log('正在加载系统健康状态...');
+      
+      // 首先测试一个简单的查询，看看GraphQL连接是否工作
+      try {
+        const testResult = await client.graphql({
+          query: SIMPLE_LOG_QUERY
+        });
+        console.log('GraphQL连接测试成功:', testResult);
+        
+        // 测试管理员权限
+        try {
+          const adminTest = await client.graphql({
+            query: CHECK_ADMIN_PERMISSIONS
+          });
+          console.log('管理员权限测试成功:', adminTest);
+          
+          // 只检查日志管理权限
+          const adminData = (adminTest as any)?.data?.checkAdminPermissions;
+          const hasLogAccess = adminData?.permissions?.canAccessLogManagement || false;
+          
+          setDebugInfo({ 
+            graphqlConnection: 'success', 
+            adminPermission: hasLogAccess ? 'success' : 'failed',
+            hasLogAccess: hasLogAccess,
+            userEmail: adminData?.email,
+            isAdmin: adminData?.isAdmin,
+            timestamp: new Date().toISOString() 
+          });
+        } catch (adminError) {
+          console.error('管理员权限测试失败:', adminError);
+          setDebugInfo({ 
+            graphqlConnection: 'success', 
+            adminPermission: 'failed',
+            adminError: adminError,
+            timestamp: new Date().toISOString() 
+          });
+        }
+        
+      } catch (testError) {
+        console.error('GraphQL连接测试失败:', testError);
+        setDebugInfo({ graphqlConnection: 'failed', error: testError, timestamp: new Date().toISOString() });
+        setError('GraphQL连接失败，请检查网络连接和权限配置');
+        return;
+      }
+
+      // 尝试调用日志查询
       const result = await client.graphql({
         query: QUERY_LOGS,
         variables: {
@@ -249,6 +334,9 @@ const LogManagement: React.FC = () => {
         }
       });
 
+      console.log('系统健康查询结果:', result);
+      setDebugInfo(prev => ({ ...prev, queryResult: result, timestamp: new Date().toISOString() }));
+
       const response = (result as any).data?.queryLogs;
       if (response && response.__typename === 'SystemHealthResult') {
         setSystemHealth({
@@ -259,17 +347,37 @@ const LogManagement: React.FC = () => {
           topErrors: response.topErrors || [],
           serviceHealth: response.serviceHealth || []
         });
+      } else {
+        console.warn('未收到预期的SystemHealthResult格式:', response);
+        // 设置默认的系统健康数据以显示界面
+        setSystemHealth({
+          totalRequests: 0,
+          errorRate: 0,
+          averageResponseTime: 0,
+          memoryUtilization: 0,
+          topErrors: [],
+          serviceHealth: [
+            { serviceName: 'questions-generator', status: 'UNKNOWN', errorCount: 0, requestCount: 0 },
+            { serviceName: 'rag-pipeline', status: 'UNKNOWN', errorCount: 0, requestCount: 0 }
+          ]
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load system health:', error);
-      // 如果API调用失败，显示默认数据
+      setError(`加载系统健康状态失败: ${error.message || error}`);
+      setDebugInfo(prev => ({ ...prev, error: error, timestamp: new Date().toISOString() }));
+      
+      // 设置默认数据以显示界面
       setSystemHealth({
         totalRequests: 0,
         errorRate: 0,
         averageResponseTime: 0,
         memoryUtilization: 0,
         topErrors: [],
-        serviceHealth: []
+        serviceHealth: [
+          { serviceName: 'questions-generator', status: 'UNKNOWN', errorCount: 0, requestCount: 0 },
+          { serviceName: 'rag-pipeline', status: 'UNKNOWN', errorCount: 0, requestCount: 0 }
+        ]
       });
     } finally {
       setLoading(false);
@@ -278,7 +386,10 @@ const LogManagement: React.FC = () => {
 
   const loadLogs = async () => {
     setLoading(true);
+    setError(null);
     try {
+      console.log('正在加载日志记录...');
+      
       const result = await client.graphql({
         query: QUERY_LOGS,
         variables: {
@@ -295,9 +406,11 @@ const LogManagement: React.FC = () => {
         }
       });
 
+      console.log('日志查询结果:', result);
+
       const response = (result as any).data?.queryLogs;
       if (response && response.__typename === 'LogsResult') {
-        setLogs(response.logs.map((item: any) => ({
+        const logsData = response.logs.map((item: any) => ({
           logId: item.logId,
           timestamp: item.timestamp,
           level: item.level,
@@ -307,12 +420,64 @@ const LogManagement: React.FC = () => {
           duration: item.duration,
           errorType: item.errorType,
           userId: item.userId
-        })));
+        }));
+        
+        setLogs(logsData);
+        console.log(`成功加载 ${logsData.length} 条日志记录`);
+      } else {
+        console.warn('未收到预期的LogsResult格式:', response);
+        
+        // 如果没有真实日志，创建一些示例日志用于测试
+        const sampleLogs: LogEntry[] = [
+          {
+            logId: '1',
+            timestamp: new Date().toISOString(),
+            level: 'INFO',
+            serviceName: 'questions-generator',
+            message: '测试生成请求已提交',
+            requestId: 'test-request-1',
+            duration: 1250
+          },
+          {
+            logId: '2',
+            timestamp: new Date(Date.now() - 300000).toISOString(),
+            level: 'ERROR',
+            serviceName: 'questions-generator',
+            message: 'Bedrock调用失败: 模型配额超出',
+            requestId: 'test-request-2',
+            errorType: 'ModelQuotaExceeded',
+            duration: 5000
+          },
+          {
+            logId: '3',
+            timestamp: new Date(Date.now() - 600000).toISOString(),
+            level: 'WARN',
+            serviceName: 'rag-pipeline',
+            message: '知识库查询响应缓慢',
+            requestId: 'test-request-3',
+            duration: 8000
+          }
+        ];
+        
+        setLogs(sampleLogs);
+        setError('注意：当前显示的是示例日志数据，真实日志API可能未正确配置');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load logs:', error);
-      // 如果API调用失败，显示空数组
-      setLogs([]);
+      setError(`加载日志失败: ${error.message || error}`);
+      
+      // 显示示例日志
+      const errorLogs: LogEntry[] = [
+        {
+          logId: 'error-1',
+          timestamp: new Date().toISOString(),
+          level: 'ERROR',
+          serviceName: 'log-system',
+          message: `日志加载失败: ${error.message || error}`,
+          requestId: 'log-error-1'
+        }
+      ];
+      setLogs(errorLogs);
     } finally {
       setLoading(false);
     }
@@ -563,6 +728,46 @@ const LogManagement: React.FC = () => {
 
   const renderOverview = () => (
     <SpaceBetween size="l">
+      {/* 错误信息和调试信息 */}
+      {error && (
+        <Container>
+          <Alert type="error" header="系统错误">
+            {error}
+          </Alert>
+        </Container>
+      )}
+      
+      {debugInfo && (
+        <Container header={<Header variant="h3">调试信息</Header>}>
+          <SpaceBetween size="s">
+            <ColumnLayout columns={2} variant="text-grid">
+              <div>
+                <Box variant="awsui-key-label">当前用户ID</Box>
+                <Box>{userProfile?.userId || '未知'}</Box>
+              </div>
+              <div>
+                <Box variant="awsui-key-label">用户邮箱</Box>
+                <Box>{userProfile?.email || '未知'}</Box>
+              </div>
+              <div>
+                <Box variant="awsui-key-label">用户类型</Box>
+                <Box>教师用户</Box>
+              </div>
+              <div>
+                <Box variant="awsui-key-label">日志管理权限</Box>
+                <Box>{debugInfo?.hasLogAccess ? '✅ 有日志管理权限' : '❌ 无日志管理权限'}</Box>
+              </div>
+            </ColumnLayout>
+            
+            <Box variant="code">
+              <pre style={{ whiteSpace: 'pre-wrap', fontSize: '12px' }}>
+                {JSON.stringify(debugInfo, null, 2)}
+              </pre>
+            </Box>
+          </SpaceBetween>
+        </Container>
+      )}
+
       {/* 系统健康概览 */}
       <Container header={<Header variant="h2">系统健康状态</Header>}>
         <ColumnLayout columns={4} variant="text-grid">
@@ -727,50 +932,76 @@ const LogManagement: React.FC = () => {
         {selectedTab === 'logs' && renderLogs()}
         {selectedTab === 'metrics' && (
           <Container header={<Header variant="h2">性能指标</Header>}>
-            <Table
-              items={metrics}
-              columnDefinitions={[
-                {
-                  id: 'timestamp',
-                  header: '时间',
-                  cell: (item: SystemMetric) => new Date(item.timestamp).toLocaleString(),
-                  width: 180
-                },
-                {
-                  id: 'metricType',
-                  header: '指标类型',
-                  cell: (item: SystemMetric) => item.metricType,
-                  width: 150
-                },
-                {
-                  id: 'value',
-                  header: '数值',
-                  cell: (item: SystemMetric) => item.value.toFixed(2),
-                  width: 100
-                },
-                {
-                  id: 'dimensions',
-                  header: '维度',
-                  cell: (item: SystemMetric) => (
-                    <Box variant="span">
-                      {typeof item.dimensions === 'string' 
-                        ? item.dimensions 
-                        : JSON.stringify(item.dimensions)}
+            <SpaceBetween size="m">
+              {error && (
+                <Alert type="error" header="加载错误">
+                  {error}
+                </Alert>
+              )}
+              
+              <div>
+                <Button onClick={() => {
+                  console.log('手动测试日志API...');
+                  setDebugInfo({
+                    userInfo: {
+                      userId: userProfile?.userId,
+                      email: userProfile?.email,
+                      isAdmin: userProfile?.email === 'yibo.yan24@student.xjtlu.edu.cn'
+                    },
+                    timestamp: new Date().toISOString()
+                  });
+                  loadLogs();
+                  loadSystemHealth();
+                }}>
+                  测试日志API连接
+                </Button>
+              </div>
+              
+              <Table
+                items={metrics}
+                columnDefinitions={[
+                  {
+                    id: 'timestamp',
+                    header: '时间',
+                    cell: (item: SystemMetric) => new Date(item.timestamp).toLocaleString(),
+                    width: 180
+                  },
+                  {
+                    id: 'metricType',
+                    header: '指标类型',
+                    cell: (item: SystemMetric) => item.metricType,
+                    width: 150
+                  },
+                  {
+                    id: 'value',
+                    header: '数值',
+                    cell: (item: SystemMetric) => item.value.toFixed(2),
+                    width: 100
+                  },
+                  {
+                    id: 'dimensions',
+                    header: '维度',
+                    cell: (item: SystemMetric) => (
+                      <Box variant="span">
+                        {typeof item.dimensions === 'string' 
+                          ? item.dimensions 
+                          : JSON.stringify(item.dimensions)}
+                      </Box>
+                    )
+                  }
+                ]}
+                loading={loading}
+                loadingText="加载指标中..."
+                empty={
+                  <Box textAlign="center" color="inherit">
+                    <b>没有指标数据</b>
+                    <Box padding={{ bottom: 's' }} variant="p" color="inherit">
+                      当前时间范围内没有找到性能指标。
                     </Box>
-                  )
-                }
-              ]}
-              loading={loading}
-              loadingText="加载指标中..."
-              empty={
-                <Box textAlign="center" color="inherit">
-                  <b>没有指标数据</b>
-                  <Box padding={{ bottom: 's' }} variant="p" color="inherit">
-                    当前时间范围内没有找到性能指标。
                   </Box>
-                </Box>
-              }
-            />
+                }
+              />
+            </SpaceBetween>
           </Container>
         )}
       </SpaceBetween>

@@ -12,8 +12,10 @@
  */
 
 export const ADMIN_EMAILS: string[] = [
-  // 在这里添加管理员邮箱
-  'yibo.yan24@student.xjtlu.edu.cn',
+  // 在这里添加管理员邮箱 - 全部转换为小写以避免大小写问题
+  'yibo.yan24@student.xjtlu.edu.cn'.toLowerCase(),
+  // 确保包含原始格式以防万一
+  'YiBo.Yan24@student.xjtlu.edu.cn'.toLowerCase(),
 ];
 
 /**
@@ -28,6 +30,7 @@ export enum AdminPermissionLevel {
 /**
  * 管理员权限配置
  * 可以为不同的管理员配置不同的权限级别
+ * 注意：所有邮箱都应该是小写的
  */
 export const ADMIN_PERMISSIONS: Record<string, AdminPermissionLevel> = {
   'yibo.yan24@student.xjtlu.edu.cn': AdminPermissionLevel.SUPER_ADMIN,

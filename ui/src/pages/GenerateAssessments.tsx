@@ -151,6 +151,13 @@ export default () => {
           setAssessTemplates(options);
         }
       })
+      .catch((error) => {
+        console.error('Error fetching templates:', error);
+        dispatchAlert({ 
+          type: AlertType.ERROR, 
+          content: '加载模板列表失败，请刷新页面重试'
+        });
+      });
   };
 
   useEffect(() => {
@@ -164,8 +171,23 @@ export default () => {
         
         addLog(`检查生成状态... (第 ${newCheckCount} 次)`);
         
-        client.graphql<any>({ query: getAssessment, variables: { id: assessId } }).then(({ data }) => {
+        client.graphql<any>({ query: getAssessment, variables: { id: assessId } }).then(({ data, errors }) => {
+          // 检查GraphQL错误
+          if (errors && errors.length > 0) {
+            addLog(`❌ 状态查询错误: ${JSON.stringify(errors)}`);
+            setFailureCount(prev => prev + 1);
+            checkStatus();
+            return;
+          }
+
           const assessment = data.getAssessment;
+          if (!assessment) {
+            addLog(`❌ 找不到评估记录 ID: ${assessId}`);
+            setFailureCount(prev => prev + 1);
+            checkStatus();
+            return;
+          }
+
           const { status } = assessment;
           
           addLog(`当前状态: ${status}`);
@@ -188,12 +210,35 @@ export default () => {
             setIsGenerating(false);
             setFailureCount(0); // 重置失败计数
             
-            // 提供详细的错误信息和建议
-            const errorMessage = '测试生成失败。可能的原因：\n' +
-              '1. 未上传课程文件 - 请确保上传了相关的课程材料\n' +
-              '2. 知识库未创建 - 请先为该课程创建知识库\n' +
-              '3. Bedrock服务问题 - 请稍后重试\n\n' +
-              '建议：请确保已上传课程文件并等待知识库创建完成后再试';
+            // 提供详细的错误信息和建议 - 改进错误消息
+            const errorMessage = '测试生成失败。可能的原因包括：\n\n' +
+              '1. 📄 文档处理问题：\n' +
+              '   • 上传的文件格式不支持或损坏\n' +
+              '   • 文档内容无法提取或过于简短\n' +
+              '   • 文档语言与系统设置不匹配\n\n' +
+              '2. 🧠 知识库问题：\n' +
+              '   • 知识库中缺少足够的内容\n' +
+              '   • 文档索引尚未完成处理\n' +
+              '   • 知识库配置错误\n\n' +
+              '3. 🤖 AI服务问题：\n' +
+              '   • Bedrock服务暂时不可用\n' +
+              '   • 模型调用限制或配额超出\n' +
+              '   • 网络连接问题\n\n' +
+              '4. ⚙️ 模板配置问题：\n' +
+              '   • 选择的模板参数不合理\n' +
+              '   • 题目数量设置过高\n\n' +
+              '💡 建议解决方案：\n' +
+              '• 检查上传的文件是否为有效的课程材料\n' +
+              '• 确保知识库中有足够的文档内容\n' +
+              '• 尝试使用更简单的模板设置\n' +
+              '• 稍后重试，可能是服务暂时繁忙\n' +
+              '• 联系管理员查看详细日志信息\n\n' +
+              `📋 诊断信息：\n` +
+              `• 评估ID: ${assessId}\n` +
+              `• 课程ID: ${course?.value}\n` +
+              `• 文件数量: ${files.length}\n` +
+              `• 模板: ${useDefault ? '默认模板' : assessTemplate?.label || '未选择'}\n` +
+              `• 时间戳: ${new Date().toISOString()}`;
             
             dispatchAlert({ 
               type: AlertType.ERROR, 
@@ -286,6 +331,34 @@ export default () => {
                     if (files.length === 0) {
                       throw new Error('请上传至少一个课程文件。\n\n系统需要基于上传的课程材料来生成测试题目。\n支持的文件格式：PDF、DOC、DOCX、TXT等');
                     }
+
+                    // 验证文件
+                    updateStep('🔍 验证上传文件...', 8);
+                    const invalidFiles = files.filter(file => {
+                      const validExtensions = ['.pdf', '.doc', '.docx', '.txt', '.md'];
+                      const fileName = file.name.toLowerCase();
+                      const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+                      const isValidSize = file.size > 0 && file.size < 50 * 1024 * 1024; // 小于50MB
+                      return !hasValidExtension || !isValidSize;
+                    });
+
+                    if (invalidFiles.length > 0) {
+                      const invalidFileNames = invalidFiles.map(f => f.name).join(', ');
+                      throw new Error(`以下文件格式不支持或文件过大：${invalidFileNames}\n\n支持的格式：PDF、DOC、DOCX、TXT、MD\n最大文件大小：50MB`);
+                    }
+
+                    addLog(`验证完成，准备处理 ${files.length} 个有效文件`);
+
+                    // 验证模板选择
+                    if (!useDefault && !assessTemplate?.value) {
+                      throw new Error('请选择测试模板或使用默认模板');
+                    }
+
+                    if (!useDefault && assessTemplate?.value) {
+                      addLog(`使用自定义模板：${assessTemplate.label}`);
+                    } else {
+                      addLog('使用默认模板设置');
+                    }
                     
                     updateStep('📁 准备上传文件...', 10);
                     
@@ -299,18 +372,37 @@ export default () => {
                         variables: { courseId: course.value }
                       });
                       
+                      // 检查GraphQL错误
+                      if ((kbResponse as any).errors && (kbResponse as any).errors.length > 0) {
+                        addLog(`知识库查询返回错误: ${JSON.stringify((kbResponse as any).errors)}`);
+                        throw new Error('知识库查询失败，请稍后重试');
+                      }
+                      
                       const knowledgeBase = kbResponse.data.getKnowledgeBase;
                       if (!knowledgeBase || !knowledgeBase.knowledgeBaseId) {
+                        addLog('❌ 该课程没有关联的知识库');
                         throw new Error(`该课程尚未创建知识库。\n\n请按以下步骤操作：\n1. 先上传课程文件到知识库\n2. 等待文档处理完成\n3. 再尝试生成测试\n\n提示：您可以在课程管理页面创建知识库`);
                       }
                       
                       addLog(`✅ 知识库检查通过，ID: ${knowledgeBase.knowledgeBaseId}`);
+                      
+                      // 检查知识库状态
+                      if (knowledgeBase.status && knowledgeBase.status !== 'ACTIVE') {
+                        addLog(`⚠️ 知识库状态: ${knowledgeBase.status}`);
+                        if (knowledgeBase.status === 'CREATING' || knowledgeBase.status === 'UPDATING') {
+                          throw new Error('知识库正在创建或更新中，请稍后重试');
+                        }
+                      }
+                      
                     } catch (error: any) {
                       // 如果是我们抛出的错误，直接抛出
-                      if (error.message.includes('该课程尚未创建知识库')) {
+                      if (error.message.includes('该课程尚未创建知识库') || 
+                          error.message.includes('知识库正在创建') ||
+                          error.message.includes('知识库查询失败')) {
                         throw error;
                       }
                       // 其他错误也视为知识库不存在
+                      addLog(`❌ 知识库检查失败: ${error.message || error}`);
                       throw new Error('无法访问课程知识库，请确保已为该课程创建知识库');
                     }
                     

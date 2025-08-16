@@ -505,6 +505,16 @@ export class DataStack extends NestedStack {
       });
     }
 
+    ///////// 管理员权限测试系统
+    const noneDataSource = api.addNoneDataSource('TestAdminPermissionDs');
+    
+    noneDataSource.createResolver('TestAdminPermissionResolver', {
+      typeName: 'Query',
+      fieldName: 'testAdminPermission',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/testAdminPermission.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     this.api = api;
   }
 }

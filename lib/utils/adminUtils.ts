@@ -18,7 +18,9 @@ export function isAdmin(userSub: string, userEmail: string): boolean {
     return false;
   }
   
-  return ADMIN_EMAILS.includes(userEmail.toLowerCase());
+  // 确保邮箱比较时忽略大小写
+  const normalizedEmail = userEmail.toLowerCase().trim();
+  return ADMIN_EMAILS.includes(normalizedEmail);
 }
 
 /**
@@ -27,12 +29,18 @@ export function isAdmin(userSub: string, userEmail: string): boolean {
  * @returns AdminPermissionLevel - 管理员权限级别
  */
 export function getAdminPermissionLevel(userEmail: string): AdminPermissionLevel | null {
-  if (!userEmail || !isAdmin('', userEmail)) {
+  if (!userEmail) {
     return null;
   }
   
-  const email = userEmail.toLowerCase();
-  return ADMIN_PERMISSIONS[email] || DEFAULT_ADMIN_PERMISSION;
+  const normalizedEmail = userEmail.toLowerCase().trim();
+  
+  // 首先检查是否是管理员
+  if (!isAdmin('', normalizedEmail)) {
+    return null;
+  }
+  
+  return ADMIN_PERMISSIONS[normalizedEmail] || DEFAULT_ADMIN_PERMISSION;
 }
 
 /**
@@ -120,11 +128,24 @@ export function canAccessLogManagement(ctx: any): boolean {
   const userSub = ctx.identity?.sub;
   const userEmail = ctx.identity?.claims?.email || ctx.identity?.username;
   
+  console.log('检查日志管理权限:', {
+    userSub,
+    userEmail,
+    normalizedEmail: userEmail?.toLowerCase()?.trim(),
+    adminEmails: ADMIN_EMAILS,
+    isAdmin: isAdmin(userSub, userEmail)
+  });
+  
   if (!userSub || !userEmail) {
+    console.log('权限检查失败: 缺少用户信息');
     return false;
   }
   
-  return hasAdminPermission(userEmail, AdminPermissionLevel.LOG_ADMIN);
+  // 直接检查是否是管理员（任何级别的管理员都可以访问日志）
+  const adminStatus = isAdmin(userSub, userEmail);
+  console.log('用户管理员状态:', adminStatus);
+  
+  return adminStatus;
 }
 
 /**
