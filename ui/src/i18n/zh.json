@@ -24,7 +24,7 @@
       "show_fewer_files": "显示更少文件",
       "show_more_files": "显示更多文件"
     },
-        "brand": "测试生成器",
+    "brand": "测试生成器",
     "selected_values": "已选择的值",
     "assessment_type": "测试类型",
     "taxonomy": "分类法",
@@ -46,7 +46,7 @@
     },
     "admin": {
       "super_admin": "超级管理员",
-      "system_admin": "系统管理员", 
+      "system_admin": "系统管理员",
       "log_admin": "日志管理员",
       "permission_level": "管理员权限"
     },
@@ -134,11 +134,12 @@
       "sign_out": "登出"
     },
     "settings": {
-        "title": "用户设置",
-        "ui_language": "界面语言",
-        "doc_language": "文档语言",
-        "default_assessment_type": "默认测试类型",
-        "default_taxonomy": "默认分类法"
+      "title": "用户设置",
+      "ui_language": "界面语言",
+      "doc_language": "文档语言",
+      "default_assessment_type": "默认测试类型",
+      "default_taxonomy": "默认分类法",
+      "language_required": "需要选择界面语言"
     }
   },
   "components": {
@@ -477,20 +478,20 @@
       }
     },
     "section": {
-        "buttons": {
-          "manage-knowledge-bases": "知识库管理",
-          "find-assessments": "查找测试",
-          "default-settings": "默认设置",
-          "templates": "模板管理",
-          "generate-assessments": "生成测试",
-          "courses": "课程管理",
-          "log-management": "日志管理",
-          "find-student": "查找学生"
-        },
-        "assessments": "测试",
-        "settings": "设置",
-        "management": "管理"
-      }
+      "buttons": {
+        "manage-knowledge-bases": "知识库管理",
+        "find-assessments": "查找测试",
+        "default-settings": "默认设置",
+        "templates": "模板管理",
+        "generate-assessments": "生成测试",
+        "courses": "课程管理",
+        "log-management": "日志管理",
+        "find-student": "查找学生"
+      },
+      "assessments": "测试",
+      "settings": "设置",
+      "management": "管理"
+    }
   },
   "students": {
     "home": {
@@ -594,7 +595,7 @@
       "name": "主题名称",
       "namePlaceholder": "输入主题名称",
       "primaryColor": "主色调",
-      "secondaryColor": "辅助色调", 
+      "secondaryColor": "辅助色调",
       "backgroundColor": "背景颜色",
       "textColor": "文本颜色",
       "logo": "Logo",

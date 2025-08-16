@@ -22,3 +22,5 @@ test_delete.js
 .gitignore
 clear-templates-smart.js
 migration-clear-templates.js
+ui/i18n-suggestions.json
+replacer.js

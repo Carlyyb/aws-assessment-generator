@@ -129,7 +129,7 @@ export default () => {
               content: '没有找到有效的模板数据，请先创建模板'
             });
           }
-
+          console.log('Valid templates:', validTemplates);
           const options = validTemplates.map((assessTemplate: AssessTemplate) => ({ 
             label: assessTemplate.name, 
             value: assessTemplate.id 
@@ -138,11 +138,12 @@ export default () => {
         } else {
           const list = data?.listAssessTemplates || [];
           // 过滤掉无效的模板记录
+          console.log('All templates before filter:', list);
           const validList = list.filter((assessTemplate: AssessTemplate) => {
             const validDocLang = assessTemplate.docLang === 'zh' || assessTemplate.docLang === 'en';
             return assessTemplate && assessTemplate.id && assessTemplate.name && validDocLang;
           });
-          
+          console.log('Valid templates after filter:', validList);
           const options = validList.map((assessTemplate: AssessTemplate) => ({ 
             label: assessTemplate.name, 
             value: assessTemplate.id 

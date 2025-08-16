@@ -31,7 +31,7 @@
     "en": "Generate Dashboard",
     "zh": "生成仪表板"
   },
-  "common.cancel": {
+  "common.actions.cancel": {
     "en": "Cancel",
     "zh": "取消"
   },
@@ -83,7 +83,7 @@
     "en": "Home Page",
     "zh": "首页"
   },
-  "common.submit": {
+  "common.actions.submit": {
     "en": "Submit",
     "zh": "提交"
   },
@@ -131,7 +131,7 @@
     "en": "Done",
     "zh": "完成"
   },
-  "common.review": {
+  "common.actions.review": {
     "en": "Review",
     "zh": "审查"
   },

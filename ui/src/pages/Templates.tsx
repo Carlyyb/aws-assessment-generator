@@ -165,10 +165,10 @@ useEffect(() => {
           <Box float="right">
             <SpaceBetween direction="horizontal" size="xs">
               <Button variant="link" onClick={() => setShowDeleteModal(false)}>
-                {getText('common.cancel')}
+                {getText('common.actions.cancel')}
               </Button>
               <Button variant="primary" loading={isDeleting} onClick={confirmDelete}>
-                {getText('common.delete')}
+                {getText('common.actions.delete')}
               </Button>
             </SpaceBetween>
           </Box>

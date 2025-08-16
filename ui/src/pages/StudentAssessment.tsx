@@ -57,7 +57,7 @@ export default () => {
         footer={
           <Box float="right">
             <Button variant="primary" onClick={() => navigate('/assessments')}>
-              {getText('common.finish')}
+              {getText('common.actions.finish')}
             </Button>
           </Box>
         }
@@ -74,7 +74,7 @@ export default () => {
             innerMetricValue={`${score}%`}
           />
           <Button fullWidth onClick={() => navigate('/review/' + assessmentId)}>
-            {getText('common.review')}
+            {getText('common.actions.review')}
           </Button>
         </SpaceBetween>
       </Modal>
@@ -102,10 +102,10 @@ export default () => {
           stepNumberLabel: (stepNumber) => getTextWithParams('pages.student_assessment.question_number', { number: stepNumber }),
           collapsedStepsLabel: (stepNumber, stepsCount) => getTextWithParams('pages.student_assessment.question_progress', { current: stepNumber, total: stepsCount }),
           skipToButtonLabel: (step, _stepNumber) => getTextWithParams('pages.student_assessment.skip_to', { title: step.title }),
-          cancelButton: getText('common.cancel'),
-          previousButton: getText('common.previous'),
-          nextButton: getText('common.next'),
-          submitButton: getText('common.submit'),
+          cancelButton: getText('common.actions.cancel'),
+          previousButton: getText('common.actions.previous'),
+          nextButton: getText('common.actions.next'),
+          submitButton: getText('common.actions.submit'),
           optional: getText('common.optional'),
         }}
         onCancel={() => navigate('/assessments')}

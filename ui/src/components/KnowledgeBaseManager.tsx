@@ -252,6 +252,8 @@ export default function KnowledgeBaseManager({
       if ((response as any).errors) {
         console.error('GraphQL errors:', (response as any).errors);
         setKnowledgeBase(null);
+        // 即使知识库不存在，也尝试加载可能已存在的文件
+        await loadUploadedFiles();
         return;
       }
       
@@ -264,13 +266,18 @@ export default function KnowledgeBaseManager({
       
       setKnowledgeBase(kb);
       
+      // 无论知识库是否存在都尝试加载文件列表
+      await loadUploadedFiles();
+      
+      // 只有当知识库存在时才加载处理任务
       if (kb?.knowledgeBaseId) {
-        await loadUploadedFiles();
         await loadIngestionJobs();
       }
     } catch (error) {
       console.error('Error loading knowledge base:', error);
       setKnowledgeBase(null);
+      // 即使出错也尝试加载文件列表
+      await loadUploadedFiles();
     } finally {
       setLoading(false);
     }
@@ -278,11 +285,14 @@ export default function KnowledgeBaseManager({
 
   // 加载已上传的文件
   const loadUploadedFiles = async () => {
-    if (!userProfile?.userId || !knowledgeBase?.s3prefix) return;
+    if (!userProfile?.userId || !courseId) return;
     
     try {
+      // 构造文件前缀路径，即使知识库没有s3prefix字段
+      const filePrefix = knowledgeBase?.s3prefix || `KnowledgeBases/${userProfile.userId}/${courseId}/`;
+      
       const result = await list({
-        prefix: knowledgeBase.s3prefix,
+        prefix: filePrefix,
       });
       
       const fileItems = result.items?.map(item => ({
@@ -294,6 +304,8 @@ export default function KnowledgeBaseManager({
       setUploadedFiles(fileItems);
     } catch (error) {
       console.error('Error loading files:', error);
+      // 即使出错也设置为空数组，避免显示加载状态
+      setUploadedFiles([]);
     }
   };
 
@@ -323,7 +335,7 @@ export default function KnowledgeBaseManager({
 
   // 上传文件
   const handleFileUpload = async () => {
-    if (!files.length || !userProfile?.userId || !knowledgeBase?.s3prefix) return;
+    if (!files.length || !userProfile?.userId) return;
     
     setIsUploading(true);
     setUploadProgress(0);
@@ -331,7 +343,9 @@ export default function KnowledgeBaseManager({
     try {
       const totalFiles = files.length;
       const uploadPromises = files.map(async (file, index) => {
-        const key = `${knowledgeBase.s3prefix}${file.name}`;
+        // 使用标准的文件路径，如果知识库没有s3prefix就构造一个
+        const filePrefix = knowledgeBase?.s3prefix || `KnowledgeBases/${userProfile.userId}/${courseId}/`;
+        const key = `${filePrefix}${file.name}`;
         
         const result = await uploadData({
           key,

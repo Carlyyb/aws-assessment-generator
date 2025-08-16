@@ -47,7 +47,7 @@
     "admin": {
       "super_admin": "Super Admin",
       "system_admin": "System Admin",
-      "log_admin": "Log Admin", 
+      "log_admin": "Log Admin",
       "permission_level": "Admin Permission"
     },
     "nav": {
@@ -138,7 +138,8 @@
       "ui_language": "UI Language",
       "doc_language": "Document Language",
       "default_assessment_type": "Default Assessment Type",
-      "default_taxonomy": "Default Taxonomy"
+      "default_taxonomy": "Default Taxonomy",
+      "language_required": "Language Required"
     }
   },
   "components": {
@@ -515,7 +516,7 @@
       "current": "Current Assessment"
     },
     "review": {
-      "title": "Review Assessment", 
+      "title": "Review Assessment",
       "current": "Assessment Review"
     },
     "assessments": {
@@ -591,7 +592,7 @@
       "name": "Theme Name",
       "namePlaceholder": "Enter theme name",
       "primaryColor": "Primary Color",
-      "secondaryColor": "Secondary Color", 
+      "secondaryColor": "Secondary Color",
       "backgroundColor": "Background Color",
       "textColor": "Text Color",
       "logo": "Logo",
