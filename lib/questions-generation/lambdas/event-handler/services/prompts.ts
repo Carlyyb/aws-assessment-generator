@@ -139,7 +139,11 @@ Structure your response in this format and do not include any additional text, r
 \`\`\`
     `;
 
-  prompt += `Provided Summarised Transcript: \n ${topicsExtractionOutput}`;
+  prompt += `Provided Summarised Transcript: \n ${
+    topicsExtractionOutput.length > 50000 
+      ? topicsExtractionOutput.substring(0, 50000) + '\n[Content truncated due to length limit]'
+      : topicsExtractionOutput
+  }`;
   return prompt;
 }
 
@@ -150,11 +154,35 @@ Tell me the topics of the subject covered, do not include examples used to expla
 For each topic, include a brief description of what was covered.
     `;
 
+  // Nova Lite has ~128K token limit, roughly 4 chars per token
+  // Reserve 1000 tokens for prompt and response, so limit document content to ~100K tokens (~400K chars)
+  const MAX_CONTENT_LENGTH = 400000;
+  let totalContentLength = 0;
+
   for (let i = 0; i < referenceDocuments.documentsContent.length; i++) {
     const document = referenceDocuments.documentsContent[i];
+    const documentContent = document.length + totalContentLength > MAX_CONTENT_LENGTH 
+      ? document.substring(0, MAX_CONTENT_LENGTH - totalContentLength)
+      : document;
+    
+    if (documentContent.length === 0) {
+      break; // Skip if no room for more content
+    }
+    
     prompt += `Document ${i}:\n`;
-    prompt += document;
+    prompt += documentContent;
+    if (documentContent.length < document.length) {
+      prompt += '\n[Content truncated due to length limit]';
+    }
+    prompt += '\n\n';
+    
+    totalContentLength += documentContent.length;
+    
+    if (totalContentLength >= MAX_CONTENT_LENGTH) {
+      break; // Stop adding more documents
+    }
   }
+  
   return prompt;
 }
 

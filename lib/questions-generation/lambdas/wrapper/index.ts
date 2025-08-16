@@ -32,28 +32,49 @@ class Lambda implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async handler(event: AppSyncResolverEvent<GenerateAssessmentQueryVariables>, lambdaContext: Context): Promise<string> {
-    if (!event.arguments.input) {
-      throw new Error('Invalid input');
+    try {
+      logger.info('Starting generateAssessment handler', { event: event.arguments });
+
+      if (!event.arguments.input) {
+        throw new Error('Invalid input: arguments.input is required');
+      }
+
+      const identity = event.identity as AppSyncIdentityCognito;
+      const userId = identity?.sub;
+      
+      if (!userId) {
+        throw new Error('Invalid user identity: userId is required');
+      }
+
+      logger.info('User authentication successful', { userId });
+
+      const assessmentId = await dataService.storeEmptyAssessment(event.arguments.input, userId);
+      
+      if (!assessmentId) {
+        throw new Error('Failed to create assessment: assessmentId is null');
+      }
+
+      logger.info('Assessment stored successfully', { assessmentId });
+
+      // noinspection TypeScriptValidateTypes
+      const invokeResponse = await client.send(
+        new InvokeCommand({
+          FunctionName: process.env.QA_LAMBDA_NAME,
+          InvocationType: InvocationType.Event,
+          Payload: JSON.stringify({
+            assessmentId: assessmentId,
+            ctx: event,
+          }),
+        })
+      );
+      
+      logger.info('Background processing initiated', { invokeResponse, assessmentId });
+
+      return assessmentId;
+    } catch (error) {
+      logger.error('Error in generateAssessment handler', { error: error.message, stack: error.stack });
+      throw error;
     }
-
-    const identity = event.identity as AppSyncIdentityCognito;
-    const userId = identity.sub;
-    const assessmentId = await dataService.storeEmptyAssessment(event.arguments.input, userId);
-
-    // noinspection TypeScriptValidateTypes
-    const invokeResponse = await client.send(
-      new InvokeCommand({
-        FunctionName: process.env.QA_LAMBDA_NAME,
-        InvocationType: InvocationType.Event,
-        Payload: JSON.stringify({
-          assessmentId: assessmentId,
-          ctx: event,
-        }),
-      })
-    );
-    logger.info(invokeResponse);
-
-    return assessmentId;
   }
 }
 

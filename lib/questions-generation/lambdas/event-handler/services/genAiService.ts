@@ -12,7 +12,7 @@ import { MultiChoice, FreeText, TrueFalse, SingleChoice } from '../../../../../u
 
 import { getInitialQuestionsPrompt, getRelevantDocumentsPrompt, getTopicsPrompt, improveQuestionPrompt } from './prompts';
 
-const MODEL_ID = 'amazon.nova-lite-v1:0';
+const MODEL_ID = 'us.amazon.nova-lite-v1:0';
 const bedrock = new BedrockRuntime();
 const bedrockAgentRuntime = new BedrockAgentRuntime();
 const parser = new XMLParser();
@@ -76,13 +76,21 @@ export class GenAiService {
   private async callLLM(modelId, prompt): Promise<string> {
     logger.debug(prompt);
     const body = JSON.stringify({
-      max_tokens: 4096,
       messages: [
         {
           role: 'user',
-          content: [{ type: 'text', text: prompt }],
+          content: [
+            {
+              text: prompt,
+            },
+          ],
         },
       ],
+      inferenceConfig: {
+        maxTokens: 4096,
+        temperature: 0.7,
+        topP: 0.9,
+      },
     });
     const response = await bedrock.invokeModel({
       body: body,
@@ -95,7 +103,7 @@ export class GenAiService {
     const text = response.body.transformToString();
     //logger.info(text);
     const modelRes = JSON.parse(text);
-    const contentElementElement = modelRes.content[0]['text'];
+    const contentElementElement = modelRes.output.message.content[0].text;
 
     return contentElementElement;
   }

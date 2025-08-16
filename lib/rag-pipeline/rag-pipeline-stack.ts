@@ -88,6 +88,7 @@ export class RagPipelineStack extends NestedStack {
     const cfnCollection = new opensearchserverless.CfnCollection(this, opssSearchCollection, {
       name: opssSearchCollection,
       type: 'VECTORSEARCH',
+      standbyReplicas: 'DISABLED', // 禁用Standby Replicas以节省成本
     });
     cfnCollection.addDependency(cfnNetworkSecurityPolicy);
     cfnCollection.addDependency(cfnEncryptionSecurityPolicy);

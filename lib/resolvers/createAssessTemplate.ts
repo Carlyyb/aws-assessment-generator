@@ -6,6 +6,7 @@ import * as ddb from '@aws-appsync/utils/dynamodb';
 
 export function request(ctx) {
   const userId = ctx.identity.sub;
+  const userEmail = ctx.identity?.claims?.email || ctx.identity?.username;
   const id = util.autoUlid();
   return ddb.put({ 
     key: { userId, id }, 
@@ -13,6 +14,7 @@ export function request(ctx) {
       id,
       userId,
       ...ctx.args.input, 
+      createdBy: userEmail,
       createdAt: util.time.nowISO8601() 
     } 
   });

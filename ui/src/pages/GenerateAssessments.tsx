@@ -53,6 +53,10 @@ export default () => {
   const [logs, setLogs] = useState<string[]>([]);
   const [_statusCheckCount, setStatusCheckCount] = useState(0);
   const [_failureCount, setFailureCount] = useState(0);
+  
+  // 调试模式状态
+  const [debugMode, setDebugMode] = useState(false);
+  const [cloudWatchLogs, setCloudWatchLogs] = useState<string[]>([]);
 
   // 添加日志函数
   const addLog = (message: string) => {
@@ -60,6 +64,62 @@ export default () => {
     const logMessage = `[${timestamp}] ${message}`;
     setLogs(prev => [...prev, logMessage]);
     console.log(logMessage); // 同时输出到控制台
+  };
+
+  // 获取CloudWatch日志的函数
+  const fetchCloudWatchLogs = async (assessmentId: string) => {
+    if (!debugMode) return;
+    
+    try {
+      addLog('🔍 正在获取CloudWatch详细错误日志...');
+      
+      // 计算查询时间范围（最近10分钟）
+      const endTime = Date.now();
+      const startTime = endTime - (10 * 60 * 1000); // 10分钟前
+      
+      // CloudWatch日志组名称
+      const logGroupName = '/genassess-rag/GenAssessStack-DataStackNestedStackDataStackNestedStackResource8D986F6F-WZN8STT9JLUJ/QuestionsGenerator/c8ba778ca05f1dcb4c57a5cca36bf3cc3b2a383eb5';
+      
+      // 构建AWS CLI命令
+      const awsCommand = `aws logs filter-log-events --log-group-name "${logGroupName}" --start-time ${startTime} --filter-pattern "ERROR" --query "events[*].message" --output json`;
+      
+      addLog(`📋 执行命令: ${awsCommand}`);
+      addLog('💡 请在终端中运行上述命令获取详细错误信息');
+      
+      // 提供常见错误的解释和解决方案
+      const commonErrors = [
+        `🔍 常见错误类型及解决方案：`,
+        ``,
+        `1. ValidationException: Input Tokens Exceeded`,
+        `   原因：文档内容过长，超过模型token限制`,
+        `   解决：使用较短的文档或减少上传文件数量`,
+        ``,
+        `2. AccessDeniedException`,
+        `   原因：权限不足，无法访问Bedrock服务`,
+        `   解决：检查IAM权限配置`,
+        ``,
+        `3. ThrottlingException`,
+        `   原因：请求频率过高，被限流`,
+        `   解决：稍后重试，避免频繁请求`,
+        ``,
+        `4. ResourceNotFoundException`,
+        `   原因：找不到指定的知识库或模型`,
+        `   解决：检查知识库配置和模型ID`,
+        ``,
+        `📊 当前请求信息：`,
+        `   评估ID: ${assessmentId}`,
+        `   时间戳: ${new Date().toISOString()}`,
+        `   用户ID: ${userProfile?.userId}`,
+        `   课程ID: ${course?.value}`,
+        ``
+      ];
+      
+      setCloudWatchLogs(commonErrors);
+      addLog(`✅ 显示错误诊断信息和AWS CLI命令`);
+      
+    } catch (error: any) {
+      addLog(`❌ 获取CloudWatch日志失败: ${error.message}`);
+    }
   };
 
   // 更新步骤和进度
@@ -165,7 +225,7 @@ export default () => {
   }, []);
 
   function checkStatus() {
-    setTimeout(() => {
+    setTimeout(async () => {
       setStatusCheckCount(prev => {
         const newCheckCount = prev + 1;
         
@@ -207,7 +267,13 @@ export default () => {
           if (status === AssessStatus.FAILED) {
             addLog('❌ 测试生成失败');
             updateStep('❌ 测试生成失败', 0);
-            setIsGenerating(false);
+            
+            // 在调试模式下获取CloudWatch日志
+              if (debugMode) {
+                fetchCloudWatchLogs(assessId).catch(error => {
+                  addLog(`❌ 获取CloudWatch日志失败: ${error.message}`);
+                });
+              }            setIsGenerating(false);
             setFailureCount(0); // 重置失败计数
             
             // 提供详细的错误信息和建议 - 改进错误消息
@@ -447,10 +513,14 @@ export default () => {
                       },
                     });
                     
+                    console.log('generateAssessment API 响应:', res);
+                    console.log('返回的ID:', res.data.generateAssessment);
+                    
                     const id = res.data.generateAssessment;
                     setAssessId(id);
                     
                     addLog(`✅ 测试请求已提交，ID: ${id}`);
+                    console.log('生成测试的地方测试请求id为', id);
                     updateStep('⏳ 正在后台生成测试内容...', 35);
                     addLog('开始监控生成进度...');
                     
@@ -540,6 +610,19 @@ export default () => {
                       accept=".pdf,.doc,.docx,.txt,.md"
                     />
                   </FormField>
+                  
+                  {/* 调试模式开关 */}
+                  <FormField 
+                    label="调试模式"
+                    description="启用后将显示详细的CloudWatch错误日志（仅供开发调试使用）"
+                  >
+                    <Checkbox 
+                      checked={debugMode} 
+                      onChange={({ detail }) => setDebugMode(detail.checked)}
+                    >
+                      启用调试模式 - 显示CloudWatch日志
+                    </Checkbox>
+                  </FormField>
                 </SpaceBetween>
               </Box>
             </SpaceBetween>
@@ -580,7 +663,7 @@ export default () => {
           
           {/* 实时日志 */}
           <Box>
-            <Header variant="h3">生成日志</Header>
+            <Header variant="h3">📋 生成日志 {debugMode && <small style={{color: '#6c757d'}}>(调试模式)</small>}</Header>
             <div
               style={{
                 backgroundColor: '#f8f9fa',
@@ -596,7 +679,16 @@ export default () => {
               {logs.length > 0 ? (
                 <div>
                   {logs.map((log, index) => (
-                    <div key={index} style={{ marginBottom: '4px' }}>
+                    <div key={index} style={{ 
+                      marginBottom: '4px',
+                      color: log.includes('❌') ? '#dc3545' :
+                             log.includes('⚠️') ? '#856404' :
+                             log.includes('✅') ? '#28a745' :
+                             log.includes('🔍') || log.includes('📋') ? '#007bff' : '#495057'
+                    }}>
+                      <span style={{ color: '#6c757d' }}>
+                        [{new Date().toLocaleTimeString()}]
+                      </span>{' '}
                       {log}
                     </div>
                   ))}
@@ -606,6 +698,69 @@ export default () => {
               )}
             </div>
           </Box>
+          
+          {/* CloudWatch调试日志 */}
+          {debugMode && (
+            <Box>
+              <Header variant="h3">🔧 CloudWatch 调试信息</Header>
+              <Alert type="info" header="调试模式已激活">
+                以下是详细的错误分析和解决方案。如果需要更完整的日志，请使用提供的AWS CLI命令。
+              </Alert>
+              <div
+                style={{
+                  backgroundColor: '#f8f9fa',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '8px',
+                  fontFamily: 'monospace',
+                  fontSize: '13px',
+                  maxHeight: '400px',
+                  overflowY: 'auto',
+                  padding: '16px',
+                }}
+              >
+                {cloudWatchLogs.length > 0 ? (
+                  cloudWatchLogs.map((log, index) => (
+                    <div 
+                      key={index} 
+                      style={{ 
+                        marginBottom: '8px',
+                        padding: '8px',
+                        borderRadius: '4px',
+                        backgroundColor: log.includes('ERROR') || log.includes('❌') ? '#fee2e2' : 
+                                       log.includes('WARN') || log.includes('⚠️') ? '#fef3cd' :
+                                       log.includes('INFO') || log.includes('ℹ️') ? '#d1ecf1' :
+                                       log.includes('📋') || log.includes('🔍') ? '#e2e3ff' : 'transparent',
+                        color: log.includes('ERROR') || log.includes('❌') ? '#dc3545' :
+                               log.includes('WARN') || log.includes('⚠️') ? '#856404' :
+                               log.includes('INFO') || log.includes('ℹ️') ? '#0c5460' :
+                               log.includes('📋') || log.includes('🔍') ? '#4c63d2' : '#495057',
+                        border: '1px solid ' + (
+                          log.includes('ERROR') || log.includes('❌') ? '#f5c6cb' :
+                          log.includes('WARN') || log.includes('⚠️') ? '#ffeaa7' :
+                          log.includes('INFO') || log.includes('ℹ️') ? '#bee5eb' :
+                          log.includes('📋') || log.includes('🔍') ? '#b3bcf5' : 'transparent'
+                        )
+                      }}
+                    >
+                      {log}
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ 
+                    color: '#6c757d', 
+                    fontStyle: 'italic',
+                    textAlign: 'center',
+                    padding: '20px'
+                  }}>
+                    <div>🔄 等待调试信息...</div>
+                    <div style={{ fontSize: '12px', marginTop: '8px' }}>
+                      点击"生成评估"后，此处将显示详细的错误分析和解决方案
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Box>
+          )}
           
           {/* 加载指示器 */}
           <SpaceBetween size="s" alignItems="center">
