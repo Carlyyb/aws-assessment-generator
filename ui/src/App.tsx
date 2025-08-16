@@ -41,7 +41,17 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
   const [alerts, setAlerts] = useState<FlashbarProps.MessageDefinition[]>([]);
   const [activeHref, setActiveHref] = useState(window.location.pathname);
   const { currentTheme } = useTheme();
-  const { adminInfo } = useAdminPermissions();
+  const { adminInfo, error: adminError } = useAdminPermissions();
+
+  // Debug logging for admin permissions
+  useEffect(() => {
+    if (adminError) {
+      console.error('管理员权限检查错误:', adminError);
+    }
+    if (adminInfo) {
+      console.log('管理员权限信息:', adminInfo);
+    }
+  }, [adminInfo, adminError]);
 
   const dispatchAlert = (newAlert: FlashbarProps.MessageDefinition) => {
     const id = Date.now().toString();
