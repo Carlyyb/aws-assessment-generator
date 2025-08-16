@@ -28,5 +28,16 @@ export const response = (ctx) => {
   if (ctx.error) {
     util.error(ctx.error.message, ctx.error.type);
   }
+  
+  // 如果没有找到记录，返回null
+  if (!ctx.result) {
+    return null;
+  }
+  
+  // 确保status字段存在，如果不存在则提供默认值
+  if (!ctx.result.status) {
+    ctx.result.status = 'ACTIVE';
+  }
+  
   return ctx.result;
 };

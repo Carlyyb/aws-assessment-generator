@@ -74,6 +74,7 @@ export class BedrockKnowledgeBase {
           kbDataSourceId,
           indexName: vectorStore.indexName,
           s3prefix,
+          status: 'ACTIVE',
         },
       })
     );

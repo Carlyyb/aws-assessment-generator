@@ -63,9 +63,17 @@ export default function CourseDashboard({
             query: getKnowledgeBase,
             variables: { courseId: course.id }
           });
-          const kb = (kbResponse as any).data?.getKnowledgeBase;
-          knowledgeBaseStatus = kb?.knowledgeBaseId ? 'available' : 'missing';
+          
+          // 检查GraphQL错误
+          if ((kbResponse as any).errors) {
+            console.error('GraphQL errors for course', course.id, ':', (kbResponse as any).errors);
+            knowledgeBaseStatus = 'missing';
+          } else {
+            const kb = (kbResponse as any).data?.getKnowledgeBase;
+            knowledgeBaseStatus = kb?.knowledgeBaseId ? 'available' : 'missing';
+          }
         } catch (error) {
+          console.error('Error checking knowledge base status for course', course.id, ':', error);
           knowledgeBaseStatus = 'missing';
         }
 

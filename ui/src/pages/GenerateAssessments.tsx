@@ -83,6 +83,13 @@ export default () => {
         variables: { courseId }
       });
       
+      // 检查GraphQL错误
+      if ((kbResponse as any).errors) {
+        console.error('GraphQL errors when checking knowledge base:', (kbResponse as any).errors);
+        setKnowledgeBaseStatus('missing');
+        return;
+      }
+      
       const knowledgeBase = kbResponse.data.getKnowledgeBase;
       if (knowledgeBase && knowledgeBase.knowledgeBaseId) {
         setKnowledgeBaseStatus('available');
@@ -90,6 +97,7 @@ export default () => {
         setKnowledgeBaseStatus('missing');
       }
     } catch (error) {
+      console.error('Error checking knowledge base status:', error);
       setKnowledgeBaseStatus('missing');
     }
   };
@@ -103,28 +111,49 @@ export default () => {
     }
   }, [course]);
 
+  // 加载模板列表 - 模仿Templates.tsx的实现
+  const loadTemplates = () => {
+    client
+      .graphql<any>({ query: listAssessTemplates })
+      .then(({ data, errors }) => {
+        if (errors && errors.length > 0) {
+          console.warn('GraphQL errors:', errors);
+          const validTemplates = (data?.listAssessTemplates || []).filter((template: AssessTemplate) => {
+            const validDocLang = template.docLang === 'zh' || template.docLang === 'en';
+            return template && template.id && template.name && validDocLang;
+          });
+
+          if (validTemplates.length === 0) {
+            dispatchAlert({ 
+              type: 'warning', 
+              content: '没有找到有效的模板数据，请先创建模板'
+            });
+          }
+
+          const options = validTemplates.map((assessTemplate: AssessTemplate) => ({ 
+            label: assessTemplate.name, 
+            value: assessTemplate.id 
+          }));
+          setAssessTemplates(options);
+        } else {
+          const list = data?.listAssessTemplates || [];
+          // 过滤掉无效的模板记录
+          const validList = list.filter((assessTemplate: AssessTemplate) => {
+            const validDocLang = assessTemplate.docLang === 'zh' || assessTemplate.docLang === 'en';
+            return assessTemplate && assessTemplate.id && assessTemplate.name && validDocLang;
+          });
+          
+          const options = validList.map((assessTemplate: AssessTemplate) => ({ 
+            label: assessTemplate.name, 
+            value: assessTemplate.id 
+          }));
+          setAssessTemplates(options);
+        }
+      })
+  };
+
   useEffect(() => {
-    client.graphql<any>({ query: listAssessTemplates }).then(({ data, errors }) => {
-      if (errors && errors.length > 0) {
-        console.warn('GraphQL errors:', errors);
-      }
-      
-      const list = data?.listAssessTemplates;
-      if (!list) return;
-      
-      // 过滤掉无效的模板记录
-      const validList = list.filter((assessTemplate: AssessTemplate) => {
-        return assessTemplate && assessTemplate.id && assessTemplate.name;
-      });
-      
-      const options = validList.map((assessTemplate: AssessTemplate) => ({ 
-        label: assessTemplate.name, 
-        value: assessTemplate.id 
-      }));
-      setAssessTemplates(options);
-    }).catch((error) => {
-      console.error('Error fetching templates:', error);
-    });
+    loadTemplates();
   }, []);
 
   function checkStatus() {
