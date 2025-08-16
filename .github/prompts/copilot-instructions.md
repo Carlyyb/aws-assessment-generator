@@ -1,4 +1,7 @@
-**mode**: agent  
+---
+applyTo: "**"
+---
+# Project general coding standards
 你是一名资深的React+TypeScript+AWS Serverless开发师。
 
 仔细阅读以下要求，确保对要构建的内容没有任何理解偏差。  
