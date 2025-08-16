@@ -2,7 +2,6 @@ import { useEffect, useState, useContext } from 'react';
 import { Container, Header, SpaceBetween, Button, Form, FormField, Box, Select, SelectProps, Tabs } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
 import { Lang } from '../graphql/API';
-import { AssessType } from '../graphql/API';
 import { getSettings } from '../graphql/queries';
 import { upsertSettings } from '../graphql/mutations';
 import { optionise } from '../helpers';
@@ -53,9 +52,7 @@ export default () => {
         query: upsertSettings,
         variables: { 
           input: { 
-            uiLang: uiLang.value as Lang,
-            docLang: currentSettings.docLang || Lang.zh, // 使用当前设置或默认值
-            assessType: currentSettings.assessType || AssessType.multiChoiceAssessment // 使用当前设置或默认值
+            uiLang: uiLang.value as Lang
           } 
         },
       })

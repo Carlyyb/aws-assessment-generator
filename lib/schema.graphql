@@ -28,14 +28,10 @@ enum AssessStatus {
 
 type Settings {
   uiLang: Lang
-  docLang: Lang
-  assessType: AssessType
 }
 
 input UpsertSettingsInput {
   uiLang: Lang!
-  docLang: Lang!
-  assessType: AssessType!
 }
 
 type Course {
