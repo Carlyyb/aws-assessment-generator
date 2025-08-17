@@ -239,6 +239,7 @@ type Mutation {
   deleteAssessTemplate(id: ID!, userId: ID!): Boolean
   upsertAssessment(input: AssessmentInput): Assessment
   deleteAssessment(id: ID!): Boolean
+  unpublishAssessment(assessmentId: ID!): Boolean
   upsertStudentAssessment(input: StudentAssessmentInput): StudentAssessment
   gradeStudentAssessment(input: StudentAssessmentInput): StudentAssessment
   createKnowledgeBase(courseId: ID, locations: [String]): IngestionJob
@@ -255,7 +256,6 @@ type Query {
   listStudentAssessments: [StudentAssessment]
   listMyStudentAssessments(studentId: ID!): [StudentAssessment]
   publishAssessment(assessmentId: ID!): Boolean
-  unpublishAssessment(assessmentId: ID!): Boolean
   generateAssessment(input: GenerateAssessmentInput): ID
   getKnowledgeBase(courseId: ID): KnowledgeBase
   getIngestionJob(input: IngestionJobInput): IngestionJob

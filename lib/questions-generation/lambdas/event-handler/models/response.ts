@@ -1,8 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
  
-import { QandA } from "../../../../../ui/src/graphql/API";
+import { MultiChoice, FreeText, TrueFalse, SingleChoice } from "../../../../../ui/src/graphql/API";
 
 export class Response {
-  questions: QandA[];
+  questions: (MultiChoice | FreeText | TrueFalse | SingleChoice)[];
 }

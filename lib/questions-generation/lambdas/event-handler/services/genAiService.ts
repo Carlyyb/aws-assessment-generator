@@ -58,19 +58,46 @@ export class GenAiService {
   }
 
   public async improveQuestions(generatedQuestions: string, assessmentTemplate: AssessmentTemplate) {
-    logger.debug(generatedQuestions);
-    const parsedQuestions: GeneratedQuestions = parser.parse(generatedQuestions);
-    let improvedQuestions: Array<MultiChoice | FreeText | TrueFalse | SingleChoice> = []; //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断兼容
-    logger.debug(JSON.stringify(parsedQuestions));
+    logger.debug('Raw generated questions:', generatedQuestions);
+    
+    try {
+      const parsedQuestions: GeneratedQuestions = parser.parse(generatedQuestions);
+      logger.debug('Parsed questions structure:', JSON.stringify(parsedQuestions));
+      
+      let improvedQuestions: Array<MultiChoice | FreeText | TrueFalse | SingleChoice> = []; //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断兼容
+      
+      // 检查解析结果的结构
+      if (!parsedQuestions || !parsedQuestions.response || !parsedQuestions.response.questions) {
+        logger.error('Invalid parsed questions structure', { parsedQuestions });
+        throw new Error('Failed to parse questions: invalid structure');
+      }
+      
+      const questions = Array.isArray(parsedQuestions.response.questions) 
+        ? parsedQuestions.response.questions 
+        : [parsedQuestions.response.questions];
+      
+      logger.info(`Processing ${questions.length} questions`);
 
-    for (let i = 0; i < parsedQuestions.response.questions.length; i++) {
-      const question = parsedQuestions.response.questions[i];
-      const relevantDocs = await this.getRelevantDocuments(question);
-      const improvedQuestion = await this.improveQuestion(assessmentTemplate, question, relevantDocs);
-      improvedQuestions.push(improvedQuestion);
+      for (let i = 0; i < questions.length; i++) {
+        const question = questions[i];
+        logger.debug(`Processing question ${i + 1}:`, JSON.stringify(question));
+        
+        const relevantDocs = await this.getRelevantDocuments(question);
+        const improvedQuestion = await this.improveQuestion(assessmentTemplate, question, relevantDocs);
+        improvedQuestions.push(improvedQuestion);
+      }
+      
+      logger.info(`Successfully processed ${improvedQuestions.length} questions`);
+      logger.debug('Final improved questions:', JSON.stringify(improvedQuestions));
+      return Promise.resolve(improvedQuestions);
+    } catch (error) {
+      logger.error('Error in improveQuestions', { 
+        error: error.message, 
+        stack: error.stack,
+        generatedQuestions: generatedQuestions.substring(0, 500) + '...' // 截断以避免日志过长
+      });
+      throw error;
     }
-    logger.debug(JSON.stringify(improvedQuestions));
-    return Promise.resolve(improvedQuestions);
   }
 
   private async callLLM(modelId, prompt): Promise<string> {

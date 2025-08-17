@@ -167,10 +167,6 @@ export default () => {
   };
 
   // 检查是否可以删除（管理员或失败状态的记录）
-  const canDelete = (assessment: Assessment) => {
-    return adminInfo?.isAdmin || assessment.status === AssessStatus.FAILED;
-  };
-
   useEffect(getAssessments, []);
 
   return (
@@ -252,8 +248,8 @@ export default () => {
                   header: '操作',
                   cell: (item) => (
                     <SpaceBetween size="xs" direction="horizontal">
-                      {/* 编辑按钮 */}
-                      {item.published || item.status !== AssessStatus.CREATED ? null : (
+                      {/* 编辑按钮 - 只有未发布且状态为CREATED的测试才能编辑 */}
+                      {!item.published && item.status === AssessStatus.CREATED && (
                         <Link
                           href={`/edit-assessment/${item.id}`}
                           onFollow={(e) => {
@@ -266,7 +262,7 @@ export default () => {
                       )}
                       
                       {/* 发布/取消发布按钮 */}
-                      {item.status === AssessStatus.CREATED ? (
+                      {item.status === AssessStatus.CREATED && (
                         item.published ? (
                           <Button
                             onClick={() => handleUnpublish(item)}
@@ -287,10 +283,19 @@ export default () => {
                             {getText('common.actions.publish')}
                           </Button>
                         )
-                      ) : null}
+                      )}
+
+                      {/* 对于已发布状态(PUBLISHED)的测试，显示取消发布按钮 */}
+                      {item.status === AssessStatus.PUBLISHED && (
+                        <Button
+                          onClick={() => handleUnpublish(item)}
+                        >
+                          取消发布
+                        </Button>
+                      )}
                       
-                      {/* 删除按钮 - 仅对失败记录或管理员可见 */}
-                      {canDelete(item) && (
+                      {/* 删除按钮 - 管理员可以删除任何测试，普通用户只能删除失败的测试 */}
+                      {(adminInfo?.isAdmin || item.status === AssessStatus.FAILED) && (
                         <Button
                           variant="normal"
                           iconName="remove"

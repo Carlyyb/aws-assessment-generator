@@ -82,7 +82,7 @@ export function isAdminFromContext(ctx: any): boolean {
   // 可以通过 Lambda resolver 或在前端获取用户信息后传递
   
   // 临时方案：从 ctx.identity 中获取邮箱（如果 Cognito 配置了返回邮箱）
-  const userEmail = ctx.identity?.claims?.email || ctx.identity?.username;
+  const userEmail = ctx.identity?.email || ctx.identity?.claims?.email;
   
   if (!userEmail) {
     return false;
