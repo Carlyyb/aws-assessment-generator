@@ -5,7 +5,6 @@ import {
   SpaceBetween, 
   Container, 
   ContentLayout, 
-  Link, 
   Box, 
   Button, 
   Pagination,
@@ -45,22 +44,31 @@ export default () => {
   // 检查数据异常的辅助函数
   const checkDataIntegrity = (assessment: any): string | null => {
     try {
-      // 检查multiChoiceAssessment数据结构
+      // 检查是否所有assessment内容都为null（完全异常的情况）
+      const hasMultiChoice = assessment.multiChoiceAssessment && Array.isArray(assessment.multiChoiceAssessment) && assessment.multiChoiceAssessment.length > 0;
+      const hasSingleChoice = assessment.singleChoiceAssessment && Array.isArray(assessment.singleChoiceAssessment) && assessment.singleChoiceAssessment.length > 0;
+      const hasTrueFalse = assessment.trueFalseAssessment && Array.isArray(assessment.trueFalseAssessment) && assessment.trueFalseAssessment.length > 0;
+      const hasFreeText = assessment.freeTextAssessment && Array.isArray(assessment.freeTextAssessment) && assessment.freeTextAssessment.length > 0;
+      
+      // 如果所有assessment内容都为空或null，标记为完全异常
+      if (!hasMultiChoice && !hasSingleChoice && !hasTrueFalse && !hasFreeText) {
+        return '所有题目内容为空，数据完全异常';
+      }
+
+      // 检查multiChoiceAssessment数据结构中的具体字段异常
       if (assessment.multiChoiceAssessment && Array.isArray(assessment.multiChoiceAssessment)) {
         for (let i = 0; i < assessment.multiChoiceAssessment.length; i++) {
           const question = assessment.multiChoiceAssessment[i];
-          if (question.correctAnswer !== undefined) {
-            // 检查correctAnswer是否为数组（这是异常情况）
-            if (Array.isArray(question.correctAnswer)) {
-              return `多选题 ${i + 1} 的答案数据格式异常（数组格式）`;
+          if (question) {
+            // 检查关键字段是否为null（被后端清理过的异常数据）
+            if (question.correctAnswer === null) {
+              return `多选题 ${i + 1} 的答案数据已被清理（原数据格式异常）`;
             }
-            // 检查question是否为数组（异常情况）
-            if (Array.isArray(question.question)) {
-              return `多选题 ${i + 1} 的问题数据格式异常（数组格式）`;
+            if (question.question === null) {
+              return `多选题 ${i + 1} 的问题数据已被清理（原数据格式异常）`;
             }
-            // 检查explanation是否为数组（异常情况）
-            if (Array.isArray(question.explanation)) {
-              return `多选题 ${i + 1} 的解释数据格式异常（数组格式）`;
+            if (question.explanation === null) {
+              return `多选题 ${i + 1} 的解释数据已被清理（原数据格式异常）`;
             }
           }
         }
@@ -70,8 +78,8 @@ export default () => {
       if (assessment.singleChoiceAssessment && Array.isArray(assessment.singleChoiceAssessment)) {
         for (let i = 0; i < assessment.singleChoiceAssessment.length; i++) {
           const question = assessment.singleChoiceAssessment[i];
-          if (Array.isArray(question.correctAnswer)) {
-            return `单选题 ${i + 1} 的答案数据格式异常`;
+          if (question && question.correctAnswer === null) {
+            return `单选题 ${i + 1} 的答案数据已被清理（原数据格式异常）`;
           }
         }
       }
@@ -79,8 +87,8 @@ export default () => {
       if (assessment.trueFalseAssessment && Array.isArray(assessment.trueFalseAssessment)) {
         for (let i = 0; i < assessment.trueFalseAssessment.length; i++) {
           const question = assessment.trueFalseAssessment[i];
-          if (Array.isArray(question.correctAnswer)) {
-            return `判断题 ${i + 1} 的答案数据格式异常`;
+          if (question && question.correctAnswer === null) {
+            return `判断题 ${i + 1} 的答案数据已被清理（原数据格式异常）`;
           }
         }
       }
@@ -95,7 +103,7 @@ export default () => {
     client
       .graphql<any>({ query: listAssessments })
       .then(({ data }) => {
-        const list = data.listAssessments || [];
+        const list = data?.listAssessments || [];
         const errors = new Map<string, string>();
         
         // 检查每个assessment的数据完整性
@@ -109,12 +117,20 @@ export default () => {
         setDataErrors(errors);
         setAssessments(list);
         setFilteredAssessments(list);
+        
+        // 如果检测到数据异常，显示通知
+        if (errors.size > 0) {
+          dispatchAlert({ 
+            type: AlertType.ERROR, 
+            content: `检测到 ${errors.size} 个测试存在数据异常，已在列表中标记` 
+          });
+        }
       })
       .catch((error) => {
         console.error('Error fetching assessments:', error);
         dispatchAlert({ 
           type: AlertType.ERROR, 
-          content: '获取测试列表时发生错误，可能存在数据格式问题' 
+          content: '获取测试列表时发生错误，请稍后重试' 
         });
       });
   };
@@ -328,64 +344,20 @@ export default () => {
                   header: '操作',
                   cell: (item) => {
                     const hasDataError = dataErrors.has(item.id);
+                    const errorMessage = dataErrors.get(item.id) || '';
+                    const isCompletelyCorrupted = errorMessage.includes('所有题目内容为空，数据完全异常');
                     
                     return (
                       <SpaceBetween size="xs" direction="horizontal">
                         {/* 数据异常警告 */}
                         {hasDataError && (
-                          <Alert type="warning" statusIconAriaLabel="数据异常">
-                            此记录存在数据格式问题，建议删除
+                          <Alert type={isCompletelyCorrupted ? "error" : "warning"} statusIconAriaLabel="数据异常">
+                            {isCompletelyCorrupted ? '数据完全损坏，仅可删除' : '此记录存在数据格式问题，建议删除'}
                           </Alert>
                         )}
                         
-                        {/* 编辑按钮 - 数据异常时禁用编辑 */}
-                        {!hasDataError && !item.published && item.status === AssessStatus.CREATED && (
-                          <Link
-                            href={`/edit-assessment/${item.id}`}
-                            onFollow={(e) => {
-                              e.preventDefault();
-                              navigate(e.detail.href!);
-                            }}
-                          >
-                            {getText('common.actions.edit')}
-                          </Link>
-                        )}
-                        
-                        {/* 发布/取消发布按钮 - 数据异常时禁用 */}
-                        {!hasDataError && item.status === AssessStatus.CREATED && (
-                          item.published ? (
-                            <Button
-                              onClick={() => handleUnpublish(item)}
-                            >
-                              取消发布
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="primary"
-                              onClick={() =>
-                                client
-                                  .graphql<any>({ query: publishAssessment, variables: { assessmentId: item.id } })
-                                  .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.assessments.find.published_successfully') }))
-                                  .then(getAssessments)
-                                  .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.status.error') }))
-                              }
-                            >
-                              {getText('common.actions.publish')}
-                            </Button>
-                          )
-                        )}
-
-                        {/* 对于已发布状态(PUBLISHED)的测试，显示取消发布按钮 - 数据异常时禁用 */}
-                        {!hasDataError && item.status === AssessStatus.PUBLISHED && (
-                          <Button
-                            onClick={() => handleUnpublish(item)}
-                          >
-                            取消发布
-                          </Button>
-                        )}
-                        
-                        {/* 删除按钮 - 管理员可以删除任何测试，普通用户只能删除失败的测试，数据异常时始终可删除 */}
-                        {(hasDataError || adminInfo?.isAdmin || item.status === AssessStatus.FAILED) && (
+                        {/* 完全异常的数据只显示删除按钮 */}
+                        {isCompletelyCorrupted ? (
                           <Button
                             variant="normal"
                             iconName="remove"
@@ -396,6 +368,65 @@ export default () => {
                           >
                             删除
                           </Button>
+                        ) : (
+                          <>
+                            {/* 编辑按钮 - 数据异常时禁用编辑 */}
+                            {!hasDataError && !item.published && item.status === AssessStatus.CREATED && (
+                              <Button
+                                variant="normal"
+                                onClick={() => navigate(`/edit-assessment/${item.id}`)}
+                              >
+                                {getText('common.actions.edit')}
+                              </Button>
+                            )}
+                            
+                            {/* 发布/取消发布按钮 - 数据异常时禁用 */}
+                            {!hasDataError && item.status === AssessStatus.CREATED && (
+                              item.published ? (
+                                <Button
+                                  onClick={() => handleUnpublish(item)}
+                                >
+                                  取消发布
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="primary"
+                                  onClick={() =>
+                                    client
+                                      .graphql<any>({ query: publishAssessment, variables: { assessmentId: item.id } })
+                                      .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.assessments.find.published_successfully') }))
+                                      .then(getAssessments)
+                                      .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.status.error') }))
+                                  }
+                                >
+                                  {getText('common.actions.publish')}
+                                </Button>
+                              )
+                            )}
+
+                            {/* 对于已发布状态(PUBLISHED)的测试，显示取消发布按钮 - 数据异常时禁用 */}
+                            {!hasDataError && item.status === AssessStatus.PUBLISHED && (
+                              <Button
+                                onClick={() => handleUnpublish(item)}
+                              >
+                                取消发布
+                              </Button>
+                            )}
+                            
+                            {/* 删除按钮 - 管理员可以删除任何测试，普通用户只能删除失败的测试，数据异常时始终可删除 */}
+                            {(hasDataError || adminInfo?.isAdmin || item.status === AssessStatus.FAILED) && (
+                              <Button
+                                variant="normal"
+                                iconName="remove"
+                                onClick={() => {
+                                  setAssessmentToDelete(item);
+                                  setShowDeleteModal(true);
+                                }}
+                              >
+                                删除
+                              </Button>
+                            )}
+                          </>
                         )}
                       </SpaceBetween>
                     );
