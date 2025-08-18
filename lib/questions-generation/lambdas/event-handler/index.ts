@@ -81,6 +81,18 @@ class Lambda implements LambdaInterface {
         topicsLength: topicsExtractionOutput?.length || 0 
       });
 
+      // 验证提取的主题是否包含学术内容（不是技术文档内容）
+      if (topicsExtractionOutput && (
+        topicsExtractionOutput.toLowerCase().includes('xml') ||
+        topicsExtractionOutput.toLowerCase().includes('document.xml') ||
+        topicsExtractionOutput.toLowerCase().includes('theme.xml') ||
+        topicsExtractionOutput.toLowerCase().includes('.rels')
+      )) {
+        logger.warn('Detected technical document content instead of academic content');
+        logger.warn('Topics extracted contain XML/technical terms, this may indicate wrong document content');
+        // 继续处理，但记录警告
+      }
+
       // Generate questions with given values
       logger.info('Generating initial questions');
       const generatedQuestions = await genAiService.generateInitialQuestions(topicsExtractionOutput, referenceDocuments.assessmentTemplate);

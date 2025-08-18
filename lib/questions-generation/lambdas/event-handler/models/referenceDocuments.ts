@@ -38,11 +38,21 @@ export class ReferenceDocuments {
         Key: `public/${s3ObjectKey}`,
       };
       logger.info(`Getting Object ${s3ObjectKey}`, getObjectCommandParams as any);
-      const s3response: GetObjectCommandOutput = await s3Client.send<GetObjectCommand>(new GetObjectCommand(getObjectCommandParams));
+      const s3response: GetObjectCommandOutput = await s3Client.send(new GetObjectCommand(getObjectCommandParams));
       const document = await s3response.Body?.transformToString();
       if (!document) {
         throw new Error(`Empty object: ${s3ObjectKey}`);
       }
+      
+      // 添加文档内容调试信息
+      logger.info(`Document ${s3ObjectKey} length: ${document.length}`);
+      logger.debug(`Document ${s3ObjectKey} preview (first 500 chars): ${document.substring(0, 500)}`);
+      
+      // 检查是否包含XML内容（可能表示读取了错误的文档）
+      if (document.includes('<?xml') || document.includes('<document>') || document.includes('xmlns:')) {
+        logger.warn(`Document ${s3ObjectKey} appears to contain XML content, may not be educational material`);
+      }
+      
       return document;
     }));
 

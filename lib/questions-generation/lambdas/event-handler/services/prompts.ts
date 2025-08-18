@@ -10,14 +10,20 @@ import { ReferenceDocuments } from '../models/referenceDocuments';
 export function getInitialQuestionsPrompt(assessmentTemplate: AssessmentTemplate, topicsExtractionOutput: string) {
   // TODO add topic to response for each question
   let prompt = `
-Craft a ${assessmentTemplate.assessType} questionnaire (${
+You are creating a ${assessmentTemplate.assessType} questionnaire with exactly ${
     assessmentTemplate.totalQuestions
-  } questions)  for a university student based on the Provided Summarised Transcript.
-Ensure you have ONLY ${assessmentTemplate.totalQuestions} questions.
-Do not make references to the transcript or the lecture, the quiz should be clear and concise.
-Do not ask questions on whether the topic was covered or not in the lecture.
-Build ${assessmentTemplate.easyQuestions} easy, ${assessmentTemplate.mediumQuestions} medium, and ${assessmentTemplate.hardQuestions} hard questions.
-The questionnaire should be in the ISO 639-2 Code: ${assessmentTemplate.docLang}
+  } questions for a university student. The questions should be based STRICTLY on the academic content provided in the Summarised Transcript below.
+
+IMPORTANT INSTRUCTIONS:
+- Generate ONLY ${assessmentTemplate.totalQuestions} questions
+- Base ALL questions on the academic content in the Provided Summarised Transcript
+- Do NOT create questions about file formats, XML structures, or technical document formats
+- Focus on the EDUCATIONAL CONTENT and subject matter from the transcript
+- The response format will be XML, but the question content should be about the academic subject, NOT about XML
+- The quiz should be clear, academic, and directly related to the learning material
+- Do not reference the transcript itself, focus on the knowledge it contains
+- Create ${assessmentTemplate.easyQuestions} easy, ${assessmentTemplate.mediumQuestions} medium, and ${assessmentTemplate.hardQuestions} hard questions
+- Use language code: ${assessmentTemplate.docLang}
 
 Use the Bloom's Taxonomy of category ${
     assessmentTemplate.taxonomy
@@ -74,14 +80,17 @@ Follow these guidelines:
 
 Formulate a question that probes knowledge of the Core Concepts.
 
-Structure your response in this format and do not include any additional text, respond with the XML content only. The response must be valid XML following this format and please ensure you follow below format:
+RESPONSE FORMAT INSTRUCTIONS:
+Your response should be formatted as XML data structure (this is just the format, NOT the content topic).
+The actual question content should be about the academic subject matter from the transcript.
+Do not include any additional text outside the XML structure.
+
+Use this exact XML format for your response:
 \`\`\`xml
 <response>
     <questions>
-        <title>[Brief question title]</title>
-        <question>
-            [Question]
-        </question>
+        <title>[Brief question title about the academic topic]</title>
+        <question>[Question about the subject matter from the transcript]</question>
     ${
       assessmentTemplate.assessType === AssessType.multiChoiceAssessment
         ? `
@@ -110,7 +119,38 @@ Structure your response in this format and do not include any additional text, r
         : ''
     }
     </questions>
-    <!-- all other questions below   -->
+    <questions>
+        <title>[Brief question title for question 2]</title>
+        <question>[Question 2]</question>
+    ${
+      assessmentTemplate.assessType === AssessType.multiChoiceAssessment
+        ? `
+            <answerChoices>[Option 1]</answerChoices>
+            <answerChoices>[Option 2]</answerChoices>
+            <answerChoices>[Option 3]</answerChoices>
+            <answerChoices>[Option 4]</answerChoices>
+            <correctAnswer>[Correct Answer Number]</correctAnswer>
+            <explanation>[Explanation for Correctness]</explanation>
+    `
+        : ''
+    }
+    ${
+      assessmentTemplate.assessType === AssessType.freeTextAssessment
+        ? `
+          <rubric>
+            <weight>[weight_value]</weight>
+            <point>[Point 1]</point>
+          </rubric>
+          <rubric>
+            <weight>[weight_value]</weight>
+            <point>[Point 2]</point>
+          </rubric>
+          <!-- all other rubric points below   -->
+    `
+        : ''
+    }
+    </questions>
+    <!-- repeat questions structure for each additional question -->
     ${
   assessmentTemplate.assessType === AssessType.trueFalseAssessment
     ? `
@@ -149,9 +189,20 @@ Structure your response in this format and do not include any additional text, r
 
 export function getTopicsPrompt(referenceDocuments: ReferenceDocuments) {
   let prompt = `
-Extract the key topics covered in the lecture. The lecture content is covered in the documents below.
-Tell me the topics of the subject covered, do not include examples used to explain the concept.
-For each topic, include a brief description of what was covered.
+TASK: Extract key academic topics and learning concepts from educational content.
+
+IMPORTANT INSTRUCTIONS:
+- Focus ONLY on educational/academic content and subject matter
+- IGNORE any technical file formats, document metadata, or system files  
+- Extract topics related to the actual course material and learning objectives
+- Do NOT include topics about document structure, file formats, XML, or technical specifications
+- For each topic, provide a brief description of the educational concept covered
+- Focus on knowledge that students should learn, not on document processing or technical formats
+
+EXAMPLE of what to AVOID: "XML file structure", "document formatting", "file types"
+EXAMPLE of what to INCLUDE: subject-specific concepts, theories, methodologies, skills
+
+Please analyze the following educational documents and extract the academic topics:
     `;
 
   // Nova Lite has ~128K token limit, roughly 4 chars per token
@@ -193,18 +244,23 @@ export function getRelevantDocumentsPrompt(question: MultiChoice | FreeText | Tr
 
 export function improveQuestionPrompt(xmlQuestion: any, xmlDocs: any, assessmentTemplate: AssessmentTemplate) {
   let prompt = `
-If relevant, use the content in the EXTRACTED_DOCUMENTS to improve the QUESTION.
-Structure your response in the FORMAT.
-Any reference to the EXTRACTED_DOCUMENTS, should include the uri of the document. 
+TASK: Improve the academic question using the provided extracted documents if relevant.
+Focus on enhancing the educational content, not the format.
 
-QUESTION:
+If relevant, use the content in the EXTRACTED_DOCUMENTS to improve the QUESTION's academic accuracy and depth.
+Any reference to the EXTRACTED_DOCUMENTS should include the uri of the document.
+
+CURRENT QUESTION:
 ${xmlQuestion}
 
 EXTRACTED_DOCUMENTS:
 ${xmlDocs}
 
+RESPONSE FORMAT INSTRUCTIONS:
+Format your response as XML data structure (this is just the format requirement, NOT the content topic).
+The question content should be about the academic subject matter, not about XML or document formats.
 
-Structure your response in this format and do not include any additional imput. The response must be valid XML following this FORMAT:
+Use this exact XML format:
 \`\`\`xml
 <question>
     <title>[Brief question title]</title>

@@ -8,14 +8,19 @@ import { GeneratedQuestions } from '../models/generatedQuestions';
 import { BedrockAgentRuntime, KnowledgeBaseRetrievalResult } from '@aws-sdk/client-bedrock-agent-runtime';
 import { BedrockRuntime } from '@aws-sdk/client-bedrock-runtime';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
-import { MultiChoice, FreeText, TrueFalse, SingleChoice } from '../../../../../ui/src/graphql/API'; //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断
+import { MultiChoice, FreeText, TrueFalse, SingleChoice, AssessType } from '../../../../../ui/src/graphql/API'; //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断
 
 import { getInitialQuestionsPrompt, getRelevantDocumentsPrompt, getTopicsPrompt, improveQuestionPrompt } from './prompts';
 
 const MODEL_ID = 'us.amazon.nova-lite-v1:0';
 const bedrock = new BedrockRuntime();
 const bedrockAgentRuntime = new BedrockAgentRuntime();
-const parser = new XMLParser();
+const parser = new XMLParser({
+  isArray: (name, jpath, isLeafNode, isAttribute) => {
+    // Only treat 'questions' as array, not individual question properties
+    return jpath === 'response.questions';
+  }
+});
 const builder = new XMLBuilder();
 
 export class GenAiService {
@@ -82,9 +87,66 @@ export class GenAiService {
         const question = questions[i];
         logger.debug(`Processing question ${i + 1}:`, JSON.stringify(question));
         
-        const relevantDocs = await this.getRelevantDocuments(question);
-        const improvedQuestion = await this.improveQuestion(assessmentTemplate, question, relevantDocs);
-        improvedQuestions.push(improvedQuestion);
+        // 检查是否是合并的问题结构（包含数组的question, correctAnswer等）
+        if (assessmentTemplate.assessType === AssessType.multiChoiceAssessment && 
+            Array.isArray((question as MultiChoice).question) &&
+            Array.isArray((question as MultiChoice).correctAnswer)) {
+          
+          logger.info('Detected merged question structure, splitting into individual questions');
+          const mergedQuestion = question as MultiChoice;
+          const questionTexts = Array.isArray(mergedQuestion.question) ? mergedQuestion.question : [mergedQuestion.question];
+          const correctAnswers = Array.isArray(mergedQuestion.correctAnswer) ? mergedQuestion.correctAnswer : [mergedQuestion.correctAnswer];
+          const explanations = Array.isArray(mergedQuestion.explanation) ? mergedQuestion.explanation : [mergedQuestion.explanation];
+          
+          // 检查生成的内容是否包含XML/技术内容
+          const hasXmlContent = questionTexts.some(q => {
+            const questionText = typeof q === 'object' ? (q as any).text : q;
+            return questionText && (
+              questionText.toLowerCase().includes('xml') ||
+              questionText.toLowerCase().includes('document.xml') ||
+              questionText.toLowerCase().includes('theme.xml') ||
+              questionText.toLowerCase().includes('.rels')
+            );
+          });
+          
+          if (hasXmlContent) {
+            logger.error('Generated questions contain XML/technical content instead of educational content');
+            throw new Error('Generated questions contain technical document references instead of educational content. Please check your knowledge base documents.');
+          }
+          
+          // 为每个子问题创建单独的问题对象
+          for (let j = 0; j < questionTexts.length; j++) {
+            const individualQuestion = {
+              __typename: "MultiChoice" as const,
+              title: `${mergedQuestion.title} - Part ${j + 1}`,
+              question: typeof questionTexts[j] === 'object' ? (questionTexts[j] as any).text : questionTexts[j],
+              answerChoices: mergedQuestion.answerChoices,
+              correctAnswer: correctAnswers[j],
+              explanation: typeof explanations[j] === 'object' ? (explanations[j] as any).text : explanations[j]
+            } as MultiChoice;
+            
+            const relevantDocs = await this.getRelevantDocuments(individualQuestion);
+            const improvedQuestion = await this.improveQuestion(assessmentTemplate, individualQuestion, relevantDocs);
+            improvedQuestions.push(improvedQuestion);
+          }
+        } else {
+          // 正常的单个问题处理 - 也检查XML内容
+          const questionText = (question as any).question;
+          if (questionText && (
+            questionText.toLowerCase().includes('xml') ||
+            questionText.toLowerCase().includes('document.xml') ||
+            questionText.toLowerCase().includes('theme.xml') ||
+            questionText.toLowerCase().includes('.rels')
+          )) {
+            logger.error('Generated question contains XML/technical content instead of educational content');
+            logger.error('Question text:', questionText);
+            throw new Error('Generated questions contain technical document references instead of educational content. Please check your knowledge base documents.');
+          }
+          
+          const relevantDocs = await this.getRelevantDocuments(question);
+          const improvedQuestion = await this.improveQuestion(assessmentTemplate, question, relevantDocs);
+          improvedQuestions.push(improvedQuestion);
+        }
       }
       
       logger.info(`Successfully processed ${improvedQuestions.length} questions`);
