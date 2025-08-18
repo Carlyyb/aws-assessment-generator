@@ -102,27 +102,27 @@ input FreeTextInput {
 }
 
 type MultiChoice {
-  title: String!
-  question: String!
-  answerChoices: [String!]!
-  correctAnswer: Int!
-  explanation: String!
+  title: String
+  question: String
+  answerChoices: [String!]
+  correctAnswer: Int
+  explanation: String
 }
 
 type TrueFalse {
-  title: String!
-  question: String!
-  answerChoices: [String!]!
-  correctAnswer: String!
-  explanation: String!
+  title: String
+  question: String
+  answerChoices: [String!]
+  correctAnswer: String
+  explanation: String
 }
 
 type SingleChoice {
-  title: String!
-  question: String!
-  answerChoices: [String!]!
-  correctAnswer: Int!
-  explanation: String!
+  title: String
+  question: String
+  answerChoices: [String!]
+  correctAnswer: Int
+  explanation: String
 }
 
 input MultiChoiceInput {

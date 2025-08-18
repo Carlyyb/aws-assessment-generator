@@ -26,9 +26,7 @@ export function generateBreadcrumbs(pathname: string, getOverride?: (path: strin
       text: getText('common.nav.find-assessments'),
       href: '/assessments/find-assessments'
     });
-    // 添加当前测试到面包屑
-    const overrideTitle = getOverride?.(pathname);
-    const testName = overrideTitle || getText('teachers.assessments.edit.current');
+    const testName = getText('teachers.assessments.edit.current');
     breadcrumbs.push({
       text: testName,
       href: pathname
@@ -135,9 +133,6 @@ function getSegmentDisplayName(segment: string, pathSegments: string[], index: n
     case 'assessment':
       return getText('students.assessment.current');
     case 'edit-assessment':
-      // 对于编辑测试页面，我们希望显示测试名称
-      // 由于这里无法直接获取测试数据，暂时显示一个通用名称
-      // 实际的测试名称应该通过其他方式获取和更新
       return getText('teachers.assessments.edit.current');
     case 'review':
       return getText('students.review.current');

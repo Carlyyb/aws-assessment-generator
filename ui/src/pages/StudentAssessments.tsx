@@ -37,29 +37,33 @@ export default () => {
             {
               id: 'name',
               header: getText('students.assessments.list.table.name'),
-              cell: (item) => item.assessment!.name,
+              cell: (item) => item.assessment?.name || '-',
               sortingField: 'name',
             },
             {
               id: 'course',
               header: getText('students.assessments.list.table.course'),
-              cell: (item) => item.assessment!.course?.name,
+              cell: (item) => item.assessment?.course?.name || '-',
               sortingField: 'course',
             },
             {
               id: 'deadline',
               header: getText('students.assessments.list.table.deadline'),
-              cell: (item) => new Date(item.assessment!.deadline).toDateString(),
+              cell: (item) => item.assessment?.deadline ? new Date(item.assessment.deadline).toDateString() : '-',
               sortingField: 'course',
             },
             {
               id: 'action',
               header: getText('students.assessments.list.table.action'),
               cell: (item) =>
-                item.completed ? (
-                  <Button onClick={() => navigate('/review/' + item.parentAssessId)}>{getText('students.assessments.list.actions.review')}</Button>
+                item.assessment ? (
+                  item.completed ? (
+                    <Button onClick={() => navigate('/review/' + item.parentAssessId)}>{getText('students.assessments.list.actions.review')}</Button>
+                  ) : (
+                    <Button onClick={() => navigate('/assessment/' + item.parentAssessId)}>{getText('students.assessments.list.actions.start')}</Button>
+                  )
                 ) : (
-                  <Button onClick={() => navigate('/assessment/' + item.parentAssessId)}>{getText('students.assessments.list.actions.start')}</Button>
+                  <Box color="text-status-inactive">无效的评估</Box>
                 ),
             },
             {
