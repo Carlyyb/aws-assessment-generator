@@ -6,6 +6,7 @@ import { Assessment, AssessType, MultiChoice, FreeText, SingleChoice, TrueFalse 
 import { getAssessment } from '../graphql/queries';
 import { upsertAssessment } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
+import { useBreadcrumb } from '../contexts/breadcrumbs';
 import { QAView } from '../components/QAView';
 import { FreeTextView } from '../components/FreeTextView';
 import { removeTypenames } from '../helpers';
@@ -96,6 +97,7 @@ export default () => {
   const params = useParams();
   const navigate = useNavigate();
   const dispatchAlert = useContext(DispatchAlertContext);
+  const { setOverride, removeOverride } = useBreadcrumb();
 
   const [assessment, updateAssessment] = useReducer(reducer, {} as Assessment);
   const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -108,9 +110,23 @@ export default () => {
         if (!result) throw new Error();
         const { updatedAt, ...content } = removeTypenames(result);
         updateAssessment({ type: ActionTypes.Put, content });
+        
+        // 设置面包屑覆盖，使测试名称显示在面包屑中
+        if (content.name) {
+          setOverride(`/edit-assessment/${params.id}`, content.name);
+        }
       })
       .catch(() => {});
-  }, []);
+  }, [params.id, setOverride]);
+
+  // 组件卸载时清理面包屑覆盖
+  useEffect(() => {
+    return () => {
+      if (params.id) {
+        removeOverride(`/edit-assessment/${params.id}`);
+      }
+    };
+  }, [params.id, removeOverride]);
 
   const getQuestions = () => {
     if (!assessment || !assessment.assessType) return [];
