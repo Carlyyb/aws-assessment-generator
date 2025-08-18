@@ -23,6 +23,8 @@ import { Assessment, AssessStatus } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { getText } from '../i18n/lang';
 import { useAdminPermissions } from '../utils/adminPermissions';
+import { ExportModal } from '../components/ExportModal';
+import { exportAssessments, ExportOptions } from '../utils/exportUtils';
 
 const client = generateClient();
 
@@ -40,27 +42,29 @@ export default () => {
   const [assessmentToDelete, setAssessmentToDelete] = useState<Assessment | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [dataErrors, setDataErrors] = useState<Map<string, string>>(new Map());
+  
+  // 批量操作相关状态
+  const [selectedAssessments, setSelectedAssessments] = useState<Assessment[]>([]);
+  const [showBatchDeleteModal, setShowBatchDeleteModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // 检查数据异常的辅助函数
   const checkDataIntegrity = (assessment: any): string | null => {
     try {
-      // 检查是否所有assessment内容都为null（完全异常的情况）
       const hasMultiChoice = assessment.multiChoiceAssessment && Array.isArray(assessment.multiChoiceAssessment) && assessment.multiChoiceAssessment.length > 0;
       const hasSingleChoice = assessment.singleChoiceAssessment && Array.isArray(assessment.singleChoiceAssessment) && assessment.singleChoiceAssessment.length > 0;
       const hasTrueFalse = assessment.trueFalseAssessment && Array.isArray(assessment.trueFalseAssessment) && assessment.trueFalseAssessment.length > 0;
       const hasFreeText = assessment.freeTextAssessment && Array.isArray(assessment.freeTextAssessment) && assessment.freeTextAssessment.length > 0;
       
-      // 如果所有assessment内容都为空或null，标记为完全异常
       if (!hasMultiChoice && !hasSingleChoice && !hasTrueFalse && !hasFreeText) {
         return '所有题目内容为空，数据完全异常';
       }
 
-      // 检查multiChoiceAssessment数据结构中的具体字段异常
       if (assessment.multiChoiceAssessment && Array.isArray(assessment.multiChoiceAssessment)) {
         for (let i = 0; i < assessment.multiChoiceAssessment.length; i++) {
           const question = assessment.multiChoiceAssessment[i];
           if (question) {
-            // 检查关键字段是否为null（被后端清理过的异常数据）
             if (question.correctAnswer === null) {
               return `多选题 ${i + 1} 的答案数据已被清理（原数据格式异常）`;
             }
@@ -74,7 +78,6 @@ export default () => {
         }
       }
 
-      // 检查其他类型的assessment数据结构
       if (assessment.singleChoiceAssessment && Array.isArray(assessment.singleChoiceAssessment)) {
         for (let i = 0; i < assessment.singleChoiceAssessment.length; i++) {
           const question = assessment.singleChoiceAssessment[i];
@@ -106,7 +109,6 @@ export default () => {
         const list = data?.listAssessments || [];
         const errors = new Map<string, string>();
         
-        // 检查每个assessment的数据完整性
         list.forEach((assessment: any) => {
           const error = checkDataIntegrity(assessment);
           if (error) {
@@ -118,7 +120,6 @@ export default () => {
         setAssessments(list);
         setFilteredAssessments(list);
         
-        // 如果检测到数据异常，显示通知
         if (errors.size > 0) {
           dispatchAlert({ 
             type: AlertType.ERROR, 
@@ -135,7 +136,76 @@ export default () => {
       });
   };
 
-  // 状态选项
+  // 批量删除处理函数
+  const handleBatchDelete = async () => {
+    setIsDeleting(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (const assessment of selectedAssessments) {
+        try {
+          await client.graphql<any>({
+            query: deleteAssessment,
+            variables: { id: assessment.id }
+          });
+          successCount++;
+        } catch (error: any) {
+          errorCount++;
+          console.error(`删除 ${assessment.name} 失败:`, error);
+        }
+      }
+
+      if (successCount > 0) {
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: `成功删除 ${successCount} 个评估${errorCount > 0 ? `，${errorCount} 个删除失败` : ''}`
+        });
+      }
+
+      if (errorCount > 0 && successCount === 0) {
+        dispatchAlert({
+          type: AlertType.ERROR,
+          content: `批量删除失败，共 ${errorCount} 个评估删除失败`
+        });
+      }
+
+      setSelectedAssessments([]);
+      getAssessments();
+    } catch (error: any) {
+      console.error('批量删除错误:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: `批量删除失败: ${error.message || '未知错误'}`
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowBatchDeleteModal(false);
+    }
+  };
+
+  // 导出处理函数
+  const handleExport = async (options: ExportOptions) => {
+    setIsExporting(true);
+    try {
+      await exportAssessments(selectedAssessments, options);
+      
+      dispatchAlert({
+        type: AlertType.SUCCESS,
+        content: `成功导出 ${selectedAssessments.length} 个评估`
+      });
+    } catch (error: any) {
+      console.error('导出错误:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: `导出失败: ${error.message || '未知错误'}`
+      });
+    } finally {
+      setIsExporting(false);
+      setShowExportModal(false);
+    }
+  };
+
   const statusOptions: SelectProps.Option[] = [
     { label: '全部状态', value: 'all' },
     { label: '进行中', value: AssessStatus.IN_PROGRESS },
@@ -144,23 +214,19 @@ export default () => {
     { label: '已发布', value: AssessStatus.PUBLISHED },
   ];
 
-  // 发布状态选项
   const publishedOptions: SelectProps.Option[] = [
     { label: '全部', value: 'all' },
     { label: '已发布', value: 'published' },
     { label: '未发布', value: 'unpublished' },
   ];
 
-  // 筛选逻辑
   useEffect(() => {
     let filtered = [...assessments];
 
-    // 按状态筛选
     if (statusFilter && statusFilter.value !== 'all') {
       filtered = filtered.filter(item => item.status === statusFilter.value);
     }
 
-    // 按发布状态筛选
     if (publishedFilter && publishedFilter.value !== 'all') {
       if (publishedFilter.value === 'published') {
         filtered = filtered.filter(item => item.published);
@@ -169,7 +235,6 @@ export default () => {
       }
     }
 
-    // 按名称筛选
     if (nameFilter.trim()) {
       filtered = filtered.filter(item => 
         item.name.toLowerCase().includes(nameFilter.toLowerCase()) ||
@@ -180,7 +245,6 @@ export default () => {
     setFilteredAssessments(filtered);
   }, [assessments, statusFilter, publishedFilter, nameFilter]);
 
-  // 删除评估
   const handleDelete = async () => {
     if (!assessmentToDelete) return;
 
@@ -210,7 +274,6 @@ export default () => {
     }
   };
 
-  // 取消发布评估
   const handleUnpublish = async (assessment: Assessment) => {
     try {
       await client.graphql<any>({
@@ -233,7 +296,6 @@ export default () => {
     }
   };
 
-  // 获取状态显示
   const getStatusDisplay = (status: AssessStatus) => {
     switch (status) {
       case AssessStatus.IN_PROGRESS:
@@ -249,7 +311,12 @@ export default () => {
     }
   };
 
-  // 检查是否可以删除（管理员或失败状态的记录）
+  // 检查是否可以删除
+  const canDelete = (item: Assessment) => {
+    const hasDataError = dataErrors.has(item.id);
+    return hasDataError || adminInfo?.isAdmin || item.status === AssessStatus.FAILED;
+  };
+
   useEffect(getAssessments, []);
 
   return (
@@ -262,7 +329,6 @@ export default () => {
             </SpaceBetween>
           }
         >
-          {/* 筛选器 */}
           <SpaceBetween size="l">
             <Box padding="s">
               <SpaceBetween size="s" direction="horizontal">
@@ -287,7 +353,33 @@ export default () => {
               </SpaceBetween>
             </Box>
 
+            {/* 批量操作栏 */}
+            {selectedAssessments.length > 0 && (
+              <Box padding="s" variant="awsui-value-large">
+                <SpaceBetween size="s" direction="horizontal">
+                  <Box variant="awsui-key-label">已选择 {selectedAssessments.length} 项:</Box>
+                  <Button
+                    onClick={() => setShowExportModal(true)}
+                    iconName="download"
+                  >
+                    导出选中项
+                  </Button>
+                  <Button
+                    variant="normal"
+                    iconName="remove"
+                    onClick={() => setShowBatchDeleteModal(true)}
+                    disabled={!selectedAssessments.some(canDelete)}
+                  >
+                    删除选中项
+                  </Button>
+                </SpaceBetween>
+              </Box>
+            )}
+
             <Table
+              selectionType="multi"
+              selectedItems={selectedAssessments}
+              onSelectionChange={({ detail }) => setSelectedAssessments(detail.selectedItems)}
               columnDefinitions={[
                 {
                   id: 'name',
@@ -349,14 +441,12 @@ export default () => {
                     
                     return (
                       <SpaceBetween size="xs" direction="horizontal">
-                        {/* 数据异常警告 */}
                         {hasDataError && (
                           <Alert type={isCompletelyCorrupted ? "error" : "warning"} statusIconAriaLabel="数据异常">
                             {isCompletelyCorrupted ? '数据完全损坏，仅可删除' : '此记录存在数据格式问题，建议删除'}
                           </Alert>
                         )}
                         
-                        {/* 完全异常的数据只显示删除按钮 */}
                         {isCompletelyCorrupted ? (
                           <Button
                             variant="normal"
@@ -370,18 +460,17 @@ export default () => {
                           </Button>
                         ) : (
                           <>
-                            {/* 测试结果按钮 - 只有已发布的测试才显示 */}
-                            {!hasDataError && item.published && (
+                            {/* 查看数据按钮 - 已发布或已创建的测试都显示 */}
+                            {!hasDataError && (item.published || item.status === AssessStatus.CREATED) && (
                               <Button
                                 variant="normal"
                                 iconName="search"
                                 onClick={() => navigate(`/assessment-results/${item.id}`)}
                               >
-                                测试结果
+                                {item.published ? '测试结果' : '查看数据'}
                               </Button>
                             )}
                             
-                            {/* 编辑按钮 - 数据异常时禁用编辑 */}
                             {!hasDataError && !item.published && item.status === AssessStatus.CREATED && (
                               <Button
                                 variant="normal"
@@ -391,7 +480,6 @@ export default () => {
                               </Button>
                             )}
                             
-                            {/* 发布/取消发布按钮 - 数据异常时禁用 */}
                             {!hasDataError && item.status === AssessStatus.CREATED && (
                               item.published ? (
                                 <Button
@@ -415,7 +503,6 @@ export default () => {
                               )
                             )}
 
-                            {/* 对于已发布状态(PUBLISHED)的测试，显示取消发布按钮 - 数据异常时禁用 */}
                             {!hasDataError && item.status === AssessStatus.PUBLISHED && (
                               <Button
                                 onClick={() => handleUnpublish(item)}
@@ -424,8 +511,7 @@ export default () => {
                               </Button>
                             )}
                             
-                            {/* 删除按钮 - 管理员可以删除任何测试，普通用户只能删除失败的测试，数据异常时始终可删除 */}
-                            {(hasDataError || adminInfo?.isAdmin || item.status === AssessStatus.FAILED) && (
+                            {canDelete(item) && (
                               <Button
                                 variant="normal"
                                 iconName="remove"
@@ -471,7 +557,7 @@ export default () => {
         </Container>
       </ContentLayout>
 
-      {/* 删除确认对话框 */}
+      {/* 单个删除确认对话框 */}
       <Modal
         visible={showDeleteModal}
         onDismiss={() => {
@@ -525,6 +611,55 @@ export default () => {
           </SpaceBetween>
         )}
       </Modal>
+
+      {/* 批量删除确认对话框 */}
+      <Modal
+        visible={showBatchDeleteModal}
+        onDismiss={() => setShowBatchDeleteModal(false)}
+        header="确认批量删除"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button 
+                variant="link"
+                onClick={() => setShowBatchDeleteModal(false)}
+              >
+                取消
+              </Button>
+              <Button 
+                variant="primary" 
+                onClick={handleBatchDelete}
+                loading={isDeleting}
+              >
+                删除
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <SpaceBetween size="m">
+          <Alert type="warning" statusIconAriaLabel="警告">
+            此操作无法撤销。删除后，所有相关的学生答题记录也将被删除。
+          </Alert>
+          <Box>
+            确定要删除选中的 <strong>{selectedAssessments.length}</strong> 个测试吗？
+          </Box>
+          {selectedAssessments.some(item => dataErrors.has(item.id)) && (
+            <Alert type="error">
+              选中项中包含数据异常的测试，建议删除以避免系统错误。
+            </Alert>
+          )}
+        </SpaceBetween>
+      </Modal>
+
+      {/* 导出模态窗口 */}
+      <ExportModal
+        visible={showExportModal}
+        onDismiss={() => setShowExportModal(false)}
+        onExport={handleExport}
+        selectedCount={selectedAssessments.length}
+        isExporting={isExporting}
+      />
     </>
   );
 };
