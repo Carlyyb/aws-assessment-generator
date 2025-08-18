@@ -22,7 +22,8 @@
       "error": "错误",
       "published": "已发布",
       "show_fewer_files": "显示更少文件",
-      "show_more_files": "显示更多文件"
+      "show_more_files": "显示更多文件",
+      "optional": "可选"
     },
     "brand": "测试生成器",
     "selected_values": "已选择的值",
@@ -550,6 +551,20 @@
         "provide_answer": "请作答：",
         "choose_answer": "请选择：",
         "grading": "评分中..."
+      },
+      "review": {
+        "your_score": "你的分数：",
+        "question_number": "第 {number} 题",
+        "question_progress": "第 {current} 题，共 {total} 题",
+        "question_title": "第 {number} 题",
+        "skip_to": "跳转到 {title}",
+        "provide_answer": "请作答：",
+        "choose_answer": "请选择：",
+        "grading": "评分中...",
+        "explanation": "解答",
+        "answer": "答案",
+        "points_with_rate": "得分（{rate}）",
+        "rubric": "评分标准"
       }
     }
   },

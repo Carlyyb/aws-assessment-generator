@@ -22,7 +22,8 @@
       "error": "Error",
       "published": "Published",
       "show_fewer_files": "Show fewer files",
-      "show_more_files": "Show more files"
+      "show_more_files": "Show more files",
+      "optional": "Optional"
     },
     "brand": "Gen Assess",
     "selected_values": "Selected Values",
@@ -547,6 +548,20 @@
         "provide_answer": "Provide:",
         "choose_answer": "Choose:",
         "grading": "Grading..."
+      },
+      "review": {
+        "your_score": "Your Score:",
+        "question_number": "Question {number}",
+        "question_progress": "Question {current} of {total}",
+        "question_title": "Question {number}",
+        "skip_to": "Skip to {title}",
+        "provide_answer": "Provide:",
+        "choose_answer": "Choose:",
+        "grading": "Grading...",
+        "explanation": "Explanation",
+        "answer": "Answer",
+        "points_with_rate": "Points ({rate})",
+        "rubric": "Rubric"
       }
     }
   },
