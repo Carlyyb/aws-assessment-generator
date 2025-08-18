@@ -101,7 +101,7 @@ export default () => {
 
   const [assessment, updateAssessment] = useReducer(reducer, {} as Assessment);
   const [activeStepIndex, setActiveStepIndex] = useState(0);
-  const [navigationOpen, setNavigationOpen] = useState(true); // 导航栏开关状态
+  const [toolsOpen, setToolsOpen] = useState(true); // 右侧工具栏开关状态
   const [modifiedQuestions, setModifiedQuestions] = useState<Set<number>>(new Set()); // 跟踪有未提交更改的题目
 
   useEffect(() => {
@@ -336,10 +336,10 @@ export default () => {
 
   return (
     <AppLayout
-      navigationOpen={navigationOpen}
-      onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
-      navigationWidth={340}
-      navigation={renderNavigationGrid()}
+      toolsOpen={toolsOpen}
+      onToolsChange={({ detail }) => setToolsOpen(detail.open)}
+      toolsWidth={300}
+      tools={renderNavigationGrid()}
       content={
         <Wizard
           onSubmit={() => {
@@ -370,7 +370,7 @@ export default () => {
           steps={steps}
         />
       }
-      toolsHide
+      navigationHide
     />
   );
 };

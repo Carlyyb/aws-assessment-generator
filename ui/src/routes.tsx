@@ -13,6 +13,7 @@ import StudentAssessment from './pages/StudentAssessment';
 import ReviewAssessment from './pages/ReviewAssessment';
 import Courses from './pages/Courses';
 import FindStudent from './pages/FindStudent';
+import AssessmentResults from './pages/AssessmentResults';
 
 export const routes = {
   teachers: [
@@ -67,6 +68,7 @@ export const routes = {
       ],
     },
     { path: 'edit-assessment/:id', element: <EditAssessments />, children: [] },
+    { path: 'assessment-results/:id', element: <AssessmentResults />, children: [] },
   ],
   students: [
     {

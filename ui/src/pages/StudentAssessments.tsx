@@ -18,7 +18,9 @@ export default () => {
       .graphql<any>({ query: listStudentAssessments })
       .then(({ data }) => {
         const list = data.listStudentAssessments || [];
-        setAssessments(list);
+        // 过滤掉无效的评估记录（主评估已被删除的记录）
+        const validAssessments = list.filter((item: StudentAssessment) => item.assessment != null);
+        setAssessments(validAssessments);
       })
       .catch(() => {});
   }, []);

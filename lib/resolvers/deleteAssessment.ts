@@ -20,15 +20,25 @@ export function request(ctx) {
     }
   }
   
+  // 调用 Lambda 函数进行级联删除
   return {
-    operation: 'DeleteItem',
-    key: util.dynamodb.toMapValues({ userId, id })
+    operation: 'Invoke',
+    payload: {
+      field: 'deleteAssessment',
+      arguments: {
+        id,
+        userId,
+        isAdmin
+      },
+      identity: ctx.identity
+    }
   };
 }
 
 export const response = (ctx) => {
   if (ctx.error) {
-    return false;
+    util.error(ctx.error.message, ctx.error.type);
   }
-  return true;
+  
+  return ctx.result.success || false;
 };

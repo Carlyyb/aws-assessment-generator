@@ -37,7 +37,7 @@ export default () => {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const [score, setScore] = useState<number>();
-  const [navigationOpen, setNavigationOpen] = useState(true); // 导航栏开关状态
+  const [toolsOpen, setToolsOpen] = useState(true); // 右侧工具栏开关状态
 
   useEffect(() => {
     client
@@ -256,10 +256,10 @@ export default () => {
       </Modal>
       
       <AppLayout
-        navigationOpen={navigationOpen}
-        onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
-        navigationWidth={340}
-        navigation={renderNavigationGrid()}
+        toolsOpen={toolsOpen}
+        onToolsChange={({ detail }) => setToolsOpen(detail.open)}
+        toolsWidth={300}
+        tools={renderNavigationGrid()}
         content={
           <Wizard
             onSubmit={() => {
@@ -338,7 +338,7 @@ export default () => {
             })}
           />
         }
-        toolsHide
+        navigationHide
       />
       
       <Modal visible={showSpinner} header={<Header>{getText('student.assessments.detail.grading')}</Header>}>

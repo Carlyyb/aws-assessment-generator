@@ -370,6 +370,17 @@ export default () => {
                           </Button>
                         ) : (
                           <>
+                            {/* 测试结果按钮 - 只有已发布的测试才显示 */}
+                            {!hasDataError && item.published && (
+                              <Button
+                                variant="normal"
+                                iconName="search"
+                                onClick={() => navigate(`/assessment-results/${item.id}`)}
+                              >
+                                测试结果
+                              </Button>
+                            )}
+                            
                             {/* 编辑按钮 - 数据异常时禁用编辑 */}
                             {!hasDataError && !item.published && item.status === AssessStatus.CREATED && (
                               <Button

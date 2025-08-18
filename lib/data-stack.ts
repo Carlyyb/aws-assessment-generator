@@ -223,6 +223,12 @@ export class DataStack extends NestedStack {
     const studentAssessmentsTable = new aws_dynamodb.TableV2(this, 'StudentAssessmentsTable', {
       partitionKey: { name: 'userId', type: aws_dynamodb.AttributeType.STRING },
       sortKey: { name: 'parentAssessId', type: aws_dynamodb.AttributeType.STRING },
+      globalSecondaryIndexes: [
+        {
+          indexName: 'ParentAssessIdIndex',
+          partitionKey: { name: 'parentAssessId', type: aws_dynamodb.AttributeType.STRING },
+        }
+      ],
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
@@ -245,7 +251,7 @@ export class DataStack extends NestedStack {
     studentAssessmentsDs.createResolver('QueryListMyStudentAssessmentsResolver', {
       typeName: 'Query',
       fieldName: 'listMyStudentAssessments',
-      requestMappingTemplate: aws_appsync.MappingTemplate.dynamoDbQuery(KeyCondition.eq('userId', 'studentId')),
+      requestMappingTemplate: aws_appsync.MappingTemplate.dynamoDbQuery(KeyCondition.eq('userId', '$ctx.args.studentId')),
       responseMappingTemplate: aws_appsync.MappingTemplate.dynamoDbResultList(),
     });
 
@@ -393,9 +399,35 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
-    /////////// Delete Assessment
+    /////////// Delete Assessment Lambda Function
 
-    assessmentsDs.createResolver('DeleteAssessmentResolver', {
+    // 创建删除评估的 Lambda 函数
+    const deleteAssessmentLambda = new NodejsFunction(this, 'DeleteAssessmentLambda', {
+      entry: path.join(__dirname, 'lambda', 'deleteAssessmentHandler.ts'),
+      handler: 'handler',
+      runtime: Runtime.NODEJS_20_X,
+      architecture: Architecture.ARM_64,
+      timeout: Duration.minutes(5),
+      tracing: Tracing.ACTIVE,
+      environment: {
+        ASSESSMENTS_TABLE: assessmentsTable.tableName,
+        STUDENT_ASSESSMENTS_TABLE: studentAssessmentsTable.tableName,
+      },
+      logGroup: new LogGroup(this, 'DeleteAssessmentLambdaLogGroup', {
+        logGroupName: `/aws/lambda/delete-assessment-handler`,
+        retention: RetentionDays.ONE_WEEK,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
+    });
+
+    // 给 Lambda 函数权限访问 DynamoDB 表
+    assessmentsTable.grantReadWriteData(deleteAssessmentLambda);
+    studentAssessmentsTable.grantReadWriteData(deleteAssessmentLambda);
+
+    // 创建 Lambda 数据源
+    const deleteAssessmentDs = api.addLambdaDataSource('DeleteAssessmentDs', deleteAssessmentLambda);
+
+    deleteAssessmentDs.createResolver('DeleteAssessmentResolver', {
       typeName: 'Mutation',
       fieldName: 'deleteAssessment',
       code: aws_appsync.Code.fromAsset('lib/resolvers/deleteAssessment.ts'),
