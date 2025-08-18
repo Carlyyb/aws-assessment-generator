@@ -229,6 +229,13 @@ const LogManagement: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
+
+  // 辅助函数：提取并记录 GraphQL 查询响应
+  const extractQueryLogsResponse = (result: any, operationType: string) => {
+    const response = result?.data?.queryLogs;
+    console.log(`${operationType} - GraphQL Response:`, response);
+    return response;
+  };
   
   // 过滤器状态
   const [filters, setFilters] = useState({
@@ -337,7 +344,7 @@ const LogManagement: React.FC = () => {
       console.log('系统健康查询结果:', result);
       setDebugInfo(prev => ({ ...prev, queryResult: result, timestamp: new Date().toISOString() }));
 
-      const response = (result as any).data?.queryLogs;
+      const response = extractQueryLogsResponse(result, 'SystemHealth');
       if (response && response.__typename === 'SystemHealthResult') {
         setSystemHealth({
           totalRequests: response.totalRequests,
@@ -408,7 +415,7 @@ const LogManagement: React.FC = () => {
 
       console.log('日志查询结果:', result);
 
-      const response = (result as any).data?.queryLogs;
+      const response = extractQueryLogsResponse(result, 'LoadLogs');
       if (response && response.__typename === 'LogsResult') {
         const logsData = response.logs.map((item: any) => ({
           logId: item.logId,
@@ -500,7 +507,7 @@ const LogManagement: React.FC = () => {
         }
       });
 
-      const response = (result as any).data?.queryLogs;
+      const response = extractQueryLogsResponse(result, 'LoadMetrics');
       if (response && response.__typename === 'MetricsResult') {
         setMetrics(response.metrics.map((item: any) => ({
           metricKey: item.metricKey,
@@ -535,7 +542,7 @@ const LogManagement: React.FC = () => {
         }
       });
 
-      const response = (result as any).data?.queryLogs;
+      const response = extractQueryLogsResponse(result, 'LoadErrorDetail');
       if (response && response.__typename === 'ErrorDetailResult') {
         const errorDetail = response.errorDetail;
         setSelectedErrorDetail({
@@ -572,7 +579,7 @@ const LogManagement: React.FC = () => {
         }
       });
 
-      const response = (result as any).data?.queryLogs;
+      const response = extractQueryLogsResponse(result, 'LoadServiceStats');
       if (response && response.__typename === 'ServiceStatsResult') {
         setServiceStats(response.serviceStats.map((item: any) => ({
           serviceName: item.serviceName,
@@ -608,7 +615,7 @@ const LogManagement: React.FC = () => {
         }
       });
 
-      const response = (result as any).data?.queryLogs;
+      const response = extractQueryLogsResponse(result, 'LoadRequestStats');
       if (response && response.__typename === 'RequestStatsResult') {
         setRequestStats(response.requestStats.map((item: any) => ({
           serviceName: item.serviceName,

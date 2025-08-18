@@ -9,4 +9,13 @@ export function request(ctx) {
   return ddb.get({ key: { userId } });
 }
 
-export const response = (ctx) => ctx.result;
+export const response = (ctx) => {
+  const result = ctx.result;
+  
+  // 如果 uiLang 为 null 值则设为 "zh"
+  if (result && result.uiLang === null) {
+    result.uiLang = "zh";
+  }
+  
+  return result;
+};

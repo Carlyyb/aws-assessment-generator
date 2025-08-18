@@ -8,7 +8,7 @@ export interface BreadcrumbItem {
 /**
  * 根据当前路径生成面包屑导航项
  */
-export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
+export function generateBreadcrumbs(pathname: string, getOverride?: (path: string) => string | null): BreadcrumbItem[] {
   // 确保总是返回至少包含首页的数组
   const breadcrumbs: BreadcrumbItem[] = [
     { text: getText('common.breadcrumb.home'), href: '/' }
@@ -16,6 +16,23 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
 
   // 安全检查 pathname
   if (!pathname || typeof pathname !== 'string') {
+    return breadcrumbs;
+  }
+
+  // 特殊处理编辑测试页面，让其面包屑路径为：首页 > 查找测试 > 测试名
+  if (pathname.startsWith('/edit-assessment/')) {
+    // 添加查找测试页面到面包屑
+    breadcrumbs.push({
+      text: getText('common.nav.find-assessments'),
+      href: '/assessments/find-assessments'
+    });
+    // 添加当前测试到面包屑
+    const overrideTitle = getOverride?.(pathname);
+    const testName = overrideTitle || getText('teachers.assessments.edit.current');
+    breadcrumbs.push({
+      text: testName,
+      href: pathname
+    });
     return breadcrumbs;
   }
 
@@ -43,13 +60,16 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
       // 跳过动态路由参数（如 :id）
       if (segment.match(/^[a-f0-9-]{36}$/) || segment.match(/^\d+$/)) {
         // 这是一个 ID 参数，显示为具体的内容标识
+        const overrideTitle = getOverride?.(currentPath);
+        const displayName = overrideTitle || getSegmentDisplayName(segment, pathSegments, i);
         breadcrumbs.push({
-          text: getSegmentDisplayName(segment, pathSegments, i),
+          text: displayName,
           href: currentPath
         });
       } else {
         // 普通路径段
-        const displayName = getNavigationText(segment);
+        const overrideTitle = getOverride?.(currentPath);
+        const displayName = overrideTitle || getNavigationText(segment);
         breadcrumbs.push({
           text: displayName,
           href: currentPath
@@ -72,7 +92,8 @@ function getNavigationText(segment: string): string {
   // 处理特殊路径
   switch (segment) {
     case 'edit-assessment':
-      return getText('teachers.assessments.edit.title');
+      // 编辑测试页面应该显示为"查找测试"而不是"编辑测试"
+      return getText('common.nav.find-assessments');
     case 'assessment':
       return getText('students.assessment.title');
     case 'review':
@@ -114,6 +135,9 @@ function getSegmentDisplayName(segment: string, pathSegments: string[], index: n
     case 'assessment':
       return getText('students.assessment.current');
     case 'edit-assessment':
+      // 对于编辑测试页面，我们希望显示测试名称
+      // 由于这里无法直接获取测试数据，暂时显示一个通用名称
+      // 实际的测试名称应该通过其他方式获取和更新
       return getText('teachers.assessments.edit.current');
     case 'review':
       return getText('students.review.current');

@@ -72,7 +72,7 @@ export async function checkUserAdminPermissions(): Promise<AdminPermissionInfo |
     const result = await client.graphql({
       query: CHECK_ADMIN_PERMISSIONS,
     });
-    
+    console.log(result);
     // 类型安全的方式访问数据
     if ('data' in result && result.data) {
       return result.data.checkAdminPermissions as AdminPermissionInfo;

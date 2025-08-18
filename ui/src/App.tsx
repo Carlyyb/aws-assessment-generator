@@ -23,6 +23,7 @@ import { ThemeButton } from './components/ThemeButton';
 import { AlertType, DispatchAlertContext } from './contexts/alerts';
 import { UserProfile, UserProfileContext } from './contexts/userProfile';
 import { RoutesContext } from './contexts/routes';
+import { BreadcrumbProvider, useBreadcrumb } from './contexts/breadcrumbs';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { generateBreadcrumbs } from './utils/breadcrumbs';
 import { fetchAuthSession } from 'aws-amplify/auth';
@@ -42,6 +43,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
   const [activeHref, setActiveHref] = useState(window.location.pathname);
   const { currentTheme } = useTheme();
   const { adminInfo, error: adminError } = useAdminPermissions();
+  const { getOverride } = useBreadcrumb();
 
   // Debug logging for admin permissions
   useEffect(() => {
@@ -155,7 +157,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
               headerSelector="#h"
               breadcrumbs={
                 <BreadcrumbGroup
-                  items={generateBreadcrumbs(activeHref)}
+                  items={generateBreadcrumbs(activeHref, getOverride)}
                 />
               }
               navigationOpen={true}
@@ -227,7 +229,9 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
 
   return (
     <ThemeProvider userProfile={userProfile}>
-      <AppContent userProfile={userProfile} signOut={signOut} />
+      <BreadcrumbProvider>
+        <AppContent userProfile={userProfile} signOut={signOut} />
+      </BreadcrumbProvider>
     </ThemeProvider>
   );
 }
@@ -237,9 +241,9 @@ export default withAuthenticator(App, {
   formFields: {
     signUp: {
       "custom:role": {
-        placeholder: 'Enter "teachers" or "students"',
+        placeholder: '输入 "teachers" 或 "students"',
         isRequired: true,
-        label: 'Role:',
+        label: '角色:',
         pattern: "(teachers|students)"
       },
     },
@@ -248,8 +252,8 @@ export default withAuthenticator(App, {
     Header: () => {
       return (
         <div style={{ padding: '20px', textAlign: 'center' }}>
-          <h1 style={{ color: '#232f3e', margin: 0 }}>Gen Assess</h1>
-          <p style={{ color: '#687078', margin: '10px 0 0 0' }}>智能测试系统 / Intelligent Assessment System</p>
+          <h1 style={{ color: '#0833b3ff', margin: 0 }}>Gen Assess</h1>
+          <p style={{ color: '#024cd7e6', margin: '10px 0 0 0' }}>智能测试系统 / Intelligent Assessment System</p>
           <LanguageSwitcher />
         </div>
       );
