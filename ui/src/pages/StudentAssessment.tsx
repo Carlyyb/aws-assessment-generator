@@ -674,7 +674,7 @@ export default () => {
             <Container header={<Header variant="h1">等待开始</Header>}>
               <SpaceBetween size="l">
                 <Alert type="info">
-                  请点击右上角的开始按钮开始答题。
+                  请点击下方开始按钮开始答题。
                 </Alert>
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <Button variant="primary" onClick={() => setShowStartDialog(true)}>

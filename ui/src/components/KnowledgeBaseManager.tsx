@@ -57,6 +57,20 @@ export default function KnowledgeBaseManager({
   const dispatchAlert = useContext(DispatchAlertContext);
   const userProfile = useContext(UserProfileContext);
   
+  // 在组件可见时验证courseId
+  useEffect(() => {
+    if (visible) {
+      console.log('KnowledgeBaseManager mounted with courseId:', courseId);
+      if (!courseId) {
+        console.error('KnowledgeBaseManager: courseId is missing!');
+        dispatchAlert({
+          type: AlertType.ERROR,
+          content: '课程ID缺失，无法创建知识库'
+        });
+      }
+    }
+  }, [visible, courseId, dispatchAlert]);
+  
   // 状态管理
   const [knowledgeBase, setKnowledgeBase] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -161,6 +175,15 @@ export default function KnowledgeBaseManager({
       return;
     }
 
+    // 验证courseId
+    if (!courseId) {
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '课程ID不能为空，请重新选择课程'
+      });
+      return;
+    }
+
     setIsCreating(true);
     setCreateProgress(0);
     setCreateLogs([]);
@@ -168,6 +191,7 @@ export default function KnowledgeBaseManager({
 
     try {
       updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.starting'), 10);
+      addCreateLog(`正在为课程 ${courseId} 创建知识库...`);
 
       // 1. 准备文件上传
       updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.preparing_files'), 20);
@@ -199,6 +223,7 @@ export default function KnowledgeBaseManager({
       // 3. 创建知识库
       updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.creating_kb'), 60);
       addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.calling_api'));
+      addCreateLog(`调用参数: courseId=${courseId}, locations=${fileData.map(({ key }) => key).join(', ')}`);
 
       const response = await client.graphql<any>({
         query: createKnowledgeBase,
