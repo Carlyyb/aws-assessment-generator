@@ -52,6 +52,30 @@ type Student {
   id: ID!
   firstName: String!
   lastName: String!
+  email: String
+  lastLoginAt: AWSDateTime
+  assessmentCount: Int
+  groups: [StudentGroup!]
+}
+
+type StudentGroup {
+  id: ID!
+  name: String!
+  description: String
+  color: String!
+  createdBy: String!
+  teachers: [String!]!
+  students: [String!]!
+  createdAt: AWSDateTime!
+}
+
+input StudentGroupInput {
+  id: ID
+  name: String!
+  description: String
+  color: String!
+  teachers: [String!]
+  students: [String!]
 }
 
 type AssessTemplate {
@@ -165,6 +189,14 @@ type Assessment {
   status: AssessStatus!
   course: Course
   createdBy: String
+  # 新增字段
+  timeLimited: Boolean  # 是否限制测试用时
+  timeLimit: Int        # 测试限制用时(minutes)
+  allowAnswerChange: Boolean  # 提交答案后是否允许修改
+  studentGroups: [String!]    # 发布给的学生分组
+  courses: [String!]          # 对应的课程列表
+  attemptLimit: Int           # 测试次数限制(-1表示无限次数)
+  scoreMethod: String         # 成绩取最高分/平均分/最低分
 }
 
 input AssessmentInput {
@@ -180,6 +212,14 @@ input AssessmentInput {
   singleChoiceAssessment: [SingleChoiceInput]
   published: Boolean
   status: AssessStatus!
+  # 新增字段
+  timeLimited: Boolean
+  timeLimit: Int
+  allowAnswerChange: Boolean
+  studentGroups: [String!]
+  courses: [String!]
+  attemptLimit: Int
+  scoreMethod: String
 }
 
 type StudentAssessment {
@@ -190,6 +230,11 @@ type StudentAssessment {
   score: Int
   report: AWSJSON
   updatedAt: AWSDateTime
+  # 新增字段
+  attemptCount: Int       # 已测试次数
+  duration: Int           # 测试用时(minutes)
+  scores: [Int!]          # 测试分数列表
+  remainingAttempts: Int  # 剩余测试次数(-1表示无限次数)
 }
 
 input StudentAssessmentInput {
