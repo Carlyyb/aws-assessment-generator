@@ -233,8 +233,9 @@ export type GenerateAssessmentInput = {
   courseId: string,
   lectureDate: string,
   deadline: string,
-  locations: Array< string | null >,
+  locations?: Array< string | null > | null,
   assessTemplateId?: string | null,
+  customPrompt?: string | null,
 };
 
 export type KnowledgeBase = {

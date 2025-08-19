@@ -145,7 +145,7 @@ export default () => {
     .filter(s => s.completed && s.score !== undefined)
     .reduce((sum, s) => sum + (s.score || 0), 0) / Math.max(completedCount, 1);
 
-  if (loading) {
+  if (loading) {\
     return (
       <ContentLayout>
         <Container>

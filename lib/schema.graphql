@@ -204,8 +204,9 @@ input GenerateAssessmentInput {
   courseId: String!
   lectureDate: AWSDate!
   deadline: AWSDate!
-  locations: [String]!
+  locations: [String]
   assessTemplateId: String
+  customPrompt: String
 }
 
 type KnowledgeBase {

@@ -7,7 +7,7 @@ import { AssessmentTemplate } from '../models/assessmentTemplate';
 import { AssessType, MultiChoice, FreeText, TrueFalse , SingleChoice} from '../../../../../ui/src/graphql/API';
 import { ReferenceDocuments } from '../models/referenceDocuments';
 
-export function getInitialQuestionsPrompt(assessmentTemplate: AssessmentTemplate, topicsExtractionOutput: string) {
+export function getInitialQuestionsPrompt(assessmentTemplate: AssessmentTemplate, topicsExtractionOutput: string, customPrompt?: string) {
   // TODO add topic to response for each question
   let prompt = `
 You are creating a ${assessmentTemplate.assessType} questionnaire with exactly ${
@@ -24,6 +24,13 @@ IMPORTANT INSTRUCTIONS:
 - Do not reference the transcript itself, focus on the knowledge it contains
 - Create ${assessmentTemplate.easyQuestions} easy, ${assessmentTemplate.mediumQuestions} medium, and ${assessmentTemplate.hardQuestions} hard questions
 - Use language code: ${assessmentTemplate.docLang}
+
+${customPrompt ? `
+CUSTOM REQUIREMENTS (HIGHEST PRIORITY - MUST FOLLOW):
+${customPrompt}
+
+The above custom requirements should take precedence over standard instructions while still maintaining the XML response format and question count.
+` : ''}
 
 Use the Bloom's Taxonomy of category ${
     assessmentTemplate.taxonomy
@@ -187,7 +194,54 @@ Use this exact XML format for your response:
   return prompt;
 }
 
-export function getTopicsPrompt(referenceDocuments: ReferenceDocuments) {
+export function getTopicsPrompt(referenceDocuments: ReferenceDocuments, customPrompt?: string) {
+  // 如果有自定义prompt，优先使用自定义prompt作为主题提取
+  if (customPrompt && customPrompt.trim()) {
+    let prompt = `
+TASK: Use the provided custom prompt as the primary learning topics and concepts for assessment generation.
+
+CUSTOM LEARNING OBJECTIVES/TOPICS:
+${customPrompt}
+
+INSTRUCTIONS:
+- The above custom prompt contains the specific learning objectives and topics that should be assessed
+- Focus on these provided topics and concepts for question generation
+- Extract and organize these topics in a clear, structured format
+- If additional context is provided in documents below, use it to enhance understanding but prioritize the custom prompt
+    `;
+    
+    // 如果还有文档内容，将其作为补充context添加（可选）
+    if (referenceDocuments.documentsContent && referenceDocuments.documentsContent.length > 0) {
+      prompt += `\n\nADDITIONAL CONTEXT FROM DOCUMENTS (use as supplementary information):\n`;
+      
+      const MAX_CONTENT_LENGTH = 200000; // 减少文档内容长度，因为主要依赖自定义prompt
+      let totalContentLength = 0;
+      
+      for (let i = 0; i < referenceDocuments.documentsContent.length && totalContentLength < MAX_CONTENT_LENGTH; i++) {
+        const document = referenceDocuments.documentsContent[i];
+        const documentContent = document.length + totalContentLength > MAX_CONTENT_LENGTH 
+          ? document.substring(0, MAX_CONTENT_LENGTH - totalContentLength)
+          : document;
+        
+        if (documentContent.length === 0) {
+          break;
+        }
+        
+        prompt += `Document ${i}:\n`;
+        prompt += documentContent;
+        if (documentContent.length < document.length) {
+          prompt += '\n[Content truncated due to length limit]';
+        }
+        prompt += '\n\n';
+        
+        totalContentLength += documentContent.length;
+      }
+    }
+    
+    return prompt;
+  }
+  
+  // 如果没有自定义prompt，使用原有的文档提取逻辑
   let prompt = `
 TASK: Extract key academic topics and learning concepts from educational content.
 

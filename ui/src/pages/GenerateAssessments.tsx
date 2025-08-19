@@ -17,6 +17,7 @@ import {
   Modal,
   ProgressBar,
   Alert,
+  Textarea,
 } from '@cloudscape-design/components';
 import { uploadData } from 'aws-amplify/storage';
 import { generateClient } from 'aws-amplify/api';
@@ -45,6 +46,9 @@ export default () => {
   const [assessTemplates, setAssessTemplates] = useState<SelectProps.Option[]>([]);
   const [assessTemplate, setAssessTemplate] = useState<SelectProps.Option | null>(null);
   const [knowledgeBaseStatus, setKnowledgeBaseStatus] = useState<'checking' | 'available' | 'missing' | null>(null);
+  
+  // 自定义prompt状态
+  const [customPrompt, setCustomPrompt] = useState('');
   
   // 进度和日志状态
   const [isGenerating, setIsGenerating] = useState(false);
@@ -257,9 +261,13 @@ export default () => {
             setIsGenerating(false);
             setFailureCount(0); // 重置失败计数
             dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.generate_assessments.generate_success') });
-            setTimeout(() => {
-              navigate(`/edit-assessment/${assessId}`);
-            }, 1000);
+            // 立即关闭模态窗口并跳转到编辑页面
+            setAssessId('');
+            setLogs([]);
+            setProgress(0);
+            setCurrentStep('');
+            setStatusCheckCount(0);
+            navigate(`/edit-assessment/${assessId}`);
             return;
           }
           
@@ -303,6 +311,7 @@ export default () => {
               `• 评估ID: ${assessId}\n` +
               `• 课程ID: ${course?.value}\n` +
               `• 文件数量: ${files.length}\n` +
+              `• 自定义学习目标: ${customPrompt.trim() ? '是' : '否'}\n` +
               `• 模板: ${useDefault ? '默认模板' : assessTemplate?.label || '未选择'}\n` +
               `• 时间戳: ${new Date().toISOString()}`;
             
@@ -394,28 +403,32 @@ export default () => {
                     if (!course?.value) {
                       throw new Error('请选择课程');
                     }
-                    if (files.length === 0) {
-                      throw new Error('请上传至少一个课程文件。\n\n系统需要基于上传的课程材料来生成测试题目。\n支持的文件格式：PDF、DOC、DOCX、TXT等');
+                    
+                    // 验证至少有文件或自定义prompt之一
+                    if (files.length === 0 && !customPrompt.trim()) {
+                      throw new Error('请上传至少一个课程文件或输入自定义学习目标。\n\n您可以：\n1. 上传课程材料（PDF、DOC、DOCX、TXT等）\n2. 或者在"自定义学习目标"中输入要考核的知识点');
                     }
 
-                    // 验证文件
-                    updateStep('🔍 验证上传文件...', 8);
-                    const invalidFiles = files.filter(file => {
-                      const validExtensions = ['.pdf', '.doc', '.docx', '.txt', '.md'];
-                      const fileName = file.name.toLowerCase();
-                      const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
-                      const isValidSize = file.size > 0 && file.size < 50 * 1024 * 1024; // 小于50MB
-                      return !hasValidExtension || !isValidSize;
-                    });
+                    // 验证文件（如果有上传文件的话）
+                    if (files.length > 0) {
+                      updateStep('🔍 验证上传文件...', 8);
+                      const invalidFiles = files.filter(file => {
+                        const validExtensions = ['.pdf', '.doc', '.docx', '.txt', '.md'];
+                        const fileName = file.name.toLowerCase();
+                        const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+                        const isValidSize = file.size > 0 && file.size < 50 * 1024 * 1024; // 小于50MB
+                        return !hasValidExtension || !isValidSize;
+                      });
 
-                    if (invalidFiles.length > 0) {
-                      const invalidFileNames = invalidFiles.map(f => f.name).join(', ');
-                      throw new Error(`以下文件格式不支持或文件过大：${invalidFileNames}\n\n支持的格式：PDF、DOC、DOCX、TXT、MD\n最大文件大小：50MB`);
-                    }
-
-                    addLog(`验证完成，准备处理 ${files.length} 个有效文件`);
-
-                    // 验证模板选择
+                      if (invalidFiles.length > 0) {
+                        const invalidFileNames = invalidFiles.map(f => f.name).join(', ');
+                        throw new Error(`以下文件格式不支持或文件过大：${invalidFileNames}\n\n支持的格式：PDF、DOC、DOCX、TXT、MD\n最大文件大小：50MB`);
+                      }
+                      
+                      addLog(`验证完成，准备处理 ${files.length} 个有效文件`);
+                    } else {
+                      addLog(`使用自定义学习目标模式，不上传文件`);
+                    }                    // 验证模板选择
                     if (!useDefault && !assessTemplate?.value) {
                       throw new Error('请选择测试模板或使用默认模板');
                     }
@@ -472,29 +485,38 @@ export default () => {
                       throw new Error('无法访问课程知识库，请确保已为该课程创建知识库');
                     }
                     
-                    const data = files.map((file) => ({
-                      key: `Assessments/${userProfile?.userId}/${course?.value}/${file.name}`,
-                      file,
-                    }));
+                    let uploadedFileKeys: string[] = [];
                     
-                    addLog(`准备上传 ${files.length} 个文件`);
-                    
-                    updateStep('📤 正在上传文件到云存储...', 15);
-                    
-                    await Promise.all(
-                      data.map(
-                        ({ key, file }, index) => {
-                          addLog(`上传文件 ${index + 1}/${files.length}: ${file.name}`);
-                          return uploadData({
-                            key,
-                            data: file,
-                          }).result;
-                        }
-                      )
-                    );
-                    
-                    updateStep('✅ 文件上传完成', 25);
-                    addLog('所有文件上传成功');
+                    // 只有在有文件时才进行上传
+                    if (files.length > 0) {
+                      const data = files.map((file) => ({
+                        key: `Assessments/${userProfile?.userId}/${course?.value}/${file.name}`,
+                        file,
+                      }));
+                      
+                      addLog(`准备上传 ${files.length} 个文件`);
+                      
+                      updateStep('📤 正在上传文件到云存储...', 15);
+                      
+                      await Promise.all(
+                        data.map(
+                          ({ key, file }, index) => {
+                            addLog(`上传文件 ${index + 1}/${files.length}: ${file.name}`);
+                            return uploadData({
+                              key,
+                              data: file,
+                            }).result;
+                          }
+                        )
+                      );
+                      
+                      uploadedFileKeys = data.map(({ key }) => key);
+                      updateStep('✅ 文件上传完成', 25);
+                      addLog('所有文件上传成功');
+                    } else {
+                      updateStep('📝 使用自定义学习目标，跳过文件上传', 25);
+                      addLog('使用自定义学习目标模式');
+                    }
                     
                     updateStep('🤖 正在调用AI生成测试...', 30);
                     addLog('发送生成请求到后端服务...');
@@ -508,7 +530,8 @@ export default () => {
                           deadline,
                           courseId: course.value,
                           assessTemplateId: assessTemplate?.value,
-                          locations: data.map(({ key }) => key),
+                          locations: uploadedFileKeys,
+                          customPrompt: customPrompt.trim() || null,
                         },
                       },
                     });
@@ -587,9 +610,30 @@ export default () => {
                   <FormField label={getText('common.labels.deadline')}>
                     <DatePicker onChange={({ detail }) => setDeadline(detail.value)} value={deadline} placeholder={getText('date_format.yyyy_mm_dd')} />
                   </FormField>
+                  
+                  {/* 自定义学习目标输入框 */}
                   <FormField 
-                    label={getText('teachers.assessments.generate.add_lecture_notes')}
-                    description="请上传课程相关的文档材料（如讲义、教材、作业等），系统将基于这些材料生成测试题目。支持PDF、DOC、DOCX、TXT等格式。"
+                    label="自定义学习目标（可选）"
+                    description="如果您有特定的学习目标或知识点要考核，可以在此输入。这将作为测试生成的主要依据。如果不填写，系统将基于上传的讲义文件生成题目。"
+                  >
+                    <Textarea
+                      value={customPrompt}
+                      onChange={({ detail }) => setCustomPrompt(detail.value)}
+                      placeholder="例如：请基于以下学习目标生成测试题目：
+1. 理解大语言模型的“黑箱”现象
+2. 理解大语言模型的基本原理与架构
+3. 应用大语言模型进行文本生成与处理
+4. 分析和评估大语言模型的局限性与伦理问题
+                      rows={6}
+                    />
+                  </FormField>
+                  
+                  <FormField 
+                    label={files.length > 0 || !customPrompt.trim() ? getText('teachers.assessments.generate.add_lecture_notes') : getText('teachers.assessments.generate.add_lecture_notes') + "（可选）"}
+                    description={customPrompt.trim() 
+                      ? "您已输入自定义学习目标。可以选择性地上传课程文档作为补充材料，或跳过此步骤。" 
+                      : "请上传课程相关的文档材料（如讲义、教材、作业等），系统将基于这些材料生成测试题目。支持PDF、DOC、DOCX、TXT等格式。"
+                    }
                   >
                     <FileUpload
                       multiple

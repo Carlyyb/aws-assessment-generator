@@ -30,8 +30,8 @@ export class GenAiService {
     this.knowledgeBaseId = knowledgeBaseId;
   }
 
-  public async getTopics(referenceDocuments: ReferenceDocuments) {
-    let prompt = getTopicsPrompt(referenceDocuments);
+  public async getTopics(referenceDocuments: ReferenceDocuments, customPrompt?: string) {
+    let prompt = getTopicsPrompt(referenceDocuments, customPrompt);
     logger.debug(prompt);
     let llmResponse = await this.callLLM(MODEL_ID, prompt);
     logger.debug(llmResponse);

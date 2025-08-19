@@ -74,11 +74,12 @@ class Lambda implements LambdaInterface {
         assessmentTemplate: referenceDocuments.assessmentTemplate
       });
 
-      // Extract topics from the Transcript document
-      logger.info('Extracting topics from documents');
-      const topicsExtractionOutput = await genAiService.getTopics(referenceDocuments);
+      // Extract topics from the Transcript document or use custom prompt
+      logger.info('Extracting topics from documents or using custom prompt');
+      const topicsExtractionOutput = await genAiService.getTopics(referenceDocuments, generateAssessmentInput.customPrompt);
       logger.info('Topics extraction completed', { 
-        topicsLength: topicsExtractionOutput?.length || 0 
+        topicsLength: topicsExtractionOutput?.length || 0,
+        hasCustomPrompt: !!generateAssessmentInput.customPrompt
       });
 
       // 验证提取的主题是否包含学术内容（不是技术文档内容）
