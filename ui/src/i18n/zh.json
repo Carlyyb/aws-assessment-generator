@@ -62,7 +62,8 @@
       "manage-knowledge-bases": "知识库管理",
       "generate-assessments": "生成测试",
       "log-management": "日志管理",
-      "find-student": "查找学生"
+      "find-student": "查找学生",
+      "student-list": "学生列表"
     },
     "help": {
       "overview": "系统概览",
@@ -488,7 +489,8 @@
         "generate-assessments": "生成测试",
         "courses": "课程管理",
         "log-management": "日志管理",
-        "find-student": "查找学生"
+        "find-student": "查找学生",
+        "student-list": "学生列表"
       },
       "assessments": "测试",
       "settings": "设置",

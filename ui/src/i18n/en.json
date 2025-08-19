@@ -62,7 +62,8 @@
       "manage-knowledge-bases": "Manage Knowledge Base",
       "generate-assessments": "Generate Assessments",
       "log-management": "Log Management",
-      "find-student": "Find Student"
+      "find-student": "Find Student",
+      "student-list": "Student List"
     },
     "help": {
       "overview": "Overview",
@@ -485,7 +486,8 @@
         "generate-assessments": "Generate Assessments",
         "courses": "Courses",
         "log-management": "Log Management",
-        "find-student": "Find Student"
+        "find-student": "Find Student",
+        "student-list": "Student List"
       },
       "assessments": "Assessment",
       "settings": "Settings",
