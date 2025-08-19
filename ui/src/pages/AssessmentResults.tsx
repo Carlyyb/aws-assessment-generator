@@ -14,15 +14,17 @@ import {
   Alert
 } from '@cloudscape-design/components';
 import { useParams, useNavigate } from 'react-router-dom';
+import { generateClient } from 'aws-amplify/api';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
+import { ExtendedAssessment, ExtendedStudentAssessment, addAssessmentDefaults, addStudentAssessmentDefaults } from '../types/ExtendedTypes';
+import { getAssessment, listStudentAssessments } from '../graphql/queries';
 
-interface StudentResult {
+const client = generateClient();
+
+interface StudentResult extends ExtendedStudentAssessment {
   userId: string;
   userName: string;
   userEmail: string;
-  completed: boolean;
-  score?: number;
-  duration?: number; // 用时（分钟）
   submittedAt?: string;
   startedAt?: string;
 }
@@ -45,60 +47,52 @@ export default () => {
   const loadAssessmentResults = async () => {
     setLoading(true);
     try {
-      // 这里需要实现获取测试结果的GraphQL查询
-      // 暂时使用模拟数据
-      const mockData: StudentResult[] = [
-        {
-          userId: '1',
-          userName: '张三',
-          userEmail: 'zhangsan@example.com',
-          completed: true,
-          score: 85,
-          duration: 45,
-          submittedAt: '2025-08-18T10:30:00Z',
-          startedAt: '2025-08-18T09:45:00Z'
-        },
-        {
-          userId: '2',
-          userName: '李四',
-          userEmail: 'lisi@example.com',
-          completed: true,
-          score: 92,
-          duration: 38,
-          submittedAt: '2025-08-18T11:15:00Z',
-          startedAt: '2025-08-18T10:37:00Z'
-        },
-        {
-          userId: '3',
-          userName: '王五',
-          userEmail: 'wangwu@example.com',
-          completed: false,
-          startedAt: '2025-08-18T09:30:00Z'
-        },
-        {
-          userId: '4',
-          userName: '赵六',
-          userEmail: 'zhaoliu@example.com',
-          completed: false
-        }
-      ];
-
-      const mockAssessmentInfo = {
-        name: '期中考试 - 数据结构',
-        course: { name: '计算机科学' },
-        deadline: '2025-08-20T23:59:59Z',
-        totalQuestions: 20
-      };
-
-      setStudentResults(mockData);
-      setAssessmentInfo(mockAssessmentInfo);
-      
-    } catch (error: any) {
-      console.error('Error loading assessment results:', error);
-      dispatchAlert({
-        type: AlertType.ERROR,
-        content: '加载测试结果失败，请稍后重试'
+      // 获取评估信息
+      const assessmentResponse = await client.graphql<any>({
+        query: getAssessment,
+        variables: { id: params.id! }
       });
+      
+      const assessment = assessmentResponse.data.getAssessment;
+      setAssessmentInfo(addAssessmentDefaults(assessment));
+      
+      // 获取所有学生评估结果
+      const studentAssessmentsResponse = await client.graphql<any>({
+        query: listStudentAssessments
+      });
+      
+      const allStudentAssessments = studentAssessmentsResponse.data.listStudentAssessments || [];
+      
+      // 筛选当前评估的结果
+      const currentAssessmentResults = allStudentAssessments
+        .filter((sa: any) => sa.parentAssessId === params.id)
+        .map((sa: any) => {
+          // 从评估数据中提取学生信息（如果有的话）
+          // 注意：这里可能需要根据实际的数据结构调整
+          const extendedSA = addStudentAssessmentDefaults(sa, assessment);
+          
+          return {
+            ...extendedSA,
+            userId: sa.userId || 'unknown',
+            userName: sa.userName || sa.userId || '未知用户',
+            userEmail: sa.userEmail || '',
+            submittedAt: sa.completed ? sa.updatedAt : undefined,
+            startedAt: sa.createdAt || sa.updatedAt
+          } as StudentResult;
+        });
+      
+      setStudentResults(currentAssessmentResults);
+      
+    } catch (error) {
+      console.error('Failed to load assessment results:', error);
+      dispatchAlert({ 
+        type: AlertType.ERROR,
+        content: '加载评估结果失败，请稍后重试。'
+      });
+      
+      // 如果加载失败，显示空状态而不是模拟数据
+      setStudentResults([]);
+      setAssessmentInfo(null);
     } finally {
       setLoading(false);
     }
@@ -129,8 +123,8 @@ export default () => {
     }
   };
 
-  const getScoreBadge = (score?: number) => {
-    if (score === undefined) return '-';
+  const getScoreBadge = (score?: number | null) => {
+    if (score === undefined || score === null) return '-';
     
     let color: 'blue' | 'green' | 'red' = 'blue';
     if (score >= 90) color = 'green';
@@ -145,7 +139,7 @@ export default () => {
     .filter(s => s.completed && s.score !== undefined)
     .reduce((sum, s) => sum + (s.score || 0), 0) / Math.max(completedCount, 1);
 
-  if (loading) {\
+  if (loading) {
     return (
       <ContentLayout>
         <Container>
@@ -223,9 +217,18 @@ export default () => {
                   cell: (item) => getScoreBadge(item.score),
                 },
                 {
-                  id: 'duration',
-                  header: '用时',
-                  cell: (item) => formatDuration(item.duration),
+                  id: 'attempts',
+                  header: '测试次数',
+                  cell: (item) => (
+                    <SpaceBetween size="xs">
+                      <Box>{item.attemptCount || 0} / {item.remainingAttempts === -1 ? '∞' : (item.attemptCount || 0) + (item.remainingAttempts || 0)}</Box>
+                      {item.scores && item.scores.length > 1 && (
+                        <Box fontSize="body-s" color="text-status-inactive">
+                          历史分数: {item.scores.join(', ')}
+                        </Box>
+                      )}
+                    </SpaceBetween>
+                  ),
                 },
                 {
                   id: 'submittedAt',
