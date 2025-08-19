@@ -22,8 +22,7 @@ export const listStudents = /* GraphQL */ `
   query ListStudents {
     listStudents {
       id
-      firstName
-      lastName
+      name
       email
       lastLoginAt
       assessmentCount

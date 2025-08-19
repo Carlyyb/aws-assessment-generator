@@ -224,8 +224,7 @@ export type IngestionJob = {
 export type Student = {
   __typename: "Student",
   id: string,
-  firstName: string,
-  lastName: string,
+  name: string,
 };
 
 export type GenerateAssessmentInput = {
@@ -537,8 +536,7 @@ export type ListStudentsQuery = {
   listStudents?:  Array< {
     __typename: "Student",
     id: string,
-    firstName: string,
-    lastName: string,
+    name: string,
   } | null > | null,
 };
 
