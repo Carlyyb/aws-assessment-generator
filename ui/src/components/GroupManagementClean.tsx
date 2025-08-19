@@ -30,8 +30,7 @@ interface StudentGroup {
 
 interface Student {
   id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
 }
 
@@ -205,11 +204,11 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
 
   const getStudentNames = (group: StudentGroup) => {
     if (group.id === 'ALL') {
-      return students.map(s => s.lastName + s.firstName);
+      return students.map(s => s.name);
     }
     return students
       .filter(s => group.students.includes(s.id))
-      .map(s => s.lastName + s.firstName);
+      .map(s => s.name);
   };
 
   const displayGroups = groups.filter(g => g.id !== 'ALL');

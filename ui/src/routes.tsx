@@ -12,8 +12,9 @@ import MyDashboard from './pages/MyDashboard';
 import StudentAssessment from './pages/StudentAssessment';
 import ReviewAssessment from './pages/ReviewAssessment';
 import Courses from './pages/Courses';
-import FindStudent from './pages/FindStudent';
+import StudentList from './pages/StudentList';
 import AssessmentResults from './pages/AssessmentResults';
+import AssessmentSettings from './pages/AssessmentSettings';
 
 export const routes = {
   teachers: [
@@ -38,8 +39,8 @@ export const routes = {
               element: <Courses />,
             },
             {
-              path: 'find-student',
-              element: <FindStudent />,
+              path: 'student-list',
+              element: <StudentList />,
             },
             {
               path: 'log-management',
@@ -69,6 +70,7 @@ export const routes = {
     },
     { path: 'edit-assessment/:id', element: <EditAssessments />, children: [] },
     { path: 'assessment-results/:id', element: <AssessmentResults />, children: [] },
+    { path: 'assessment-settings/:id', element: <AssessmentSettings />, children: [] },
   ],
   students: [
     {

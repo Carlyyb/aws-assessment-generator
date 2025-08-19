@@ -11,6 +11,7 @@ import {
 import './styles/high-contrast.css';
 import './styles/cross-browser.css';
 import './styles/theme.css';
+import './styles/logo.css';
 import { I18nProvider } from '@cloudscape-design/components/i18n';
 import messages from '@cloudscape-design/components/i18n/messages/all.en';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -30,6 +31,7 @@ import { fetchAuthSession } from 'aws-amplify/auth';
 import { Notifications } from '@mantine/notifications';
 import { useAdminPermissions } from './utils/adminPermissions';
 import { getAdminLevelDisplayName } from './utils/adminDisplayUtils';
+import { AuthMonitor } from './components/AuthMonitor';
 
 const LOCALE = 'zh';
 
@@ -113,46 +115,41 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
 
   return (
     <DispatchAlertContext.Provider value={dispatchAlert}>
-      <UserProfileContext.Provider value={userProfile}>
-        <RoutesContext.Provider value={routes}>
-          <I18nProvider locale={LOCALE} messages={[messages]}>
-            <Notifications />
-            <div id="h">
-              <TopNavigation
-                identity={{
-                  href: '#',
-                  title: getText('common.brand'),
-                }}
-                utilities={[
-                  {
-                    type: 'menu-dropdown',
-                    text: getUserDisplayText(),
-                    description: getUserDescription(),
-                    iconName: 'user-profile',
-                    items: [{ id: 'signout', text: getText('common.action.sign_out') }],
-                    onItemClick: ({ detail }) => {
-                      if (detail.id === 'signout') signOut && signOut();
+      <AuthMonitor>
+        <UserProfileContext.Provider value={userProfile}>
+          <RoutesContext.Provider value={routes}>
+            <I18nProvider locale={LOCALE} messages={[messages]}>
+              <Notifications />
+              <div id="h" style={{ position: 'relative' }} data-has-logo={currentTheme.logoUrl ? 'true' : 'false'}>
+                <TopNavigation
+                  identity={{
+                    href: '#',
+                    title: getText('common.brand'),
+                  }}
+                  utilities={[
+                    {
+                      type: 'menu-dropdown',
+                      text: getUserDisplayText(),
+                      description: getUserDescription(),
+                      iconName: 'user-profile',
+                      items: [{ id: 'signout', text: getText('common.action.sign_out') }],
+                      onItemClick: ({ detail }) => {
+                        if (detail.id === 'signout') signOut && signOut();
+                      },
                     },
-                  },
-                ]}
-              />
-              {/* 自定义Logo显示区域 */}
-              {currentTheme.logoUrl && (
-                <div style={{
-                  position: 'absolute',
-                  top: '8px',
-                  left: '16px',
-                  zIndex: 1000,
-                }}>
-                  <img 
-                    src={currentTheme.logoUrl} 
-                    alt={getText('common.brand')} 
-                    className="app-logo"
-                    style={{ maxHeight: '32px' }}
-                  />
-                </div>
-              )}
-            </div>
+                  ]}
+                />
+                {/* 自定义Logo显示区域 */}
+                {currentTheme.logoUrl && (
+                  <div className="custom-logo-container">
+                    <img 
+                      src={currentTheme.logoUrl} 
+                      alt={getText('common.brand')} 
+                      className="custom-logo"
+                    />
+                  </div>
+                )}
+              </div>
             <AppLayout
               headerSelector="#h"
               breadcrumbs={
@@ -205,6 +202,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
           </I18nProvider>
         </RoutesContext.Provider>
       </UserProfileContext.Provider>
+      </AuthMonitor>
     </DispatchAlertContext.Provider>
   );
 }

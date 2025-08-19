@@ -460,6 +460,28 @@ export default () => {
                           </Button>
                         ) : (
                           <>
+                            {/* 设置按钮 - 对于已创建的测试 */}
+                            {!hasDataError && item.status === AssessStatus.CREATED && (
+                              <Button
+                                variant="normal"
+                                iconName="settings"
+                                onClick={() => navigate(`/assessment-settings/${item.id}`)}
+                              >
+                                设置
+                              </Button>
+                            )}
+                            
+                            {/* 模拟测试按钮 - 对于已创建且已发布的测试 */}
+                            {!hasDataError && item.status === AssessStatus.CREATED && item.published && (
+                              <Button
+                                variant="normal"
+                                iconName="external"
+                                onClick={() => navigate(`/assessment/${item.id}?preview=true`)}
+                              >
+                                模拟测试
+                              </Button>
+                            )}
+                            
                             {/* 查看数据按钮 - 已发布或已创建的测试都显示 */}
                             {!hasDataError && (item.published || item.status === AssessStatus.CREATED) && (
                               <Button
@@ -471,40 +493,43 @@ export default () => {
                               </Button>
                             )}
                             
-                            {!hasDataError && !item.published && item.status === AssessStatus.CREATED && (
-                              <Button
-                                variant="normal"
-                                onClick={() => navigate(`/edit-assessment/${item.id}`)}
-                              >
-                                {getText('common.actions.edit')}
-                              </Button>
-                            )}
-                            
                             {!hasDataError && item.status === AssessStatus.CREATED && (
                               item.published ? (
                                 <Button
+                                  iconName="status-negative"
                                   onClick={() => handleUnpublish(item)}
                                 >
                                   取消发布
                                 </Button>
                               ) : (
-                                <Button
-                                  variant="primary"
-                                  onClick={() =>
-                                    client
-                                      .graphql<any>({ query: publishAssessment, variables: { assessmentId: item.id } })
-                                      .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.assessments.find.published_successfully') }))
-                                      .then(getAssessments)
-                                      .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.status.error') }))
-                                  }
-                                >
-                                  {getText('common.actions.publish')}
-                                </Button>
+                                <>
+                                  <Button
+                                    variant="primary"
+                                    iconName="status-positive"
+                                    onClick={() =>
+                                      client
+                                        .graphql<any>({ query: publishAssessment, variables: { assessmentId: item.id } })
+                                        .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.assessments.find.published_successfully') }))
+                                        .then(getAssessments)
+                                        .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.status.error') }))
+                                    }
+                                  >
+                                    {getText('common.actions.publish')}
+                                  </Button>
+                                  <Button
+                                    variant="normal"
+                                    iconName="edit"
+                                    onClick={() => navigate(`/edit-assessment/${item.id}`)}
+                                  >
+                                    编辑试卷
+                                  </Button>
+                                </>
                               )
                             )}
 
                             {!hasDataError && item.status === AssessStatus.PUBLISHED && (
                               <Button
+                                iconName="status-negative"
                                 onClick={() => handleUnpublish(item)}
                               >
                                 取消发布

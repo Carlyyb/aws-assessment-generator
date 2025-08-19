@@ -50,8 +50,7 @@ input CourseInput {
 
 type Student {
   id: ID!
-  firstName: String!
-  lastName: String!
+  name: String!
   email: String
   lastLoginAt: AWSDateTime
   assessmentCount: Int
@@ -295,6 +294,7 @@ type Query {
   getSettings: Settings
   listCourses: [Course]
   listStudents: [Student]
+  listStudentGroups: [StudentGroup]
   getAssessment(id: ID!): Assessment
   listAssessments: [Assessment]
   listAssessTemplates: [AssessTemplate]

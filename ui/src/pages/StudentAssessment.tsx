@@ -15,11 +15,11 @@ import {
   Alert,
   ProgressBar,
 } from '@cloudscape-design/components';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import { MultiChoice, FreeText, TrueFalse, SingleChoice, AssessType, StudentAssessment } from '../graphql/API';
-import { getStudentAssessment } from '../graphql/queries';
+import { getStudentAssessment, getAssessment } from '../graphql/queries';
 import { gradeStudentAssessment } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { getText, getTextWithParams } from '../i18n/lang';
@@ -29,8 +29,12 @@ const client = generateClient();
 export default () => {
   const params = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dispatchAlert = useContext(DispatchAlertContext);
   const [showSpinner, setShowSpinner] = useState(false);
+  
+  // 检查是否为预览模式
+  const isPreviewMode = searchParams.get('preview') === 'true';
 
   const [assessmentId, setAssessmentId] = useState<string>();
   const [questions, setQuestions] = useState<(MultiChoice | FreeText | TrueFalse | SingleChoice)[]>([]);
@@ -52,39 +56,83 @@ export default () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    client
-      .graphql<any>({ query: getStudentAssessment, variables: { parentAssessId: params.id! } })
-      .then(({ data }) => {
-        const result: StudentAssessment = data.getStudentAssessment;
-        setAssessmentId(result.parentAssessId);
-        setAssessType(result.assessment?.assessType);
-        
-        // 检查是否有时间限制
-        const assessment = result.assessment as any;
-        if (assessment?.timeLimited && assessment?.timeLimit) {
-          setIsTimeLimited(true);
-          setTimeLimit(assessment.timeLimit);
-          setRemainingTime(assessment.timeLimit * 60); // 转换为秒
-          setShowStartDialog(true); // 显示开始确认对话框
+    if (isPreviewMode) {
+      // 预览模式：直接获取评估数据
+      const loadAssessmentData = async () => {
+        try {
+          const response = await client.graphql({ query: getAssessment, variables: { id: params.id! } });
+          const data = (response as any).data;
+          const assessment = data.getAssessment;
+          setAssessmentId(assessment.id);
+          setAssessType(assessment.assessType);
+          
+          // 检查是否有时间限制
+          if (assessment?.timeLimited && assessment?.timeLimit) {
+            setIsTimeLimited(true);
+            setTimeLimit(assessment.timeLimit);
+            setRemainingTime(assessment.timeLimit * 60); // 转换为秒
+            setShowStartDialog(true); // 显示开始确认对话框
+          }
+          
+          // 根据评估类型获取正确的问题数组
+          let questionArray: (MultiChoice | FreeText | TrueFalse | SingleChoice)[] = [];
+          if (assessment?.assessType === AssessType.multiChoiceAssessment && assessment.multiChoiceAssessment) {
+            questionArray = assessment.multiChoiceAssessment;
+          } else if (assessment?.assessType === AssessType.freeTextAssessment && assessment.freeTextAssessment) {
+            questionArray = assessment.freeTextAssessment;
+          } else if (assessment?.assessType === AssessType.trueFalseAssessment && assessment.trueFalseAssessment) {
+            questionArray = assessment.trueFalseAssessment;
+          } else if (assessment?.assessType === AssessType.singleChoiceAssessment && assessment.singleChoiceAssessment) {
+            questionArray = assessment.singleChoiceAssessment;
+          }
+          
+          setQuestions(questionArray);
+          setAnswers(new Array(questionArray.length).fill(''));
+        } catch (error: any) {
+          console.error('Preview mode: Failed to load assessment:', error);
+          dispatchAlert({ 
+            type: AlertType.ERROR, 
+            content: '预览模式：无法加载测试数据' 
+          });
         }
-        
-        // 根据评估类型获取正确的问题数组
-        let questionArray: (MultiChoice | FreeText | TrueFalse | SingleChoice)[] = [];
-        if (result.assessment?.assessType === AssessType.multiChoiceAssessment && result.assessment.multiChoiceAssessment) {
-          questionArray = result.assessment.multiChoiceAssessment;
-        } else if (result.assessment?.assessType === AssessType.freeTextAssessment && result.assessment.freeTextAssessment) {
-          questionArray = result.assessment.freeTextAssessment;
-        } else if (result.assessment?.assessType === AssessType.trueFalseAssessment && result.assessment.trueFalseAssessment) {
-          questionArray = result.assessment.trueFalseAssessment;
-        } else if (result.assessment?.assessType === AssessType.singleChoiceAssessment && result.assessment.singleChoiceAssessment) {
-          questionArray = result.assessment.singleChoiceAssessment;
-        }
-        
-        setQuestions(questionArray);
-        setAnswers(new Array(questionArray.length).fill(''));
-      })
-      .catch(() => {});
-  }, []);
+      };
+      
+      loadAssessmentData();
+      // 正常学生模式
+      client
+        .graphql<any>({ query: getStudentAssessment, variables: { parentAssessId: params.id! } })
+        .then(({ data }) => {
+          const result: StudentAssessment = data.getStudentAssessment;
+          setAssessmentId(result.parentAssessId);
+          setAssessType(result.assessment?.assessType);
+          
+          // 检查是否有时间限制
+          const assessment = result.assessment as any;
+          if (assessment?.timeLimited && assessment?.timeLimit) {
+            setIsTimeLimited(true);
+            setTimeLimit(assessment.timeLimit);
+            setRemainingTime(assessment.timeLimit * 60); // 转换为秒
+            setShowStartDialog(true); // 显示开始确认对话框
+          }
+          
+          // 根据评估类型获取正确的问题数组
+          let questionArray: (MultiChoice | FreeText | TrueFalse | SingleChoice)[] = [];
+          if (result.assessment?.assessType === AssessType.multiChoiceAssessment && result.assessment.multiChoiceAssessment) {
+            questionArray = result.assessment.multiChoiceAssessment;
+          } else if (result.assessment?.assessType === AssessType.freeTextAssessment && result.assessment.freeTextAssessment) {
+            questionArray = result.assessment.freeTextAssessment;
+          } else if (result.assessment?.assessType === AssessType.trueFalseAssessment && result.assessment.trueFalseAssessment) {
+            questionArray = result.assessment.trueFalseAssessment;
+          } else if (result.assessment?.assessType === AssessType.singleChoiceAssessment && result.assessment.singleChoiceAssessment) {
+            questionArray = result.assessment.singleChoiceAssessment;
+          }
+          
+          setQuestions(questionArray);
+          setAnswers(new Array(questionArray.length).fill(''));
+        })
+        .catch(() => {});
+    }
+  }, [isPreviewMode, params.id, dispatchAlert]);
 
   // 开始计时器
   const startTimer = useCallback(() => {
@@ -118,24 +166,45 @@ export default () => {
       clearInterval(timerRef.current);
     }
     
-    setShowSpinner(true);
-    client
-      .graphql<any>({
-        query: gradeStudentAssessment,
-        variables: {
-          input: {
-            parentAssessId: params.id!,
-            answers: JSON.stringify(answers.map((answer) => (isNaN(+answer) ? answer : +answer + 1))),
+    if (isPreviewMode) {
+      // 预览模式：模拟评分但不保存数据
+      setShowSpinner(true);
+      
+      setTimeout(() => {
+        const answeredCount = answers.filter(answer => answer !== undefined && answer !== '').length;
+        const completionRate = answeredCount / questions.length;
+        const simulatedScore = Math.round((completionRate * 0.7 + Math.random() * 0.3) * 100);
+        
+        setScore(simulatedScore);
+        setShowSpinner(false);
+        
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: `预览模式 - 时间到！模拟得分: ${simulatedScore}分 (注意：这只是预览，未保存任何数据)`
+        });
+      }, 1500);
+      
+    } else {
+      // 正常学生模式：真实提交
+      setShowSpinner(true);
+      client
+        .graphql<any>({
+          query: gradeStudentAssessment,
+          variables: {
+            input: {
+              parentAssessId: params.id!,
+              answers: JSON.stringify(answers.map((answer) => (isNaN(+answer) ? answer : +answer + 1))),
+            },
           },
-        },
-      })
-      .then(({ data }) => {
-        const { score } = data.gradeStudentAssessment;
-        setScore(score);
-      })
-      .catch(() => dispatchAlert({ type: AlertType.ERROR }))
-      .finally(() => setShowSpinner(false));
-  }, [answers, params.id, dispatchAlert]);
+        })
+        .then(({ data }) => {
+          const { score } = data.gradeStudentAssessment;
+          setScore(score);
+        })
+        .catch(() => dispatchAlert({ type: AlertType.ERROR }))
+        .finally(() => setShowSpinner(false));
+    }
+  }, [answers, params.id, dispatchAlert, isPreviewMode, questions.length]);
 
   // 格式化时间显示
   const formatTime = (seconds: number): string => {
@@ -174,25 +243,54 @@ export default () => {
     }
     
     setShowSubmitConfirmation(false);
-    setShowSpinner(true);
     
-    client
-      .graphql<any>({
-        query: gradeStudentAssessment,
-        variables: {
-          input: {
-            parentAssessId: params.id!,
-            answers: JSON.stringify(answers.map((answer) => (isNaN(+answer) ? answer : +answer + 1))),
+    if (isPreviewMode) {
+      // 预览模式：模拟评分但不保存数据
+      setShowSpinner(true);
+      
+      // 模拟评分逻辑
+      setTimeout(() => {
+        let simulatedScore = 0;
+        let totalQuestions = questions.length;
+        
+        // 基于答案完成度生成模拟分数
+        const answeredCount = answers.filter(answer => answer !== undefined && answer !== '').length;
+        const completionRate = answeredCount / totalQuestions;
+        
+        // 简单的模拟评分：完成度高的获得更高分数，加上一些随机性
+        simulatedScore = Math.round((completionRate * 0.7 + Math.random() * 0.3) * 100);
+        
+        setScore(simulatedScore);
+        setShowSpinner(false);
+        
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: `预览模式完成！模拟得分: ${simulatedScore}分 (注意：这只是预览，未保存任何数据)`
+        });
+      }, 1500); // 模拟网络延迟
+      
+    } else {
+      // 正常学生模式：真实提交
+      setShowSpinner(true);
+      
+      client
+        .graphql<any>({
+          query: gradeStudentAssessment,
+          variables: {
+            input: {
+              parentAssessId: params.id!,
+              answers: JSON.stringify(answers.map((answer) => (isNaN(+answer) ? answer : +answer + 1))),
+            },
           },
-        },
-      })
-      .then(({ data }) => {
-        const { score } = data.gradeStudentAssessment;
-        setScore(score);
-      })
-      .catch(() => dispatchAlert({ type: AlertType.ERROR }))
-      .finally(() => setShowSpinner(false));
-  }, [answers, params.id, dispatchAlert]);
+        })
+        .then(({ data }) => {
+          const { score } = data.gradeStudentAssessment;
+          setScore(score);
+        })
+        .catch(() => dispatchAlert({ type: AlertType.ERROR }))
+        .finally(() => setShowSpinner(false));
+    }
+  }, [answers, params.id, dispatchAlert, isPreviewMode, questions.length]);
 
   // 验证提交前的条件
   const validateSubmission = () => {
@@ -498,27 +596,39 @@ export default () => {
       {/* 开始确认对话框 */}
       <Modal
         visible={showStartDialog}
-        header="开始评估"
+        header={isPreviewMode ? "预览模式 - 开始评估" : "开始评估"}
         footer={
           <Box float="right">
             <SpaceBetween direction="horizontal" size="xs">
-              <Button onClick={() => navigate('/assessments')}>取消</Button>
+              <Button onClick={() => navigate(isPreviewMode ? '/assessments/find-assessments' : '/assessments')}>取消</Button>
               <Button variant="primary" onClick={startTimer}>
-                开始答题
+                {isPreviewMode ? '开始预览' : '开始答题'}
               </Button>
             </SpaceBetween>
           </Box>
         }
-        onDismiss={() => navigate('/assessments')}
+        onDismiss={() => navigate(isPreviewMode ? '/assessments/find-assessments' : '/assessments')}
       >
         <SpaceBetween size="m">
-          <div>请确认您已准备好开始评估。</div>
+          {isPreviewMode ? (
+            <Alert type="info">
+              <div><strong>🎭 教师预览模式</strong></div>
+              <div>您正在以教师身份预览学生测试体验。这是一个模拟环境，不会保存任何答题数据。</div>
+            </Alert>
+          ) : (
+            <div>请确认您已准备好开始评估。</div>
+          )}
+          
           {isTimeLimited && (
             <Alert type="info">
               <strong>注意：</strong>此评估有时间限制，总时长为 {timeLimit} 分钟。一旦开始，计时器将开始倒计时，时间到期时会自动提交。
+              {isPreviewMode && <div><em>（预览模式下，计时器正常工作但不保存数据）</em></div>}
             </Alert>
           )}
-          <div>点击"开始答题"按钮后，您将无法返回此页面。</div>
+          
+          {!isPreviewMode && (
+            <div>点击"开始答题"按钮后，您将无法返回此页面。</div>
+          )}
         </SpaceBetween>
       </Modal>
 
@@ -543,7 +653,7 @@ export default () => {
       {/* 最终提交确认对话框 */}
       <Modal
         visible={showSubmitConfirmation}
-        header="确认提交"
+        header={isPreviewMode ? "预览模式 - 确认提交" : "确认提交"}
         footer={
           <Box float="right">
             <SpaceBetween direction="horizontal" size="xs">
@@ -551,7 +661,7 @@ export default () => {
                 返回检查
               </Button>
               <Button variant="primary" onClick={handleFinalSubmit}>
-                确认提交
+                {isPreviewMode ? '模拟提交' : '确认提交'}
               </Button>
             </SpaceBetween>
           </Box>
@@ -559,22 +669,34 @@ export default () => {
         onDismiss={() => setShowSubmitConfirmation(false)}
       >
         <SpaceBetween size="m">
+          {isPreviewMode && (
+            <Alert type="info">
+              <div><strong>🎭 预览模式</strong></div>
+              <div>这是模拟提交，不会保存任何数据。</div>
+            </Alert>
+          )}
           {renderSubmissionSummary()}
         </SpaceBetween>
       </Modal>
 
       <Modal
         visible={score !== undefined}
-        header={getText('student.assessments.detail.your_score')}
+        header={isPreviewMode ? "预览模式 - 模拟结果" : getText('student.assessments.detail.your_score')}
         footer={
           <Box float="right">
-            <Button variant="primary" onClick={() => navigate('/assessments')}>
-              {getText('common.actions.finish')}
+            <Button variant="primary" onClick={() => navigate(isPreviewMode ? '/assessments/find-assessments' : '/assessments')}>
+              {isPreviewMode ? '返回测试管理' : getText('common.actions.finish')}
             </Button>
           </Box>
         }
       >
         <SpaceBetween size="l">
+          {isPreviewMode && (
+            <Alert type="success">
+              <div><strong>🎭 预览完成！</strong></div>
+              <div>这是模拟的测试结果，仅供预览参考。</div>
+            </Alert>
+          )}
           <PieChart
             hideFilter
             hideLegend
@@ -585,9 +707,11 @@ export default () => {
             ]}
             innerMetricValue={`${score}%`}
           />
-          <Button fullWidth onClick={() => navigate('/review/' + assessmentId)}>
-            {getText('common.actions.review')}
-          </Button>
+          {!isPreviewMode && (
+            <Button fullWidth onClick={() => navigate('/review/' + assessmentId)}>
+              {getText('common.actions.review')}
+            </Button>
+          )}
         </SpaceBetween>
       </Modal>
       
@@ -600,6 +724,22 @@ export default () => {
           hasStarted ? (
             <Container>
               <SpaceBetween size="l">
+                {/* 预览模式提示 */}
+                {isPreviewMode && (
+                  <Alert type="info" statusIconAriaLabel="预览模式">
+                    <SpaceBetween size="s">
+                      <div><strong>🎭 教师预览模式</strong></div>
+                      <div>您正在以教师身份预览学生测试体验。所有交互都是模拟的，不会保存任何答题数据。</div>
+                      <Button 
+                        variant="link" 
+                        onClick={() => navigate('/assessments/find-assessments')}
+                      >
+                        返回测试管理
+                      </Button>
+                    </SpaceBetween>
+                  </Alert>
+                )}
+                
                 {/* 当前题目显示 */}
                 <Container header={
                   <Header variant="h2">

@@ -34,6 +34,39 @@ export const ThemeSettings: React.FC = () => {
 
   const canCustomize = canCustomizeTheme(userProfile);
 
+  // 处理logo文件上传
+  const handleLogoUpload = (files: File[]) => {
+    if (files.length > 0) {
+      const file = files[0];
+      // 检查文件类型
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml'];
+      if (!allowedTypes.includes(file.type)) {
+        addNotification({
+          type: 'error',
+          content: '只支持 JPG、PNG、SVG 格式的图片文件',
+        });
+        return;
+      }
+      
+      // 检查文件大小 (最大2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        addNotification({
+          type: 'error',
+          content: '文件大小不能超过 2MB',
+        });
+        return;
+      }
+      
+      // 创建预览URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const logoUrl = e.target?.result as string;
+        setFormData(prev => ({ ...prev, logoUrl }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const addNotification = (notification: FlashbarProps.MessageDefinition) => {
     const id = Date.now().toString();
     setNotifications([
@@ -209,20 +242,37 @@ export const ThemeSettings: React.FC = () => {
                 </ColumnLayout>
 
                 <FormField label={getText('theme.custom.logo')}>
-                  <Input
-                    value={formData.logoUrl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, logoUrl: e.detail.value }))}
-                    placeholder={getText('theme.custom.logoPlaceholder')}
-                  />
-                  {formData.logoUrl && (
-                    <Box margin={{ top: 'xs' }}>
-                      <img 
-                        src={formData.logoUrl} 
-                        alt="Logo preview" 
-                        style={{ height: '60px', objectFit: 'contain' }}
+                  <SpaceBetween size="s">
+                    <div>
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.svg"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            handleLogoUpload(Array.from(e.target.files));
+                          }
+                        }}
+                        style={{ marginBottom: '8px' }}
                       />
-                    </Box>
-                  )}
+                      <div style={{ fontSize: '12px', color: '#666' }}>
+                        支持 JPG、PNG、SVG 格式，最大 2MB
+                      </div>
+                    </div>
+                    <Input
+                      value={formData.logoUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, logoUrl: e.detail.value }))}
+                      placeholder={getText('theme.custom.logoPlaceholder')}
+                    />
+                    {formData.logoUrl && (
+                      <Box margin={{ top: 'xs' }}>
+                        <img 
+                          src={formData.logoUrl} 
+                          alt="Logo preview" 
+                          style={{ height: '60px', objectFit: 'contain' }}
+                        />
+                      </Box>
+                    )}
+                  </SpaceBetween>
                 </FormField>
 
                 <Button variant="primary" onClick={handleSaveTheme}>

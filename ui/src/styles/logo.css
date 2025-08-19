@@ -1,0 +1,28 @@
+/* Logo styling for theme customization */
+.custom-logo-container {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  z-index: 1000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-logo {
+  height: 24px;
+  object-fit: contain;
+  max-width: 120px;
+}
+
+/* 调整标题位置以为logo留出空间 */
+.awsui-top-navigation .awsui-top-navigation__content .awsui-top-navigation__identity {
+  margin-left: 40px;
+}
+
+/* 当有logo时调整标题位置 */
+[data-has-logo="true"] .awsui-top-navigation .awsui-top-navigation__content .awsui-top-navigation__identity {
+  margin-left: 140px;
+}

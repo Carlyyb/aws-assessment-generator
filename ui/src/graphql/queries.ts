@@ -24,6 +24,33 @@ export const listStudents = /* GraphQL */ `
       id
       firstName
       lastName
+      email
+      lastLoginAt
+      assessmentCount
+      groups {
+        id
+        name
+        description
+        color
+        createdBy
+        teachers
+        students
+        createdAt
+      }
+    }
+  }
+`;
+export const listStudentGroups = /* GraphQL */ `
+  query ListStudentGroups {
+    listStudentGroups {
+      id
+      name
+      description
+      color
+      createdBy
+      teachers
+      students
+      createdAt
     }
   }
 `;

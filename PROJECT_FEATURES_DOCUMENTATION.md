@@ -8,6 +8,25 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ## 最新更新记录
 
+### 2025-08-19: 主题系统Logo支持和UI优化
+- **功能描述**：完善主题系统，支持Logo上传和显示，修复学生列表显示问题，优化按钮设计
+- **修改位置**：
+  - `ui/src/components/ThemeSettings.tsx` - 添加Logo文件上传功能，支持JPG/PNG/SVG格式，最大2MB
+  - `ui/src/App.tsx` - 在TopNavigation中显示自定义Logo
+  - `ui/src/styles/logo.css` - 新增Logo样式文件
+  - `lib/schema.graphql` - 修改Student类型，将firstName和lastName合并为name字段
+  - `ui/src/pages/StudentList.tsx` - 修复学生列表显示和数据结构
+  - `ui/src/components/GroupManagementClean.tsx` - 更新Student接口
+  - `ui/src/pages/FindAssessments.tsx` - 为编辑和发布按钮添加图标，调整按钮顺序
+- **实现细节**：
+  - Logo上传支持本地文件选择，自动生成Base64预览URL
+  - 文件类型验证：只允许image/jpeg、image/jpg、image/png、image/svg+xml
+  - 文件大小限制：最大2MB
+  - Logo显示在TopNavigation标题左侧，使用CSS定位
+  - Student模型简化：移除firstName和lastName，统一使用name字段
+  - 按钮优化：发布按钮添加status-positive图标，编辑按钮添加edit图标，发布按钮置于编辑按钮左侧
+- **版本控制**：v1.3.0 - 主题系统增强版本
+
 ### 2025-08-19: TypeScript 类型错误修复
 - **修复问题**：前端组件中的 TypeScript 类型错误
 - **修复位置**：
