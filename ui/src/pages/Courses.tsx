@@ -23,7 +23,8 @@ import { getText } from '../i18n/lang';
 
 const client = generateClient();
 
-export default () => {
+
+const CoursesPage = () => {
   const dispatchAlert = useContext(DispatchAlertContext);
   const [courses, setCourses] = useState<Course[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -42,14 +43,14 @@ export default () => {
           [course.id]: 'loading'
         }));
 
-        const response = await client.graphql<any>({
+        const response = await client.graphql<{ data?: { getKnowledgeBase?: { knowledgeBaseId?: string; status?: string } }, errors?: any }>({
           query: getKnowledgeBase,
           variables: { courseId: course.id }
         });
         
         // 检查GraphQL错误
-        if ((response as any).errors) {
-          console.error(`Error checking knowledge base for course ${course.id}:`, (response as any).errors);
+        if ('errors' in response && response.errors) {
+          console.error(`Error checking knowledge base for course ${course.id}:`, response.errors);
           setKnowledgeBaseStatuses(prev => ({
             ...prev,
             [course.id]: 'missing'
@@ -57,8 +58,7 @@ export default () => {
           return;
         }
         
-        const kb = (response as any).data?.getKnowledgeBase;
-        console.log(`Knowledge base for course ${course.id}:`, kb);
+        const kb = ('data' in response) ? response.data?.getKnowledgeBase : null;
         
         // 检查知识库是否存在且状态为活跃
         const hasKnowledgeBase = kb && (
@@ -89,10 +89,11 @@ export default () => {
       }
       return acc;
     }, {} as {[courseId: string]: 'loading' | 'available' | 'missing'});
-    
-    console.log('Knowledge base statuses:', statusMap);
     setKnowledgeBaseStatuses(statusMap);
   };
+  
+  
+
 
   // 打开知识库管理
   const handleManageKnowledgeBase = (course: Course) => {
@@ -115,8 +116,8 @@ export default () => {
       });
       
       // 重新加载课程列表
-      const response = await client.graphql<any>({ query: listCourses });
-      const updatedCourses = response.data?.listCourses || [];
+      const response = await client.graphql<{ data?: { listCourses?: Course[] } }>({ query: listCourses });
+      const updatedCourses = ('data' in response) ? response.data?.listCourses || [] : [];
       setCourses(updatedCourses);
       await checkAllKnowledgeBaseStatuses(updatedCourses);
       
@@ -151,8 +152,8 @@ export default () => {
   useEffect(() => {
     const loadCoursesAndStatuses = async () => {
       try {
-        const response = await client.graphql<any>({ query: listCourses });
-        const courseList = response.data?.listCourses || [];
+        const response = await client.graphql<{ data?: { listCourses?: Course[] } }>({ query: listCourses });
+        const courseList = ('data' in response) ? response.data?.listCourses || [] : [];
         setCourses(courseList);
         await checkAllKnowledgeBaseStatuses(courseList);
       } catch (error) {
@@ -162,7 +163,7 @@ export default () => {
     };
 
     loadCoursesAndStatuses();
-  }, [showCreateModal, showKnowledgeBaseModal]);
+  }, [showCreateModal, showKnowledgeBaseModal, dispatchAlert]);
 
   return (
     <ContentLayout>
@@ -329,3 +330,5 @@ export default () => {
     </ContentLayout>
   );
 };
+
+export default CoursesPage;

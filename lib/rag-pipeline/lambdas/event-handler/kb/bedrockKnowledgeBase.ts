@@ -20,7 +20,7 @@ import { logger } from '../utils/pt';
 import { VectorStore } from './vectorStore';
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 
 const bedrockAgentClient = new BedrockAgentClient();
 const client = new DynamoDBClient();
@@ -37,38 +37,42 @@ export class BedrockKnowledgeBase {
   }
 
   static async getKnowledgeBase(userId: string, courseId: string): Promise<BedrockKnowledgeBase> {
-    // Check DDB Table
-    const ddbResponse = await docClient.send(
-      new GetCommand({
-        Key: {
-          userId,
-          courseId,
-        },
+    // 首先尝试查找该课程的任何现有知识库（不限制用户）
+    const scanResponse = await docClient.send(
+      new ScanCommand({
         TableName: KB_TABLE,
+        FilterExpression: 'courseId = :courseId',
+        ExpressionAttributeValues: {
+          ':courseId': courseId
+        }
       })
     );
 
-    if (ddbResponse.Item) {
-      logger.info(ddbResponse as any);
-      //TODO verify that the KB ID and the data source still exist
-      return new BedrockKnowledgeBase(ddbResponse.Item['knowledgeBaseId'], ddbResponse.Item['kbDataSourceId']);
+    // 如果找到现有的知识库，返回它（不管是哪个教师创建的）
+    if (scanResponse.Items && scanResponse.Items.length > 0) {
+      const existingKB = scanResponse.Items[0];
+      logger.info('Found existing KB for course', existingKB as any);
+      return new BedrockKnowledgeBase(existingKB['knowledgeBaseId'], existingKB['kbDataSourceId']);
     }
-    const kbName = `${courseId}-${userId}`;
-    const s3prefix = `${userId}/${courseId}/`;
+
+    // 如果没有找到现有知识库，创建新的
+    const kbName = `${courseId}-shared`; // 移除用户ID，使其为共享知识库
+    const s3prefix = `shared/${courseId}/`; // 使用共享前缀
     const kbDataSourceName = `${kbName}-datasource`;
 
     // The Knowledge Base does not exist
-    logger.info(`KnowledgeBase: ${userId} does not exist, creating`);
+    logger.info(`KnowledgeBase for course ${courseId} does not exist, creating shared KB`);
     const vectorStore = await VectorStore.getVectorStore(kbName);
     let knowledgeBaseId = await BedrockKnowledgeBase.createKnowledgeBase(kbName, vectorStore.indexName);
     await this.waitForKbReady(knowledgeBaseId);
     let kbDataSourceId = await BedrockKnowledgeBase.createDataSource(knowledgeBaseId, kbDataSourceName, s3prefix);
 
+    // 将知识库记录存储到 DynamoDB（使用当前用户ID，但这是为了保持表结构一致性）
     const storeKBResponse = await docClient.send(
       new PutCommand({
         TableName: KB_TABLE,
         Item: {
-          userId,
+          userId, // 记录创建者，但所有教师都可以访问
           courseId,
           knowledgeBaseId,
           kbDataSourceId,
@@ -161,7 +165,7 @@ export class BedrockKnowledgeBase {
         // noinspection TypeScriptValidateTypes
         logger.info(`Attempt ${attempts}. KB creating`, { request: createKbRequest });
         // noinspection TypeScriptValidateTypes
-        const createKbResponse = await bedrockAgentClient.send<CreateKnowledgeBaseCommandInput, CreateKnowledgeBaseResponse>(createKbRequest);
+        const createKbResponse = await bedrockAgentClient.send(createKbRequest);
         return createKbResponse;
       } catch (e) {
         logger.info(e);
@@ -190,10 +194,28 @@ export class BedrockKnowledgeBase {
     const startIngestionJobCommand = new StartIngestionJobCommand(ingestionInput);
 
     // noinspection TypeScriptValidateTypes
-    const startIngestionResponse: StartIngestionJobCommandOutput = await bedrockAgentClient.send<StartIngestionJobCommandOutput>(
+    const startIngestionResponse: StartIngestionJobCommandOutput = await bedrockAgentClient.send(
       startIngestionJobCommand
     );
     logger.info(startIngestionResponse as any);
+    
+    // 验证响应结构
+    if (!startIngestionResponse.ingestionJob) {
+      throw new Error('Invalid ingestion response: missing ingestionJob');
+    }
+    
+    if (!startIngestionResponse.ingestionJob.ingestionJobId) {
+      throw new Error('Invalid ingestion response: missing ingestionJobId');
+    }
+    
+    if (!startIngestionResponse.ingestionJob.knowledgeBaseId) {
+      throw new Error('Invalid ingestion response: missing knowledgeBaseId');
+    }
+    
+    if (!startIngestionResponse.ingestionJob.dataSourceId) {
+      throw new Error('Invalid ingestion response: missing dataSourceId');
+    }
+    
     return startIngestionResponse;
   }
 

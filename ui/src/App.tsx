@@ -31,7 +31,7 @@ import { Notifications } from '@mantine/notifications';
 import { useAdminPermissions } from './utils/adminPermissions';
 import { getAdminLevelDisplayName } from './utils/adminDisplayUtils';
 
-const LOCALE = 'en';
+const LOCALE = 'zh';
 
 interface AppContentProps {
   userProfile: UserProfile;
@@ -236,7 +236,7 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
   );
 }
 
-export default withAuthenticator(App, {
+const AuthenticatedApp = withAuthenticator(App, {
   signUpAttributes: ['name'],
   formFields: {
     signUp: {
@@ -249,7 +249,7 @@ export default withAuthenticator(App, {
     },
   },
   components: {
-    Header: () => {
+    Header: function AuthHeader() {
       return (
         <div style={{ padding: '20px', textAlign: 'center' }}>
           <h1 style={{ color: '#0833b3ff', margin: 0 }}>Gen Assess</h1>
@@ -260,3 +260,5 @@ export default withAuthenticator(App, {
     }
   }
 });
+
+export default AuthenticatedApp;

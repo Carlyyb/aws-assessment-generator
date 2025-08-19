@@ -36,7 +36,7 @@ export default () => {
   
   const [loading, setLoading] = useState(true);
   const [studentResults, setStudentResults] = useState<StudentResult[]>([]);
-  const [assessmentInfo, setAssessmentInfo] = useState<any>(null);
+  const [assessmentInfo, setAssessmentInfo] = useState<ExtendedAssessment | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentResult | null>(null);
 

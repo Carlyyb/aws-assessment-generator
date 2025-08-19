@@ -4,7 +4,7 @@
 import { Context, PostConfirmationTriggerEvent } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { LambdaInterface } from "@aws-lambda-powertools/commons/lib/esm/types";
+import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import { logger, tracer } from "../rag-pipeline/lambdas/event-handler/utils/pt";
 import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 import { AdminAddUserToGroupCommand, CognitoIdentityProviderClient } from "@aws-sdk/client-cognito-identity-provider";
@@ -69,7 +69,7 @@ class Lambda implements LambdaInterface {
       Username: sub,
       GroupName: group,
     });
-    const response = await cognitoIdentityProviderClient.send<AdminAddUserToGroupCommand>(request);
+    const response = await cognitoIdentityProviderClient.send(request);
     logger.info(response as any);
     return response;
   }

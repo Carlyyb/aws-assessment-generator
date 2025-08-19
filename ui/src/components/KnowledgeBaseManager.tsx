@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -111,7 +111,18 @@ export default function KnowledgeBaseManager({
           },
         });
         
-        jobStatus = response.data.getIngestionJob.status;
+        // 检查响应是否有错误
+        if (response.errors) {
+          console.error('GraphQL errors:', response.errors);
+          throw new Error(response.errors[0]?.message || 'Unknown GraphQL error');
+        }
+        
+        const job = response.data?.getIngestionJob;
+        if (!job) {
+          throw new Error('无法获取知识库处理任务状态');
+        }
+        
+        jobStatus = job.status;
         addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.current_status').replace('{status}', jobStatus));
         
         if (jobStatus === 'COMPLETE') {
@@ -161,7 +172,7 @@ export default function KnowledgeBaseManager({
       // 1. 准备文件上传
       updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.preparing_files'), 20);
       const fileData = files.map((file) => ({
-        key: `KnowledgeBases/${userProfile?.userId}/${courseId}/${file.name}`,
+        key: `KnowledgeBases/shared/${courseId}/${file.name}`, // 使用共享路径
         file,
       }));
 
@@ -197,7 +208,31 @@ export default function KnowledgeBaseManager({
         },
       });
 
-      const result = response.data.createKnowledgeBase;
+      // 检查响应是否有错误
+      if ((response as any).errors) {
+        console.error('GraphQL errors:', (response as any).errors);
+        throw new Error((response as any).errors[0]?.message || 'Unknown GraphQL error');
+      }
+
+      const result = response.data?.createKnowledgeBase;
+      
+      // 检查结果是否为空或缺少必要字段
+      if (!result) {
+        throw new Error('创建知识库响应为空，请检查后端服务状态');
+      }
+      
+      if (!result.ingestionJobId) {
+        throw new Error('知识库创建响应中缺少 ingestionJobId');
+      }
+      
+      if (!result.knowledgeBaseId) {
+        throw new Error('知识库创建响应中缺少 knowledgeBaseId');
+      }
+      
+      if (!result.dataSourceId) {
+        throw new Error('知识库创建响应中缺少 dataSourceId');
+      }
+
       addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.request_submitted').replace('{jobId}', result.ingestionJobId));
 
       // 4. 等待知识库创建完成
@@ -240,48 +275,79 @@ export default function KnowledgeBaseManager({
   };
 
   // 加载知识库信息
-  const loadKnowledgeBase = async () => {
+  const loadKnowledgeBase = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await client.graphql<any>({
+      const response = await client.graphql<{ data?: { getKnowledgeBase?: { knowledgeBaseId?: string; status?: string; kbDataSourceId?: string; s3prefix?: string } }, errors?: Array<{ message: string }> }>({
         query: getKnowledgeBase,
         variables: { courseId }
       });
-      
+
       // 检查是否有错误或数据为null
-      if ((response as any).errors) {
-        console.error('GraphQL errors:', (response as any).errors);
+      if ('errors' in response && response.errors) {
+        console.error('GraphQL errors:', response.errors);
         setKnowledgeBase(null);
-        // 即使知识库不存在，也尝试加载可能已存在的文件
-        await loadUploadedFiles();
         return;
       }
-      
-      const kb = (response as any).data?.getKnowledgeBase;
-      
+
+      const kb = ('data' in response) ? response.data?.getKnowledgeBase : null;
+
       // 如果知识库存在但status为null，设置默认状态
       if (kb && !kb.status) {
         kb.status = 'UNKNOWN';
       }
-      
+
       setKnowledgeBase(kb);
-      
-      // 无论知识库是否存在都尝试加载文件列表
-      await loadUploadedFiles();
-      
-      // 只有当知识库存在时才加载处理任务
+
+      // 加载已上传的文件列表 - 内联实现
+      try {
+        const listResponse = await list({ prefix: `KnowledgeBases/shared/${courseId}/` });
+        if ('items' in listResponse && listResponse.items) {
+          setUploadedFiles(listResponse.items);
+        }
+      } catch (error) {
+        console.error('Error loading uploaded files:', error);
+        setUploadedFiles([]);
+      }
+
+      // 只有当知识库存在时才加载处理任务 - 内联实现
       if (kb?.knowledgeBaseId) {
-        await loadIngestionJobs();
+        try {
+          const jobResponse = await client.graphql<{ data?: { getIngestionJob?: { status?: string; id?: string } } }>({
+            query: getIngestionJob,
+            variables: {
+              input: {
+                knowledgeBaseId: kb.knowledgeBaseId,
+                dataSourceId: kb.kbDataSourceId
+              }
+            }
+          });
+          
+          const job = ('data' in jobResponse) ? jobResponse.data?.getIngestionJob : null;
+          if (job) {
+            setIngestionJobs([job]);
+          }
+        } catch (error) {
+          console.error('Error loading ingestion jobs:', error);
+        }
       }
     } catch (error) {
       console.error('Error loading knowledge base:', error);
       setKnowledgeBase(null);
-      // 即使出错也尝试加载文件列表
-      await loadUploadedFiles();
+      // 即使出错也尝试加载文件列表 - 内联实现
+      try {
+        const listResponse = await list({ prefix: `KnowledgeBases/shared/${courseId}/` });
+        if ('items' in listResponse && listResponse.items) {
+          setUploadedFiles(listResponse.items);
+        }
+      } catch (fileError) {
+        console.error('Error loading uploaded files:', fileError);
+        setUploadedFiles([]);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseId]);
 
   // 加载已上传的文件
   const loadUploadedFiles = async () => {
@@ -289,7 +355,7 @@ export default function KnowledgeBaseManager({
     
     try {
       // 构造文件前缀路径，即使知识库没有s3prefix字段
-      const filePrefix = knowledgeBase?.s3prefix || `KnowledgeBases/${userProfile.userId}/${courseId}/`;
+      const filePrefix = knowledgeBase?.s3prefix || `KnowledgeBases/shared/${courseId}/`; // 使用共享路径
       
       const result = await list({
         prefix: filePrefix,
@@ -314,7 +380,7 @@ export default function KnowledgeBaseManager({
     if (!knowledgeBase?.knowledgeBaseId) return;
     
     try {
-      const response = await client.graphql<any>({
+      const response = await client.graphql<{ data?: { getIngestionJob?: { status?: string; id?: string } } }>({
         query: getIngestionJob,
         variables: {
           input: {
@@ -324,7 +390,7 @@ export default function KnowledgeBaseManager({
         }
       });
       
-      const job = (response as any).data?.getIngestionJob;
+      const job = ('data' in response) ? response.data?.getIngestionJob : null;
       if (job) {
         setIngestionJobs([job]);
       }
@@ -344,7 +410,7 @@ export default function KnowledgeBaseManager({
       const totalFiles = files.length;
       const uploadPromises = files.map(async (file, index) => {
         // 使用标准的文件路径，如果知识库没有s3prefix就构造一个
-        const filePrefix = knowledgeBase?.s3prefix || `KnowledgeBases/${userProfile.userId}/${courseId}/`;
+        const filePrefix = knowledgeBase?.s3prefix || `KnowledgeBases/shared/${courseId}/`; // 使用共享路径
         const key = `${filePrefix}${file.name}`;
         
         const result = await uploadData({
@@ -474,7 +540,7 @@ export default function KnowledgeBaseManager({
     if (visible) {
       loadKnowledgeBase();
     }
-  }, [visible, courseId]);
+  }, [visible, courseId, loadKnowledgeBase]);
 
   return (
     <>

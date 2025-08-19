@@ -387,7 +387,7 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
             <SpaceBetween size="s">
               <Box>
                 <SpaceBetween size="xs" direction="horizontal" alignItems="center">
-                  <Box
+                  <div
                     style={{
                       width: '24px',
                       height: '24px',
@@ -406,15 +406,17 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
                 items={presetColors.map(color => ({
                   value: color,
                   label: (
-                    <Box
-                      style={{
-                        width: '30px',
-                        height: '30px',
-                        borderRadius: '50%',
-                        backgroundColor: color,
-                        margin: '0 auto'
-                      }}
-                    />
+                    <Box>
+                      <div
+                        style={{
+                          width: '30px',
+                          height: '30px',
+                          borderRadius: '50%',
+                          backgroundColor: color,
+                          margin: '0 auto'
+                        }}
+                      />
+                    </Box>
                   )
                 }))}
                 columns={5}
@@ -477,7 +479,7 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
             <SpaceBetween size="s">
               <Box>
                 <SpaceBetween size="xs" direction="horizontal" alignItems="center">
-                  <Box
+                  <div
                     style={{
                       width: '24px',
                       height: '24px',
@@ -496,15 +498,17 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
                 items={presetColors.map(color => ({
                   value: color,
                   label: (
-                    <Box
-                      style={{
-                        width: '30px',
-                        height: '30px',
-                        borderRadius: '50%',
-                        backgroundColor: color,
-                        margin: '0 auto'
-                      }}
-                    />
+                    <Box>
+                      <div
+                        style={{
+                          width: '30px',
+                          height: '30px',
+                          borderRadius: '50%',
+                          backgroundColor: color,
+                          margin: '0 auto'
+                        }}
+                      />
+                    </Box>
                   )
                 }))}
                 columns={5}

@@ -6,6 +6,61 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ---
 
+## 最新更新记录
+
+### 2025-08-19: TypeScript 类型错误修复
+- **修复问题**：前端组件中的 TypeScript 类型错误
+- **修复位置**：
+  - `ui/src/components/KnowledgeBaseManager.tsx` - 添加缺失的 useCallback 导入，修复 GraphQL 响应类型
+  - `ui/src/pages/Courses.tsx` - 修复 GraphQL 响应类型访问
+- **修复内容**：
+  - 添加 `useCallback` 导入到 React hooks
+  - 使用类型守卫 `('data' in response)` 来安全访问 GraphQL 响应
+  - 替换所有 `any` 类型为具体的接口类型
+  - 内联 `loadKnowledgeBase` 中的函数调用以避免依赖循环
+  - 使用正确的 Amplify Storage `list` API
+  - 前后端编译均通过，无 TypeScript 错误
+
+### 2025-08-19: 编译错误修复和依赖包兼容性
+- **修复问题**：编译时出现多个依赖包错误
+- **修复位置**：
+  - `lib/lambdas/postConfirmation.ts` - 修复 @aws-lambda-powertools 导入路径
+  - `lib/rag-pipeline/lambdas/event-handler/get-document.ts` - 替换缺失的第三方包
+  - 新增 `lib/rag-pipeline/lambdas/event-handler/types.ts` - 本地类型定义
+- **修复内容**：
+  - 修复 LambdaInterface 导入路径：从 `/lib/esm/types` 改为 `/types`
+  - 移除泛型类型参数过多的错误
+  - 创建本地类型定义替换缺失的 `@project-lakechain` 包
+  - 用文件扩展名检测替代 `file-type` 包依赖
+  - 编译成功通过，无错误输出
+
+### 2025-08-19: 知识库权限共享功能
+- **功能描述**：修改知识库管理，使同一课程的知识库对所有教师开放
+- **修改位置**：
+  - `lib/resolvers/getKnowledgeBase.ts` - 改为按课程ID扫描而非用户+课程组合查询
+  - `lib/rag-pipeline/lambdas/event-handler/kb/bedrockKnowledgeBase.ts` - 修改为检查现有知识库逻辑
+  - `ui/src/components/KnowledgeBaseManager.tsx` - 使用共享文件路径
+  - `ui/src/pages/ManageKnowledgeBases.tsx` - 使用共享文件路径
+- **实现细节**：
+  - 知识库查询不再限制 userId，允许跨教师访问
+  - 文件上传路径从 `KnowledgeBases/{userId}/{courseId}/` 改为 `KnowledgeBases/shared/{courseId}/`
+  - 后端首先检查是否已有知识库存在，避免重复创建
+
+### 2025-08-19: 知识库创建错误处理优化
+- **修复问题**：创建知识库时出现 "Cannot read properties of null (reading 'ingestionJobId')" 错误
+- **修复位置**：
+  - `ui/src/components/KnowledgeBaseManager.tsx`
+  - `ui/src/pages/ManageKnowledgeBases.tsx` 
+  - `lib/rag-pipeline/lambdas/event-handler/index.ts`
+  - `lib/rag-pipeline/lambdas/event-handler/kb/bedrockKnowledgeBase.ts`
+- **修复内容**：
+  - 增强前端 GraphQL 响应错误检查
+  - 添加后端 ingestion 响应验证
+  - 改进错误消息提示
+  - 确保返回值包含所有必要字段
+
+---
+
 ## 核心功能模块
 
 ### 1. 用户认证与权限管理
