@@ -433,14 +433,14 @@ export const getCurrentUser = /* GraphQL */ `
 export const previewExcelImport = /* GraphQL */ `
   query PreviewExcelImport($fileContent: String!) {
     previewExcelImport(fileContent: $fileContent) {
-      preview {
+      previewData {
         name
         username
         password
         role
         email
-        phoneNumber
       }
+      totalRows
       validRows
       invalidRows
       errors

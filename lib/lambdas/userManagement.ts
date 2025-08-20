@@ -85,6 +85,165 @@ function validatePassword(password: string): boolean {
 }
 
 /**
+ * 解析CSV格式的Excel内容
+ */
+function parseCSVContent(csvContent: string): { rows: string[][], errors: string[] } {
+  const errors: string[] = [];
+  const lines = csvContent.split('\n').filter(line => line.trim());
+  
+  if (lines.length === 0) {
+    errors.push('文件内容为空');
+    return { rows: [], errors };
+  }
+  
+  const rows: string[][] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    
+    // 简单的CSV解析，支持逗号分隔
+    const columns = line.split(',').map(col => col.trim().replace(/"/g, ''));
+    
+    if (columns.length < 2) {
+      errors.push(`第 ${i + 1} 行格式错误：至少需要姓名和用户名两列`);
+      continue;
+    }
+    
+    rows.push(columns);
+  }
+  
+  return { rows, errors };
+}
+
+/**
+ * 验证用户名格式
+ */
+function validateUsername(username: string): boolean {
+  // 用户名应该是3-50个字符，只允许字母、数字、下划线和点
+  return /^[a-zA-Z0-9._]{3,50}$/.test(username);
+}
+
+/**
+ * 验证姓名格式
+ */
+function validateName(name: string): boolean {
+  // 姓名应该是1-100个字符，不能为空
+  return name && name.length >= 1 && name.length <= 100;
+}
+
+/**
+ * 验证邮箱格式
+ */
+function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
+ * 将行数据转换为用户输入
+ */
+function convertRowToUserInput(row: string[], defaultRole: string, rowIndex: number): { user?: any, error?: string } {
+  const [name, username, password, email] = row;
+  
+  // 验证必填字段
+  if (!validateName(name)) {
+    return { error: `第 ${rowIndex + 1} 行：姓名格式错误` };
+  }
+  
+  if (!validateUsername(username)) {
+    return { error: `第 ${rowIndex + 1} 行：用户名格式错误（3-50个字符，只允许字母数字下划线和点）` };
+  }
+  
+  // 验证可选字段
+  if (email && !validateEmail(email)) {
+    return { error: `第 ${rowIndex + 1} 行：邮箱格式错误` };
+  }
+  
+  const user: any = {
+    name: name.trim(),
+    username: username.trim(),
+    role: defaultRole,
+    ...(password && { password: password.trim() }),
+    ...(email && { email: email.trim() })
+  };
+  
+  return { user };
+}
+
+/**
+ * Excel导入预览函数
+ */
+async function previewExcelImport(fileContent: string): Promise<any> {
+  console.log('Excel导入预览开始');
+
+  if (!fileContent || fileContent.trim() === '') {
+    throw new Error('文件内容不能为空');
+  }
+
+  const result = {
+    previewData: [],
+    totalRows: 0,
+    validRows: 0,
+    invalidRows: 0,
+    errors: []
+  };
+
+  try {
+    // 解析CSV内容
+    const { rows, errors: parseErrors } = parseCSVContent(fileContent);
+    result.errors.push(...parseErrors);
+    result.totalRows = rows.length;
+    
+    if (rows.length === 0) {
+      result.errors.push('没有找到有效的数据行');
+      return result;
+    }
+    
+    // 假设默认角色为学生，实际使用时可以通过参数传入
+    const defaultRole = 'students';
+    
+    // 处理每一行数据
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const { user, error } = convertRowToUserInput(row, defaultRole, i);
+      
+      if (error) {
+        result.errors.push(error);
+        result.invalidRows++;
+      } else if (user) {
+        result.previewData.push(user);
+        result.validRows++;
+      }
+    }
+    
+    // 检查重复的用户名
+    const usernameSet = new Set<string>();
+    const duplicateUsernames: string[] = [];
+    
+    for (const user of result.previewData) {
+      if (usernameSet.has(user.username)) {
+        duplicateUsernames.push(user.username);
+      } else {
+        usernameSet.add(user.username);
+      }
+    }
+    
+    if (duplicateUsernames.length > 0) {
+      result.errors.push(`发现重复的用户名: ${duplicateUsernames.join(', ')}`);
+    }
+    
+    console.log(`Excel导入预览完成: 总行数 ${result.totalRows}, 有效行 ${result.validRows}, 无效行 ${result.invalidRows}, 错误 ${result.errors.length}`);
+    return result;
+    
+  } catch (error: any) {
+    console.error('Excel导入预览失败:', error);
+    result.errors.push(`解析文件失败: ${error.message}`);
+    return result;
+  }
+}
+
+/**
  * 检查权限
  */
 function checkPermission(groups: string[], targetRole: string): boolean {
@@ -391,6 +550,20 @@ export const handler = async (event: any): Promise<any> => {
           console.error('删除用户失败:', error);
           throw new Error(`删除用户失败: ${error.message}`);
         }
+      }
+
+      case 'previewExcelImport': {
+        // 检查权限
+        if (!groups.includes('admin') && !groups.includes('super_admin')) {
+          throw new Error('没有权限执行此操作');
+        }
+
+        const { fileContent } = args;
+        if (!fileContent || fileContent.trim() === '') {
+          throw new Error('文件内容不能为空');
+        }
+
+        return await previewExcelImport(fileContent);
       }
 
       default:
