@@ -28,3 +28,5 @@ replacer.js
 *.jpg
 *.png
 .claude/settings.local.json
+*.xlsx
+Template.xlsx

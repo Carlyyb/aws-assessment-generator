@@ -120,9 +120,9 @@ export const DEFAULT_USER_PASSWORD = {
   // 密码复杂度要求
   requirements: {
     minLength: 8,
-    requireUppercase: true,
-    requireLowercase: true,
-    requireNumbers: true,
-    requireSpecialChars: true
+    requireUppercase: false,
+    requireLowercase: false,
+    requireNumbers: false,
+    requireSpecialChars: false
   }
 };

@@ -99,9 +99,7 @@ export class DataStack extends NestedStack {
 
     // 创建用户管理 Lambda 函数
     const userManagementFunction = new NodejsFunction(this, 'UserManagementFunction', {
-      functionName: `${this.stackName}-user-management`,
       entry: path.join(__dirname, 'lambdas', 'userManagement.ts'),
-      handler: 'handler',
       runtime: aws_lambda.Runtime.NODEJS_18_X,
       timeout: Duration.seconds(30),
       memorySize: 512,
@@ -111,13 +109,8 @@ export class DataStack extends NestedStack {
         REGION: Stack.of(this).region
       },
       bundling: {
-        externalModules: [],
-        nodeModules: [
-          '@aws-sdk/client-dynamodb',
-          '@aws-sdk/lib-dynamodb',
-          '@aws-sdk/client-cognito-identity-provider',
-          '@aws-sdk/client-ssm'
-        ]
+        minify: true,
+        externalModules: ['@aws-sdk/client-dynamodb', '@aws-sdk/lib-dynamodb', '@aws-sdk/client-cognito-identity-provider', '@aws-sdk/client-ssm'],
       }
     });
 
@@ -165,6 +158,20 @@ export class DataStack extends NestedStack {
       typeName: 'Mutation',
       fieldName: 'batchCreateUsers',
       code: aws_appsync.Code.fromAsset('lib/resolvers/batchCreateUsers.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationUpdateUserResolver', {
+      typeName: 'Mutation',
+      fieldName: 'updateUser',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/updateUser.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationDeleteUserResolver', {
+      typeName: 'Mutation',
+      fieldName: 'deleteUser',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteUser.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 

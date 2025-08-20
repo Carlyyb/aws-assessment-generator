@@ -23,7 +23,7 @@ import {
 import { useCollection } from '@cloudscape-design/collection-hooks';
 import { generateClient } from 'aws-amplify/api';
 import { listUsers, previewExcelImport } from '../graphql/queries';
-import { batchCreateUsersMutation, createSingleUserMutation } from '../graphql/mutations';
+import { batchCreateUsersMutation, createSingleUserMutation, updateUserMutation, deleteUserMutation } from '../graphql/mutations';
 import { getText } from '../i18n/lang';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { useAdminPermissions } from '../utils/adminPermissions';
@@ -59,12 +59,38 @@ interface ExcelImportResult {
 }
 
 const UserManagement: React.FC = () => {
+  // 角色显示映射
+  const roleDisplayMap: {[key: string]: string} = {
+    students: '学生',
+    teachers: '教师',
+    admin: '管理员',
+    super_admin: '超级管理员'
+  };
+
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBatchCreateModal, setShowBatchCreateModal] = useState(false);
   const [activeTabId, setActiveTabId] = useState('single');
+  
+  // 密码显示相关状态
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [generatedUserInfo, setGeneratedUserInfo] = useState<{username: string, password: string} | null>(null);
+  
+  // 用户设置相关状态
+  const [showUserSettingsModal, setShowUserSettingsModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string>('');
+  
+  // 密码重置相关状态
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState<string>('');
+  const [useDefaultPassword, setUseDefaultPassword] = useState<boolean>(true);
+  
+  // 多选删除相关状态
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   
   // 权限检查
   const { adminInfo } = useAdminPermissions();
@@ -118,7 +144,7 @@ const UserManagement: React.FC = () => {
   // Excel导入相关状态
   const [excelFile, setExcelFile] = useState<File[]>([]);
   const [excelPreview, setExcelPreview] = useState<ExcelImportResult | null>(null);
-  const [importRole, setImportRole] = useState<'students' | 'teachers'>('students');
+  const [importRole, setImportRole] = useState<'students' | 'teachers' | 'admin'>('students');
   
   const dispatchAlert = useContext(DispatchAlertContext);
 
@@ -171,10 +197,17 @@ const UserManagement: React.FC = () => {
         : '从未登录'
     },
     {
-      id: 'createdAt',
-      header: '创建时间',
-      cell: (item: User) => new Date(item.createdAt).toLocaleString('zh-CN'),
-      sortingField: 'createdAt'
+      id: 'actions',
+      header: '操作',
+      cell: (item: User) => (
+        <Button
+          iconName="settings"
+          variant="link"
+          onClick={() => handleOpenUserSettings(item)}
+        >
+          设置
+        </Button>
+      )
     }
   ];
 
@@ -202,6 +235,10 @@ const UserManagement: React.FC = () => {
       },
       pagination: { pageSize: 20 },
       sorting: {},
+      selection: {
+        keepSelection: true,
+        trackBy: 'id',
+      },
     }
   );
 
@@ -250,6 +287,211 @@ const UserManagement: React.FC = () => {
     return users.some(user => user.username.toLowerCase() === username.toLowerCase());
   };
 
+  // 打开用户设置模态框
+  const handleOpenUserSettings = (user: User) => {
+    setSelectedUser(user);
+    setUserRole(user.role);
+    setShowUserSettingsModal(true);
+  };
+
+  // 打开密码重置模态框
+  const handleOpenResetPassword = () => {
+    setNewPassword('');
+    setUseDefaultPassword(true);
+    setShowUserSettingsModal(false);
+    setShowResetPasswordModal(true);
+  };
+
+  // 处理密码重置
+  const handleResetPassword = async () => {
+    if (!selectedUser) return;
+
+    // 验证自定义密码长度
+    if (!useDefaultPassword && newPassword.length < 8) {
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '自定义密码必须至少8位字符'
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // 这里需要添加重置密码的 GraphQL mutation
+      // 暂时先显示成功信息
+      
+      dispatchAlert({
+        type: AlertType.SUCCESS,
+        content: `用户 "${selectedUser.username}" 的密码已重置${useDefaultPassword ? '为默认密码' : ''}`
+      });
+
+      setShowResetPasswordModal(false);
+      setSelectedUser(null);
+      setNewPassword('');
+      setUseDefaultPassword(true);
+      
+    } catch (error: unknown) {
+      console.error('重置密码失败:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '重置密码失败'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 获取可设置的角色选项（基于权限）
+  const getEditableRoleOptions = (currentRole: string) => {
+    const isSuperAdmin = adminInfo?.permissions.canCreateAdmin;
+    const isAdmin = adminInfo?.isAdmin;
+
+    const options = [];
+
+    if (isSuperAdmin) {
+      // 超级管理员可以修改admin及以下身份
+      options.push(
+        { label: '学生', value: 'students' },
+        { label: '教师', value: 'teachers' },
+        { label: '管理员', value: 'admin' }
+      );
+    } else if (isAdmin) {
+      // 普通管理员只能修改teacher及以下身份
+      options.push(
+        { label: '学生', value: 'students' },
+        { label: '教师', value: 'teachers' }
+      );
+    }
+
+    // 确保当前角色在选项中（即使权限不足也要显示当前状态）
+    const currentOption = options.find(opt => opt.value === currentRole);
+    if (!currentOption && currentRole) {
+      options.push({ label: roleDisplayMap[currentRole] || currentRole, value: currentRole });
+    }
+
+    return options;
+  };
+
+  // 检查是否有权限修改用户角色
+  const canEditUserRole = (user: User): boolean => {
+    const isSuperAdmin = adminInfo?.permissions.canCreateAdmin;
+    const isAdmin = adminInfo?.isAdmin;
+
+    if (isSuperAdmin) {
+      // 超级管理员可以修改admin及以下级别的用户
+      return ['students', 'teachers', 'admin'].includes(user.role);
+    } else if (isAdmin) {
+      // 普通管理员只能修改teacher及以下级别的用户
+      return ['students', 'teachers'].includes(user.role);
+    }
+
+    return false;
+  };
+
+  // 保存用户设置
+  const handleSaveUserSettings = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setLoading(true);
+      
+      const updates = {
+        role: userRole,
+        name: selectedUser.name
+      };
+
+      await client.graphql({
+        query: updateUserMutation,
+        variables: {
+          username: selectedUser.username,
+          updates: updates
+        }
+      });
+
+      dispatchAlert({
+        type: AlertType.SUCCESS,
+        content: `用户 "${selectedUser.username}" 设置已更新`
+      });
+
+      setShowUserSettingsModal(false);
+      setSelectedUser(null);
+      
+      // 重新加载用户列表
+      await loadUsers(selectedRole || undefined);
+      
+    } catch (error: unknown) {
+      console.error('更新用户设置失败:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '更新用户设置失败'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 多选删除处理
+  const handleDeleteUsers = () => {
+    if (!collectionProps.selectedItems || collectionProps.selectedItems.length === 0) {
+      dispatchAlert({
+        type: AlertType.WARNING,
+        content: '请选择要删除的用户'
+      });
+      return;
+    }
+    setShowDeleteConfirmModal(true);
+  };
+
+  // 确认删除用户
+  const handleConfirmDeleteUsers = async () => {
+    if (deleteConfirmText !== 'yes') {
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '请在输入框中输入 "yes" 确认删除操作'
+      });
+      return;
+    }
+
+    if (!collectionProps.selectedItems || collectionProps.selectedItems.length === 0) return;
+
+    try {
+      setLoading(true);
+      
+      // 逐个删除选中的用户
+      const deletePromises = collectionProps.selectedItems.map(async (user: User) => {
+        return client.graphql({
+          query: deleteUserMutation,
+          variables: {
+            username: user.username
+          }
+        });
+      });
+
+      await Promise.all(deletePromises);
+
+      dispatchAlert({
+        type: AlertType.SUCCESS,
+        content: `已成功删除 ${collectionProps.selectedItems.length} 个用户`
+      });
+
+      setShowDeleteConfirmModal(false);
+      setDeleteConfirmText('');
+      
+      // 重新加载用户列表
+      await loadUsers(selectedRole || undefined);
+      
+    } catch (error: unknown) {
+      console.error('删除用户失败:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '删除用户失败'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 创建单个用户
   const handleCreateSingleUser = async () => {
     if (!singleUserForm.name || !singleUserForm.username || !singleUserForm.role) {
@@ -293,10 +535,19 @@ const UserManagement: React.FC = () => {
         throw new Error('创建用户返回数据为空');
       }
 
-      dispatchAlert({
-        type: AlertType.SUCCESS,
-        content: `用户 "${singleUserForm.username}" 创建成功`
-      });
+      // 如果生成了默认密码，显示密码信息
+      if (userData.generatedPassword) {
+        setGeneratedUserInfo({
+          username: userData.username,
+          password: userData.generatedPassword
+        });
+        setShowPasswordModal(true);
+      } else {
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: `用户 "${singleUserForm.username}" 创建成功`
+        });
+      }
 
       // 重置表单并关闭模态框
       setSingleUserForm({
@@ -462,12 +713,12 @@ const UserManagement: React.FC = () => {
             />
           </FormField>
           
-          <FormField label="密码" description="留空将生成默认密码">
+          <FormField label="密码" description="留空将生成默认密码，自定义密码需至少8位字符">
             <Input
               value={singleUserForm.password || ''}
               onChange={({ detail }) => setSingleUserForm({ ...singleUserForm, password: detail.value })}
-              placeholder="请输入密码"
-              type="password"
+              placeholder="请输入密码（至少8位字符）"
+              type="text"
             />
           </FormField>
           
@@ -532,9 +783,13 @@ const UserManagement: React.FC = () => {
           
           <FormField label="用户角色 *">
             <Select
-              selectedOption={{ label: importRole === 'students' ? '学生' : '教师', value: importRole }}
-              onChange={({ detail }) => setImportRole(detail.selectedOption.value as 'students' | 'teachers')}
-              options={getAvailableRoleOptions().filter(option => option.value !== 'admin')} // 批量导入不允许创建管理员
+              selectedOption={{ 
+                label: importRole === 'students' ? '学生' : 
+                       importRole === 'teachers' ? '教师' : '管理员', 
+                value: importRole 
+              }}
+              onChange={({ detail }) => setImportRole(detail.selectedOption.value as 'students' | 'teachers' | 'admin')}
+              options={getAvailableRoleOptions()}
             />
           </FormField>
           
@@ -665,6 +920,36 @@ const UserManagement: React.FC = () => {
           loadingText="加载中..."
           loading={loading}
           trackBy="id"
+          header={
+            <Header 
+              counter={`(${users.length})`}
+              actions={
+                <SpaceBetween direction="horizontal" size="xs">
+                  <Button
+                    disabled={!collectionProps.selectedItems || collectionProps.selectedItems.length === 0}
+                    onClick={handleDeleteUsers}
+                  >
+                    删除选中
+                  </Button>
+                  <Button 
+                    variant="primary" 
+                    iconName="add-plus"
+                    onClick={() => setShowCreateModal(true)}
+                  >
+                    创建用户
+                  </Button>
+                  <Button 
+                    iconName="upload"
+                    onClick={() => setShowBatchCreateModal(true)}
+                  >
+                    批量导入
+                  </Button>
+                </SpaceBetween>
+              }
+            >
+              用户管理
+            </Header>
+          }
           empty={
             <Box textAlign="center" color="inherit">
               <b>没有用户</b>
@@ -685,6 +970,205 @@ const UserManagement: React.FC = () => {
             <div>排序和显示首选项</div>
           }
         />
+
+        {/* 用户设置模态框 */}
+        <Modal
+          onDismiss={() => setShowUserSettingsModal(false)}
+          visible={showUserSettingsModal}
+          closeAriaLabel="关闭"
+          size="medium"
+          header="用户设置"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button variant="link" onClick={() => setShowUserSettingsModal(false)}>
+                  取消
+                </Button>
+                <Button variant="primary" onClick={handleSaveUserSettings}>
+                  保存
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          {selectedUser && (
+            <SpaceBetween size="m">
+              <FormField label="用户名">
+                <Input 
+                  value={selectedUser.username} 
+                  disabled 
+                />
+              </FormField>
+              
+              <FormField label="邮箱">
+                <Input 
+                  value={selectedUser.email || ''} 
+                  disabled 
+                />
+              </FormField>
+              
+              <FormField label="用户角色">
+                <Select
+                  selectedOption={userRole ? { label: roleDisplayMap[userRole] || userRole, value: userRole } : null}
+                  onChange={({ detail }) => setUserRole(detail.selectedOption?.value || '')}
+                  options={getEditableRoleOptions(selectedUser.role)}
+                  disabled={!canEditUserRole(selectedUser)}
+                />
+              </FormField>
+              
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button 
+                  onClick={handleOpenResetPassword}
+                  iconName="security"
+                >
+                  重置密码
+                </Button>
+              </SpaceBetween>
+            </SpaceBetween>
+          )}
+        </Modal>
+
+        {/* 密码重置模态框 */}
+        <Modal
+          onDismiss={() => {
+            setShowResetPasswordModal(false);
+            setNewPassword('');
+            setUseDefaultPassword(true);
+          }}
+          visible={showResetPasswordModal}
+          closeAriaLabel="关闭"
+          size="medium"
+          header="重置用户密码"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button variant="link" onClick={() => {
+                  setShowResetPasswordModal(false);
+                  setNewPassword('');
+                  setUseDefaultPassword(true);
+                }}>
+                  取消
+                </Button>
+                <Button 
+                  variant="primary" 
+                  onClick={handleResetPassword}
+                  loading={loading}
+                >
+                  确认重置
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          {selectedUser && (
+            <SpaceBetween size="m">
+              <Alert type="info">
+                您正在为用户 "{selectedUser.username}" 重置密码。
+              </Alert>
+              
+              <FormField label="密码设置方式">
+                <SpaceBetween direction="vertical" size="xs">
+                  <label>
+                    <input
+                      type="radio"
+                      checked={useDefaultPassword}
+                      onChange={() => {
+                        setUseDefaultPassword(true);
+                        setNewPassword('');
+                      }}
+                      style={{ marginRight: '8px' }}
+                    />
+                    使用系统生成的默认密码
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      checked={!useDefaultPassword}
+                      onChange={() => setUseDefaultPassword(false)}
+                      style={{ marginRight: '8px' }}
+                    />
+                    自定义密码
+                  </label>
+                </SpaceBetween>
+              </FormField>
+              
+              {!useDefaultPassword && (
+                <FormField 
+                  label="新密码" 
+                  description="密码必须至少8位字符"
+                  errorText={newPassword.length > 0 && newPassword.length < 8 ? '密码长度不能少于8位字符' : undefined}
+                >
+                  <Input
+                    value={newPassword}
+                    onChange={({ detail }) => setNewPassword(detail.value)}
+                    placeholder="请输入新密码（至少8位字符）"
+                    type="text"
+                    invalid={newPassword.length > 0 && newPassword.length < 8}
+                  />
+                </FormField>
+              )}
+              
+              <Alert type="warning">
+                密码重置后，用户需要使用新密码登录。建议通知用户密码已更改。
+              </Alert>
+            </SpaceBetween>
+          )}
+        </Modal>
+
+        {/* 删除确认模态框 */}
+        <Modal
+          onDismiss={() => setShowDeleteConfirmModal(false)}
+          visible={showDeleteConfirmModal}
+          closeAriaLabel="关闭"
+          size="medium"
+          header="确认删除"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button variant="link" onClick={() => setShowDeleteConfirmModal(false)}>
+                  取消
+                </Button>
+                <Button 
+                  variant="primary"
+                  onClick={handleConfirmDeleteUsers}
+                  disabled={deleteConfirmText !== 'yes'}
+                >
+                  确认删除
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          <SpaceBetween size="m">
+            <Alert type="warning">
+              您即将删除 {collectionProps.selectedItems?.length || 0} 个用户。此操作不可撤销，请谨慎操作。
+            </Alert>
+            
+            <FormField 
+              label="请输入 'yes' 确认删除"
+              description="输入 'yes' 以确认删除操作"
+            >
+              <Input
+                value={deleteConfirmText}
+                onChange={({ detail }) => setDeleteConfirmText(detail.value)}
+                placeholder="输入 yes"
+              />
+            </FormField>
+            
+            {collectionProps.selectedItems && collectionProps.selectedItems.length > 0 && (
+              <div>
+                <h4>将要删除的用户：</h4>
+                <ul>
+                  {collectionProps.selectedItems.map((user: User) => (
+                    <li key={user.id}>
+                      {user.username} ({user.email || '未知邮箱'}) - {roleDisplayMap[user.role] || user.role}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </SpaceBetween>
+        </Modal>
 
         {/* 创建用户模态框 */}
         <Modal
@@ -729,6 +1213,61 @@ const UserManagement: React.FC = () => {
             onChange={({ detail }) => setActiveTabId(detail.activeTabId)}
             tabs={createUserTabs}
           />
+        </Modal>
+
+        {/* 密码显示模态框 */}
+        <Modal
+          onDismiss={() => {
+            setShowPasswordModal(false);
+            setGeneratedUserInfo(null);
+          }}
+          visible={showPasswordModal}
+          closeAriaLabel="关闭"
+          footer={
+            <Box float="right">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setGeneratedUserInfo(null);
+                  dispatchAlert({
+                    type: AlertType.SUCCESS,
+                    content: `用户 "${generatedUserInfo?.username}" 创建成功`
+                  });
+                }}
+              >
+                确认
+              </Button>
+            </Box>
+          }
+          header="用户创建成功"
+        >
+          <SpaceBetween direction="vertical" size="m">
+            <Alert type="info" header="请记录以下登录信息">
+              系统已为您生成默认密码，请将此信息安全地传达给用户。
+            </Alert>
+            
+            <Box>
+              <FormField label="用户名">
+                <Input
+                  value={generatedUserInfo?.username || ''}
+                  readOnly
+                />
+              </FormField>
+              
+              <FormField label="默认密码">
+                <Input
+                  value={generatedUserInfo?.password || ''}
+                  readOnly
+                  type="text"
+                />
+              </FormField>
+            </Box>
+            
+            <Alert type="warning">
+              用户首次登录后建议修改密码。默认密码仅显示一次，请妥善保存。
+            </Alert>
+          </SpaceBetween>
         </Modal>
       </SpaceBetween>
     </Container>

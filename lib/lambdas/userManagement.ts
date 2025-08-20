@@ -8,8 +8,8 @@
 
 import { AppSyncResolverEvent } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
-import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand, AdminSetUserPasswordCommand, AdminGetUserCommand } from '@aws-sdk/client-cognito-identity-provider';
+import { DynamoDBDocumentClient, PutCommand, ScanCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand, AdminSetUserPasswordCommand, AdminGetUserCommand, AdminUpdateUserAttributesCommand, AdminDeleteUserCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
 
 // 客户端初始化
@@ -70,23 +70,18 @@ async function checkUserExists(username: string, userPoolId: string): Promise<bo
 }
 
 /**
- * 生成默认密码
+ * 生成默认密码 - 简化格式，8位字符
  */
 function generateDefaultPassword(role: string, username: string): string {
   const timestamp = Date.now().toString().slice(-4);
-  return `${role}${username}${timestamp}@Aa1`;
+  return `${username}${timestamp}`;
 }
 
 /**
- * 验证密码复杂度
+ * 验证密码复杂度 - 只需要8位长度
  */
 function validatePassword(password: string): boolean {
-  if (password.length < 8) return false;
-  if (!/[A-Z]/.test(password)) return false;
-  if (!/[a-z]/.test(password)) return false;
-  if (!/\d/.test(password)) return false;
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) return false;
-  return true;
+  return password.length >= 8;
 }
 
 /**
@@ -197,7 +192,11 @@ async function createSingleUser(userInput: UserInput, userPoolId: string, usersT
     Item: userRecord
   }));
 
-  return userRecord;
+  // 返回用户信息，如果是生成的默认密码则包含密码
+  return {
+    ...userRecord,
+    generatedPassword: !password ? finalPassword : undefined
+  };
 }
 
 /**
@@ -293,6 +292,105 @@ export const handler = async (event: any): Promise<any> => {
         }));
 
         return response.Items || [];
+      }
+
+      case 'updateUser': {
+        const { username, updates } = args;
+        
+        // 检查权限
+        if (!groups.includes('admin') && !groups.includes('super_admin')) {
+          throw new Error('没有权限更新用户');
+        }
+
+        // 检查是否有权限更新此角色
+        if (updates.role && !checkPermission(groups, updates.role)) {
+          throw new Error(`没有权限将用户角色更新为 ${updates.role}`);
+        }
+
+        try {
+          // 更新 DynamoDB 中的用户信息
+          const updateExpression = [];
+          const expressionAttributeValues = {};
+          const expressionAttributeNames = {};
+
+          if (updates.role) {
+            updateExpression.push('#role = :role');
+            expressionAttributeNames['#role'] = 'role';
+            expressionAttributeValues[':role'] = updates.role;
+          }
+
+          if (updates.name) {
+            updateExpression.push('#name = :name');
+            expressionAttributeNames['#name'] = 'name';
+            expressionAttributeValues[':name'] = updates.name;
+          }
+
+          updateExpression.push('updatedAt = :updatedAt');
+          expressionAttributeValues[':updatedAt'] = new Date().toISOString();
+
+          const updateParams = {
+            TableName: usersTableName,
+            Key: { username },
+            UpdateExpression: `SET ${updateExpression.join(', ')}`,
+            ExpressionAttributeValues: expressionAttributeValues,
+            ...(Object.keys(expressionAttributeNames).length > 0 && { ExpressionAttributeNames: expressionAttributeNames }),
+            ReturnValues: 'ALL_NEW' as const
+          };
+
+          const updateResult = await docClient.send(new UpdateCommand(updateParams));
+
+          // 如果角色发生变化，更新 Cognito 用户组
+          if (updates.role) {
+            // 这里可以添加更复杂的组管理逻辑
+            // 暂时简化处理
+            await cognitoClient.send(new AdminAddUserToGroupCommand({
+              UserPoolId: userPoolId,
+              Username: username,
+              GroupName: updates.role
+            }));
+          }
+
+          console.log(`用户 ${username} 更新成功`);
+          return updateResult.Attributes;
+        } catch (error: any) {
+          console.error('更新用户失败:', error);
+          throw new Error(`更新用户失败: ${error.message}`);
+        }
+      }
+
+      case 'deleteUser': {
+        const { username } = args;
+        
+        // 检查权限
+        if (!groups.includes('admin') && !groups.includes('super_admin')) {
+          throw new Error('没有权限删除用户');
+        }
+
+        try {
+          // 从 Cognito 删除用户
+          await cognitoClient.send(new AdminDeleteUserCommand({
+            UserPoolId: userPoolId,
+            Username: username
+          }));
+
+          // 从 DynamoDB 软删除用户（设置 isActive 为 false）
+          await docClient.send(new UpdateCommand({
+            TableName: usersTableName,
+            Key: { username },
+            UpdateExpression: 'SET isActive = :isActive, deletedAt = :deletedAt, deletedBy = :deletedBy',
+            ExpressionAttributeValues: {
+              ':isActive': false,
+              ':deletedAt': new Date().toISOString(),
+              ':deletedBy': requestorUsername
+            }
+          }));
+
+          console.log(`用户 ${username} 删除成功`);
+          return true;
+        } catch (error: any) {
+          console.error('删除用户失败:', error);
+          throw new Error(`删除用户失败: ${error.message}`);
+        }
       }
 
       default:
