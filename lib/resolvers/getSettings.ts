@@ -12,10 +12,24 @@ export function request(ctx) {
 export const response = (ctx) => {
   const result = ctx.result;
   
+  if (!result) {
+    // 如果没有设置记录，返回默认值
+    return {
+      uiLang: "zh",
+      globalLogo: null,
+      themeSettings: null
+    };
+  }
+  
   // 如果 uiLang 为 null 值则设为 "zh"
-  if (result && result.uiLang === null) {
+  if (result.uiLang === null || result.uiLang === undefined) {
     result.uiLang = "zh";
   }
   
-  return result;
+  // 确保返回的对象包含所有字段
+  return {
+    uiLang: result.uiLang,
+    globalLogo: result.globalLogo || null,
+    themeSettings: result.themeSettings || null
+  };
 };

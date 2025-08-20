@@ -18,6 +18,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import type { WithAuthenticatorProps } from '@aws-amplify/ui-react';
 import { withAuthenticator } from '@aws-amplify/ui-react';
 import { routes as routesList } from './routes';
+import PasswordReset from './pages/PasswordReset';
 import { getText } from './i18n/lang';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { ThemeButton } from './components/ThemeButton';
@@ -32,6 +33,7 @@ import { Notifications } from '@mantine/notifications';
 import { useAdminPermissions } from './utils/adminPermissions';
 import { getAdminLevelDisplayName } from './utils/adminDisplayUtils';
 import { AuthMonitor } from './components/AuthMonitor';
+import PasswordChangeMonitor from './components/PasswordChangeMonitor';
 
 const LOCALE = 'zh';
 
@@ -43,7 +45,7 @@ interface AppContentProps {
 function AppContent({ userProfile, signOut }: AppContentProps) {
   const [alerts, setAlerts] = useState<FlashbarProps.MessageDefinition[]>([]);
   const [activeHref, setActiveHref] = useState(window.location.pathname);
-  const { currentTheme } = useTheme();
+  const { currentTheme, globalLogo } = useTheme();
   const { adminInfo, error: adminError } = useAdminPermissions();
   const { getOverride } = useBreadcrumb();
 
@@ -83,8 +85,29 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
   };
 
   const routes = (routesList as any)[userProfile.group];
-  const router = createBrowserRouter(routes);
-  const [sideNavRoutes] = routes;
+  
+  // 确保routes存在，如果不存在则使用默认路由或显示错误
+  let finalRoutes = routes;
+  if (!routes || !Array.isArray(routes) || routes.length === 0) {
+    console.error(`没有找到用户组 "${userProfile.group}" 的路由配置`);
+    // 根据用户组提供默认路由
+    finalRoutes = userProfile.group === 'students' 
+      ? (routesList as any).students
+      : (routesList as any).teachers;
+    
+    if (!finalRoutes) {
+      return (
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          <h2>路由配置错误</h2>
+          <p>用户组: {userProfile.group}</p>
+          <p>请联系系统管理员</p>
+        </div>
+      );
+    }
+  }
+  
+  const router = createBrowserRouter(finalRoutes);
+  const [sideNavRoutes] = finalRoutes;
 
   router.subscribe(({ location }) => setActiveHref(location.pathname));
 
@@ -94,7 +117,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
     
     // 只使用后端权限信息
     const adminLevelText = adminInfo?.isAdmin 
-      ? ` (${getAdminLevelDisplayName(adminInfo.adminLevel)})`
+      ? ` (${getAdminLevelDisplayName(adminInfo.highestRole)})`
       : '';
     
     return roleText + adminLevelText;
@@ -106,7 +129,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
     
     // 只使用后端权限信息
     if (adminInfo?.isAdmin) {
-      const adminLevel = getAdminLevelDisplayName(adminInfo.adminLevel);
+      const adminLevel = getAdminLevelDisplayName(adminInfo.highestRole);
       return `${baseDescription} | ${getText('common.admin.permission_level')}: ${adminLevel}`;
     }
     
@@ -116,92 +139,104 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
   return (
     <DispatchAlertContext.Provider value={dispatchAlert}>
       <AuthMonitor>
-        <UserProfileContext.Provider value={userProfile}>
-          <RoutesContext.Provider value={routes}>
+        <PasswordChangeMonitor>
+          <UserProfileContext.Provider value={userProfile}>
+            <RoutesContext.Provider value={routes}>
             <I18nProvider locale={LOCALE} messages={[messages]}>
               <Notifications />
-              <div id="h" style={{ position: 'relative' }} data-has-logo={currentTheme.logoUrl ? 'true' : 'false'}>
-                <TopNavigation
-                  identity={{
-                    href: '#',
-                    title: getText('common.brand'),
-                  }}
-                  utilities={[
-                    {
-                      type: 'menu-dropdown',
-                      text: getUserDisplayText(),
-                      description: getUserDescription(),
-                      iconName: 'user-profile',
-                      items: [{ id: 'signout', text: getText('common.action.sign_out') }],
-                      onItemClick: ({ detail }) => {
-                        if (detail.id === 'signout') signOut && signOut();
+              {/* 应用主题样式到整个应用框架 */}
+              <div 
+                style={{
+                  '--theme-primary-color': currentTheme.primaryColor,
+                  '--theme-secondary-color': currentTheme.secondaryColor,
+                  '--theme-background-color': currentTheme.backgroundColor,
+                  '--theme-text-color': currentTheme.textColor,
+                } as React.CSSProperties}
+              >
+                <div id="h" style={{ position: 'relative' }} data-has-logo={globalLogo ? 'true' : 'false'}>
+                  <TopNavigation
+                    identity={{
+                      href: '#',
+                      title: '', // 删除标题文字，为logo留出空间
+                    }}
+                    utilities={[
+                      {
+                        type: 'menu-dropdown',
+                        text: getUserDisplayText(),
+                        description: getUserDescription(),
+                        iconName: 'user-profile',
+                        items: [{ id: 'signout', text: getText('common.action.sign_out') }],
+                        onItemClick: ({ detail }) => {
+                          if (detail.id === 'signout') signOut && signOut();
+                        },
                       },
-                    },
-                  ]}
+                    ]}
+                  />
+                  {/* 自定义Logo显示区域 */}
+                  {globalLogo && (
+                    <div className="custom-logo-container">
+                      <img 
+                        src={globalLogo} 
+                        alt={getText('common.brand')} 
+                        className="custom-logo"
+                      />
+                    </div>
+                  )}
+                </div>
+                <AppLayout
+                headerSelector="#h"
+                breadcrumbs={
+                  <BreadcrumbGroup
+                    items={generateBreadcrumbs(activeHref, getOverride)}
+                  />
+                }
+                navigationOpen={true}
+                navigation={
+                  <SideNavigation
+                    activeHref={activeHref}
+                    header={{
+                      href: '/',
+                      text: getText('common.brand'),
+                    }}
+                    onFollow={(e) => {
+                      e.preventDefault();
+                      router.navigate(e.detail.href);
+                    }}
+                    items={sideNavRoutes.children?.map(({ path, children }: any) => {
+                      if (children && children.length > 0) {
+                        return {
+                          type: 'expandable-link-group',
+                          text: getText(`common.nav.${path}`),
+                          href: `/${path}`,
+                          items: children.map(({ path: childPath }: any) => ({
+                            type: 'link',
+                            text: getText(`common.nav.${childPath}`),
+                            href: `/${path}/${childPath}`,
+                          })),
+                        };
+                      } else {
+                        return { type: 'link', text: getText(`common.nav.${path}`), href: `/${path}` };
+                      }
+                    }) || []}
+                  />
+                }
+                notifications={<Flashbar items={alerts}/>}
+                toolsOpen={false}
+                tools={
+                  <HelpPanel header={<h2>{getText('common.help.overview')}</h2>}>
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+                      <ThemeButton />
+                    </div>
+                    {getText('common.help.content')}
+                  </HelpPanel>
+                }
+                content={<RouterProvider router={router}/>}
                 />
-                {/* 自定义Logo显示区域 */}
-                {currentTheme.logoUrl && (
-                  <div className="custom-logo-container">
-                    <img 
-                      src={currentTheme.logoUrl} 
-                      alt={getText('common.brand')} 
-                      className="custom-logo"
-                    />
-                  </div>
-                )}
               </div>
-            <AppLayout
-              headerSelector="#h"
-              breadcrumbs={
-                <BreadcrumbGroup
-                  items={generateBreadcrumbs(activeHref, getOverride)}
-                />
-              }
-              navigationOpen={true}
-              navigation={
-                <SideNavigation
-                  activeHref={activeHref}
-                  header={{
-                    href: '/',
-                    text: getText('common.brand'),
-                  }}
-                  onFollow={(e) => {
-                    e.preventDefault();
-                    router.navigate(e.detail.href);
-                  }}
-                  items={sideNavRoutes.children?.map(({ path, children }: any) => {
-                    if (children && children.length > 0) {
-                      return {
-                        type: 'expandable-link-group',
-                        text: getText(`common.nav.${path}`),
-                        href: `/${path}`,
-                        items: children.map(({ path: childPath }: any) => ({
-                          type: 'link',
-                          text: getText(`common.nav.${childPath}`),
-                          href: `/${path}/${childPath}`,
-                        })),
-                      };
-                    } else {
-                      return { type: 'link', text: getText(`common.nav.${path}`), href: `/${path}` };
-                    }
-                  }) || []}
-                />
-              }
-              notifications={<Flashbar items={alerts}/>}
-              toolsOpen={false}
-              tools={
-                <HelpPanel header={<h2>{getText('common.help.overview')}</h2>}>
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-                    <ThemeButton />
-                  </div>
-                  {getText('common.help.content')}
-                </HelpPanel>
-              }
-              content={<RouterProvider router={router}/>}
-            />
           </I18nProvider>
         </RoutesContext.Provider>
       </UserProfileContext.Provider>
+      </PasswordChangeMonitor>
       </AuthMonitor>
     </DispatchAlertContext.Provider>
   );
@@ -212,16 +247,46 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
 
   useEffect(() => {
     fetchAuthSession()
-      .then((session) =>
+      .then((session) => {
+        const cognitoGroups = (session.tokens?.idToken?.payload as any)['cognito:groups'];
+        const userGroup = Array.isArray(cognitoGroups) && cognitoGroups.length > 0 
+          ? cognitoGroups[0] 
+          : 'students'; // 默认为学生组
+          
+        console.log('用户组信息:', cognitoGroups, '选择的组:', userGroup);
+        
         setUserProfile({
           ...user,
-          group: (session.tokens?.idToken?.payload as any)['cognito:groups'][0],
+          group: userGroup,
           email: session.tokens?.idToken?.payload.email,
-          name: session.tokens?.idToken?.payload.name,
-        } as UserProfile),
-      )
-      .catch(() => console.error('Failed to fetch auth session'));
-  }, []);
+          name: session.tokens?.idToken?.payload.preferred_username || session.tokens?.idToken?.payload.name,
+        } as UserProfile);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch auth session:', error);
+        // 设置默认用户配置
+        setUserProfile({
+          ...user,
+          group: 'students',
+          email: user?.signInDetails?.loginId || '',
+          name: user?.username || '',
+        } as UserProfile);
+      });
+  }, [user]);
+
+  // 检查当前路径是否是密码重置页面
+  const isPasswordResetPage = window.location.pathname === '/reset-password';
+  
+  // 如果是密码重置页面，直接渲染不需要认证
+  if (isPasswordResetPage) {
+    return (
+      <ThemeProvider userProfile={undefined}> {/* 修复类型错误 */}
+        <BreadcrumbProvider>
+          <PasswordReset />
+        </BreadcrumbProvider>
+      </ThemeProvider>
+    );
+  }
 
   if (!userProfile?.group) return null;
 
@@ -235,16 +300,22 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
 }
 
 const AuthenticatedApp = withAuthenticator(App, {
-  signUpAttributes: ['name'],
+  // 移除自注册功能
+  hideSignUp: true,
+  // 移除自注册属性配置
   formFields: {
-    signUp: {
-      "custom:role": {
-        placeholder: '输入 "teachers" 或 "students"',
-        isRequired: true,
-        label: '角色:',
-        pattern: "(teachers|students)"
+    signIn: {
+      username: {
+        placeholder: '用户名或邮箱',
+        label: '用户名:',
+        isRequired: true
       },
-    },
+      password: {
+        placeholder: '密码',
+        label: '密码:',
+        isRequired: true
+      }
+    }
   },
   components: {
     Header: function AuthHeader() {
@@ -255,6 +326,26 @@ const AuthenticatedApp = withAuthenticator(App, {
           <LanguageSwitcher />
         </div>
       );
+    },
+    SignIn: {
+      Footer: function SignInFooter() {
+        return (
+          <div style={{ textAlign: 'center', marginTop: '20px', color: '#666' }}>
+            <p>请使用管理员分配的账号登录</p>
+            <p>如需账号请联系系统管理员</p>
+            <p>
+              <a 
+                href="/reset-password" 
+                style={{ color: '#0972d3', textDecoration: 'none' }}
+                onMouseOver={(e) => (e.target as HTMLElement).style.textDecoration = 'underline'}
+                onMouseOut={(e) => (e.target as HTMLElement).style.textDecoration = 'none'}
+              >
+                忘记密码？
+              </a>
+            </p>
+          </div>
+        );
+      }
     }
   }
 });
