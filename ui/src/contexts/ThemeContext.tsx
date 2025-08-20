@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { MantineProvider, MantineThemeOverride, createTheme } from '@mantine/core';
 import { UserProfile } from './userProfile';
+import { generateClient } from 'aws-amplify/api';
+import { getSettings } from '../graphql/queries';
+import { upsertSettings } from '../graphql/mutations';
+
+const client = generateClient();
 
 export interface CustomTheme {
   id: string;
@@ -15,10 +20,19 @@ export interface CustomTheme {
   isDefault: boolean;
 }
 
+// 全局Logo配置接口
+export interface GlobalLogoConfig {
+  logoUrl?: string;
+  lastUpdated: string;
+  updatedBy: string;
+}
+
 export interface ThemeContextType {
   currentTheme: CustomTheme;
   availableThemes: CustomTheme[];
+  globalLogo: string;
   setTheme: (theme: CustomTheme) => void;
+  setGlobalLogo: (logoUrl: string) => void;
   canCustomizeTheme: (userProfile?: UserProfile) => boolean;
   saveCustomTheme: (theme: Omit<CustomTheme, 'id' | 'createdBy'>) => void;
   deleteCustomTheme: (themeId: string) => void;
@@ -75,16 +89,52 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, userProfile }) => {
   const [currentTheme, setCurrentTheme] = useState<CustomTheme>(defaultThemes[0]);
   const [availableThemes, setAvailableThemes] = useState<CustomTheme[]>(defaultThemes);
+  const [globalLogo, setGlobalLogoState] = useState<string>('');
 
   // 检查用户是否可以自定义主题
   const canCustomizeTheme = (user?: UserProfile): boolean => {
     return user?.group === 'teachers'; // 目前只有老师可以自定义，后续可改为管理员
   };
 
-  // 从 localStorage 加载保存的主题
+  // 从云端加载设置
+  const loadSettingsFromCloud = async () => {
+    try {
+      const result = await client.graphql({
+        query: getSettings,
+      });
+      
+      // 类型守卫：确保result是GraphQLResult类型
+      if ('data' in result) {
+        const settings = result.data?.getSettings;
+        if (settings) {
+          // 加载全局Logo
+          if (settings.globalLogo) {
+            setGlobalLogoState(settings.globalLogo);
+          }
+          
+          // 加载主题设置
+          if (settings.themeSettings) {
+            const themeSettings = JSON.parse(settings.themeSettings);
+            if (themeSettings.customThemes) {
+              setAvailableThemes([...defaultThemes, ...themeSettings.customThemes]);
+            }
+            if (themeSettings.currentTheme) {
+              setCurrentTheme(themeSettings.currentTheme);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading settings from cloud:', error);
+      // 降级到localStorage
+    }
+  };
+
+  // 从 localStorage 加载保存的主题和全局Logo，然后从云端同步
   useEffect(() => {
     const savedThemes = localStorage.getItem('customThemes');
     const savedCurrentTheme = localStorage.getItem('currentTheme');
+    const savedGlobalLogo = localStorage.getItem('globalLogo');
     
     if (savedThemes) {
       try {
@@ -103,7 +153,51 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, userProf
         console.error('Error loading current theme:', error);
       }
     }
+
+    if (savedGlobalLogo) {
+      try {
+        const logoConfig = JSON.parse(savedGlobalLogo);
+        setGlobalLogoState(logoConfig.logoUrl || '');
+      } catch (error) {
+        console.error('Error loading global logo:', error);
+      }
+    }
+
+    // 从云端加载最新设置
+    loadSettingsFromCloud();
   }, []);
+
+  // 设置全局Logo并保存到云端
+  const setGlobalLogo = async (logoUrl: string) => {
+    setGlobalLogoState(logoUrl);
+    const logoConfig: GlobalLogoConfig = {
+      logoUrl,
+      lastUpdated: new Date().toISOString(),
+      updatedBy: userProfile?.email || 'unknown',
+    };
+    localStorage.setItem('globalLogo', JSON.stringify(logoConfig));
+    
+    // 保存到云端
+    try {
+      await client.graphql({
+        query: upsertSettings,
+        variables: {
+          input: {
+            uiLang: 'zh', // 保持当前语言设置
+            globalLogo: logoUrl,
+            themeSettings: JSON.stringify({
+              customThemes: availableThemes.filter(theme => !theme.isDefault),
+              currentTheme: currentTheme,
+            }),
+          },
+        },
+      });
+      console.log('Global logo saved to cloud successfully');
+    } catch (error) {
+      console.error('Error saving global logo to cloud:', error);
+      // 如果云端保存失败，至少保存到localStorage
+    }
+  };
 
   // 设置主题
   const setTheme = (theme: CustomTheme) => {
@@ -184,12 +278,17 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, userProf
     root.style.setProperty('--secondary-color', currentTheme.secondaryColor);
     root.style.setProperty('--background-color', currentTheme.backgroundColor);
     root.style.setProperty('--text-color', currentTheme.textColor);
-  }, [currentTheme]);
+    
+    // 应用全局Logo
+    root.style.setProperty('--global-logo-url', globalLogo ? `url(${globalLogo})` : 'none');
+  }, [currentTheme, globalLogo]);
 
   const contextValue: ThemeContextType = {
     currentTheme,
     availableThemes,
+    globalLogo,
     setTheme,
+    setGlobalLogo,
     canCustomizeTheme,
     saveCustomTheme,
     deleteCustomTheme,

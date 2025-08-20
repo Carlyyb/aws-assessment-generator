@@ -26,3 +26,37 @@
 [data-has-logo="true"] .awsui-top-navigation .awsui-top-navigation__content .awsui-top-navigation__identity {
   margin-left: 140px;
 }
+
+/* 修复顶部导航栏和左侧导航栏重叠问题 */
+/* 确保顶部导航栏的z-index高于侧边导航栏 */
+.awsui_top-navigation_k5dlb_d6w6r_117 {
+  z-index: 1100 !important;
+  position: relative;
+}
+
+/* 确保侧边导航栏不会覆盖顶部导航栏 */
+.awsui_navigation-container_hyvsj_zz5e8_707 {
+  z-index: 1000 !important;
+  margin-top: 0 !important;
+  top: 56px !important; /* 为顶部导航栏留出空间 */
+}
+
+/* 为AppLayout内容区域留出顶部导航栏空间 */
+.awsui-app-layout__content {
+  padding-top: 0 !important;
+}
+
+/* 修复中等尺寸屏幕下的重叠问题 */
+.awsui_medium_k5dlb_d6w6r_162 {
+  z-index: 1100 !important;
+}
+
+/* 确保主内容区域不被导航栏遮挡 */
+.awsui-app-layout__main {
+  padding-top: 8px;
+}
+
+/* 修复收纳状态下的重叠 */
+.awsui-app-layout__navigation.awsui-app-layout__navigation--closed {
+  z-index: 999 !important;
+}

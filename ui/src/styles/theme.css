@@ -1,9 +1,17 @@
-/* 主题CSS变量 */
+/* 动态主题CSS变量 */
 :root {
   --primary-color: #232f3e;
   --secondary-color: #ff9900;
   --background-color: #ffffff;
   --text-color: #000000;
+}
+
+/* 动态主题应用器 - 支持从App.tsx传递的内联样式 */
+[style*="--theme-primary-color"] {
+  --primary-color: var(--theme-primary-color);
+  --secondary-color: var(--theme-secondary-color);
+  --background-color: var(--theme-background-color);
+  --text-color: var(--theme-text-color);
 }
 
 /* 应用主题变量到现有组件 */
@@ -14,6 +22,7 @@
 
 .awsui-top-navigation {
   border-bottom-color: var(--primary-color);
+  background-color: var(--background-color);
 }
 
 .awsui-side-navigation {
@@ -84,6 +93,35 @@
   object-fit: contain;
 }
 
+/* 删除标题文字后的Logo布局适配 */
+.awsui-top-navigation .awsui-top-navigation-identity {
+  min-width: auto;
+}
+
+.awsui-top-navigation .awsui-top-navigation-identity .awsui-top-navigation-identity-title {
+  display: none; /* 隐藏默认标题 */
+}
+
+/* 自定义Logo容器样式 */
+.custom-logo-container {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1000;
+}
+
+.custom-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* 为Logo预留空间 */
+[data-has-logo="true"] .awsui-top-navigation .awsui-top-navigation-identity {
+  margin-left: 60px;
+}
+
 /* 卡片主题适配 */
 .awsui-cards .awsui-cards-card {
   border-color: var(--primary-color);
@@ -129,4 +167,52 @@
 /* 防止过度动画 */
 .no-transition * {
   transition: none !important;
+}
+
+/* 容器背景适配 */
+.awsui-container {
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+/* Header样式适配 */
+.awsui-header {
+  color: var(--primary-color);
+}
+
+/* SpaceBetween组件适配 */
+.awsui-space-between {
+  color: var(--text-color);
+}
+
+/* 固定定位样式 - 使TopNavigation和SideNavigation在滚动时保持固定 */
+#h {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: var(--background-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.awsui-app-layout {
+  padding-top: 48px; /* TopNavigation的高度，防止内容被遮挡 */
+}
+
+/* 确保SideNavigation也固定 */
+.awsui-app-layout .awsui-app-layout-navigation {
+  position: fixed !important;
+  top: 48px; /* TopNavigation高度之下 */
+  left: 0;
+  height: calc(100vh - 48px);
+  z-index: 999;
+  background-color: var(--background-color);
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 调整主内容区域，为固定的SideNavigation让出空间 */
+.awsui-app-layout .awsui-app-layout-main {
+  margin-left: 280px; /* SideNavigation的默认宽度 */
+  min-height: calc(100vh - 48px);
 }
