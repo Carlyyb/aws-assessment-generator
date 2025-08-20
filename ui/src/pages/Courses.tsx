@@ -10,7 +10,9 @@ import {
   Button, 
   Modal,
   StatusIndicator,
-  Alert
+  Alert,
+  FormField,
+  Input
 } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
 import { listCourses, getKnowledgeBase } from '../graphql/queries';
@@ -23,7 +25,6 @@ import { getText } from '../i18n/lang';
 
 const client = generateClient();
 
-
 const CoursesPage = () => {
   const dispatchAlert = useContext(DispatchAlertContext);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -34,6 +35,42 @@ const CoursesPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
 
+  // 课程设置弹窗状态
+  const [showCourseSettingsModal, setShowCourseSettingsModal] = useState(false);
+  const [courseSettingsForm, setCourseSettingsForm] = useState<{ description: string }>({ description: '' });
+
+  // 打开课程设置弹窗时初始化表单
+  useEffect(() => {
+    if (showCourseSettingsModal && selectedCourse) {
+      setCourseSettingsForm({
+        description: selectedCourse.description || ''
+      });
+    }
+  }, [showCourseSettingsModal, selectedCourse]);
+
+  // 保存课程设置
+  const handleSaveCourseSettings = async () => {
+    if (!selectedCourse) return;
+    try {
+      // 调用后端API更新课程（假设有updateCourse mutation）
+      await client.graphql({
+        query: /* GraphQL */ `mutation UpdateCourse($id: ID!, $description: String) { updateCourse(id: $id, description: $description) { id description } }`,
+        variables: {
+          id: selectedCourse.id,
+          description: courseSettingsForm.description
+        }
+      });
+      dispatchAlert({ type: AlertType.SUCCESS, content: '课程设置已保存' });
+      setShowCourseSettingsModal(false);
+      // 重新加载课程列表
+      const response = await client.graphql<{ data?: { listCourses?: Course[] } }>({ query: listCourses });
+      const updatedCourses = ('data' in response) ? response.data?.listCourses || [] : [];
+      setCourses(updatedCourses);
+    } catch (error) {
+      dispatchAlert({ type: AlertType.ERROR, content: '保存失败' });
+    }
+  };
+
   // 检查所有课程的知识库状态
   const checkAllKnowledgeBaseStatuses = async (courseList: Course[]) => {
     const statusPromises = courseList.map(async (course) => {
@@ -43,7 +80,7 @@ const CoursesPage = () => {
           [course.id]: 'loading'
         }));
 
-        const response = await client.graphql<{ data?: { getKnowledgeBase?: { knowledgeBaseId?: string; status?: string } }, errors?: any }>({
+        const response = await client.graphql<{ data?: { getKnowledgeBase?: { knowledgeBaseId?: string; status?: string } }, errors?: unknown }>({
           query: getKnowledgeBase,
           variables: { courseId: course.id }
         });
@@ -91,9 +128,6 @@ const CoursesPage = () => {
     }, {} as {[courseId: string]: 'loading' | 'available' | 'missing'});
     setKnowledgeBaseStatuses(statusMap);
   };
-  
-  
-
 
   // 打开知识库管理
   const handleManageKnowledgeBase = (course: Course) => {
@@ -166,7 +200,7 @@ const CoursesPage = () => {
   }, [showCreateModal, showKnowledgeBaseModal, dispatchAlert]);
 
   return (
-    <ContentLayout>
+    <>
       {/* 创建课程模态框 */}
       <Modal 
         header={getText('teachers.settings.courses.create_new')} 
@@ -199,6 +233,31 @@ const CoursesPage = () => {
           }}
         />
       )}
+
+      {/* 课程设置弹窗 */}
+      <Modal
+        visible={showCourseSettingsModal}
+        onDismiss={() => setShowCourseSettingsModal(false)}
+        header="课程设置"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button variant="link" onClick={() => setShowCourseSettingsModal(false)}>取消</Button>
+              <Button variant="primary" onClick={handleSaveCourseSettings}>保存</Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <SpaceBetween direction="vertical" size="m">
+          <FormField label="课程描述">
+            <Input
+              value={courseSettingsForm.description}
+              onChange={({ detail }) => setCourseSettingsForm(form => ({ ...form, description: detail.value }))}
+              placeholder="请输入课程描述"
+            />
+          </FormField>
+        </SpaceBetween>
+      </Modal>
 
       {/* 删除确认模态框 */}
       <Modal
@@ -240,94 +299,105 @@ const CoursesPage = () => {
           </Alert>
         )}
       </Modal>
-      
-      <Container
-        header={
-          <SpaceBetween size="l">
-            <Header variant="h1">{getText('teachers.settings.courses.title')}</Header>
-          </SpaceBetween>
-        }
-      >
-        <Table
+
+      <ContentLayout>
+        <Container
           header={
-            <Header>
-              <Button iconName="add-plus" onClick={() => setShowCreateModal(true)}>
-                {getText('teachers.settings.courses.new_course')}
-              </Button>
-            </Header>
+            <SpaceBetween size="l">
+              <Header variant="h1">{getText('teachers.settings.courses.title')}</Header>
+            </SpaceBetween>
           }
-          columnDefinitions={[
-            {
-              id: 'id',
-              header: getText('common.labels.id'),
-              cell: (item) => item.id,
-              sortingField: 'id'
-            },
-            {
-              id: 'name',
-              header: getText('common.labels.name'),
-              cell: (item) => item.name,
-              sortingField: 'name'
-            },
-            {
-              id: 'description',
-              header: getText('common.labels.description'),
-              cell: (item) => item.description,
-              sortingField: 'description'
-            },
-            {
-              id: 'knowledgeBase',
-              header: '知识库状态',
-              cell: (item) => getKnowledgeBaseStatus(item.id),
-              minWidth: 120
-            },
-            {
-              id: 'actions',
-              header: '操作',
-              cell: (item) => (
-                <SpaceBetween direction="horizontal" size="xs">
-                  <Button
-                    variant="normal"
-                    iconName="folder"
-                    onClick={() => handleManageKnowledgeBase(item)}
-                  >
-                    管理知识库
-                  </Button>
-                  <Button
-                    variant="normal"
-                    iconName="remove"
-                    onClick={() => {
-                      setCourseToDelete(item);
-                      setShowDeleteModal(true);
-                    }}
-                  >
-                    删除
-                  </Button>
-                </SpaceBetween>
-              ),
-              minWidth: 200
-            },
-          ]}
-          columnDisplay={[
-            { id: 'id', visible: false },
-            { id: 'name', visible: true },
-            { id: 'description', visible: true },
-            { id: 'knowledgeBase', visible: true },
-            { id: 'actions', visible: true },
-          ]}
-          items={courses}
-          loadingText={getText('common.status.loading')}
-          pagination={<Pagination currentPageIndex={1} pagesCount={1} />}
-          trackBy="id"
-          empty={
-            <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
-              {getText('common.status.empty')}
-            </Box>
-          }
-          // filter={<TextFilter filteringPlaceholder="Find courses" filteringText="" />}
-        />
-      </Container>
-    </ContentLayout>
+        >
+          <Table
+            header={
+              <Header>
+                <Button iconName="add-plus" onClick={() => setShowCreateModal(true)}>
+                  {getText('teachers.settings.courses.new_course')}
+                </Button>
+              </Header>
+            }
+            columnDefinitions={[
+              {
+                id: 'id',
+                header: getText('common.labels.id'),
+                cell: (item) => item.id,
+                sortingField: 'id'
+              },
+              {
+                id: 'name',
+                header: getText('common.labels.name'),
+                cell: (item) => item.name,
+                sortingField: 'name'
+              },
+              {
+                id: 'description',
+                header: getText('common.labels.description'),
+                cell: (item) => item.description,
+                sortingField: 'description'
+              },
+              {
+                id: 'knowledgeBase',
+                header: '知识库状态',
+                cell: (item) => getKnowledgeBaseStatus(item.id),
+                minWidth: 120
+              },
+              {
+                id: 'actions',
+                header: '操作',
+                cell: (item) => (
+                  <SpaceBetween direction="horizontal" size="xs">
+                    <Button
+                      variant="normal"
+                      iconName="folder"
+                      onClick={() => handleManageKnowledgeBase(item)}
+                    >
+                      管理知识库
+                    </Button>
+                    <Button
+                      variant="normal"
+                      iconName="settings"
+                      onClick={() => {
+                        setSelectedCourse(item);
+                        setShowCourseSettingsModal(true);
+                      }}
+                    >
+                      课程设置
+                    </Button>
+                    <Button
+                      variant="normal"
+                      iconName="remove"
+                      onClick={() => {
+                        setCourseToDelete(item);
+                        setShowDeleteModal(true);
+                      }}
+                    >
+                      删除
+                    </Button>
+                  </SpaceBetween>
+                ),
+                minWidth: 300
+              },
+            ]}
+            columnDisplay={[
+              { id: 'id', visible: false },
+              { id: 'name', visible: true },
+              { id: 'description', visible: true },
+              { id: 'knowledgeBase', visible: true },
+              { id: 'actions', visible: true },
+            ]}
+            items={courses}
+            loadingText={getText('common.status.loading')}
+            pagination={<Pagination currentPageIndex={1} pagesCount={1} />}
+            trackBy="id"
+            empty={
+              <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
+                {getText('common.status.empty')}
+              </Box>
+            }
+          />
+        </Container>
+      </ContentLayout>
+    </>
   );
 };
 

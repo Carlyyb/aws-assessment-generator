@@ -22,7 +22,7 @@ export default () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<'single' | 'multiple'>('single');
   const [templateToDelete, setTemplateToDelete] = useState<AssessTemplate | null>(null);
-
+  
   // 加载模板列表
   const loadTemplates = () => {
     client
