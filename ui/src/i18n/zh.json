@@ -43,7 +43,9 @@
     },
     "role": {
       "teachers": "教师",
-      "students": "学生"
+      "students": "学生",
+      "admin": "管理员",
+      "super_admin": "超级管理员"
     },
     "admin": {
       "super_admin": "超级管理员",
@@ -63,7 +65,8 @@
       "generate-assessments": "生成测试",
       "log-management": "日志管理",
       "find-student": "查找学生",
-      "student-list": "学生列表"
+      "student-list": "学生列表",
+      "user-management": "用户管理"
     },
     "help": {
       "overview": "系统概览",
