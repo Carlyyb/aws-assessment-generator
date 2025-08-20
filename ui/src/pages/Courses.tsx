@@ -16,7 +16,7 @@ import {
 } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
 import { listCourses, getKnowledgeBase } from '../graphql/queries';
-import { deleteCourse } from '../graphql/mutations';
+import { deleteCourse, upsertCourse } from '../graphql/mutations';
 import { Course } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import CreateCourse from '../components/CreateCourse';
@@ -52,12 +52,15 @@ const CoursesPage = () => {
   const handleSaveCourseSettings = async () => {
     if (!selectedCourse) return;
     try {
-      // 调用后端API更新课程（假设有updateCourse mutation）
+      // 使用upsertCourse mutation更新课程
       await client.graphql({
-        query: /* GraphQL */ `mutation UpdateCourse($id: ID!, $description: String) { updateCourse(id: $id, description: $description) { id description } }`,
+        query: upsertCourse,
         variables: {
-          id: selectedCourse.id,
-          description: courseSettingsForm.description
+          input: {
+            id: selectedCourse.id,
+            name: selectedCourse.name,
+            description: courseSettingsForm.description
+          }
         }
       });
       dispatchAlert({ type: AlertType.SUCCESS, content: '课程设置已保存' });
