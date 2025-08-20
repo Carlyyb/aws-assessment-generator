@@ -7,18 +7,20 @@ import {
   aws_cognito,
   aws_dynamodb,
   aws_iam,
+  aws_lambda,
   aws_lambda_nodejs,
   aws_logs,
   Duration,
   NestedStack,
   NestedStackProps,
   RemovalPolicy,
+  Stack,
 } from 'aws-cdk-lib';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import path from 'path';
 import { Architecture, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
-import { ManagedPolicy, Policy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { ManagedPolicy, Policy, PolicyStatement, PolicyDocument } from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { TableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
@@ -78,6 +80,91 @@ export class DataStack extends NestedStack {
       typeName: 'Mutation',
       fieldName: 'upsertSettings',
       code: aws_appsync.Code.fromAsset('lib/resolvers/upsertSettings.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    /////////// Users
+
+    const usersTable = new aws_dynamodb.TableV2(this, 'UsersTable', {
+      partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    // 将用户表名保存到SSM参数
+    new StringParameter(this, 'UsersTableNameParameter', {
+      parameterName: '/gen-assess/users-table-name',
+      stringValue: usersTable.tableName,
+      description: 'Users table name for GenAssess application'
+    });
+
+    // 创建用户管理 Lambda 函数
+    const userManagementFunction = new NodejsFunction(this, 'UserManagementFunction', {
+      functionName: `${this.stackName}-user-management`,
+      entry: path.join(__dirname, 'lambdas', 'userManagement.ts'),
+      handler: 'handler',
+      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      timeout: Duration.seconds(30),
+      memorySize: 512,
+      environment: {
+        USER_POOL_ID: userPool.userPoolId,
+        USERS_TABLE_NAME: usersTable.tableName,
+        REGION: Stack.of(this).region
+      },
+      bundling: {
+        externalModules: [],
+        nodeModules: [
+          '@aws-sdk/client-dynamodb',
+          '@aws-sdk/lib-dynamodb',
+          '@aws-sdk/client-cognito-identity-provider',
+          '@aws-sdk/client-ssm'
+        ]
+      }
+    });
+
+    // 给 Lambda 函数权限访问 DynamoDB、Cognito 和 SSM
+    usersTable.grantReadWriteData(userManagementFunction);
+    userManagementFunction.addToRolePolicy(new aws_iam.PolicyStatement({
+      effect: aws_iam.Effect.ALLOW,
+      actions: [
+        'cognito-idp:AdminCreateUser',
+        'cognito-idp:AdminSetUserPassword',
+        'cognito-idp:AdminAddUserToGroup',
+        'cognito-idp:AdminGetUser',
+        'cognito-idp:ListUsers'
+      ],
+      resources: [userPool.userPoolArn]
+    }));
+    userManagementFunction.addToRolePolicy(new aws_iam.PolicyStatement({
+      effect: aws_iam.Effect.ALLOW,
+      actions: [
+        'ssm:GetParameter',
+        'ssm:GetParameters'
+      ],
+      resources: [`arn:aws:ssm:${Stack.of(this).region}:${Stack.of(this).account}:parameter/gen-assess/*`]
+    }));
+
+    // 创建 Lambda 数据源
+    const userManagementDs = api.addLambdaDataSource('UserManagementDataSource', userManagementFunction);
+
+    // 创建用户管理相关的 resolver
+    userManagementDs.createResolver('QueryListUsersResolver', {
+      typeName: 'Query',
+      fieldName: 'listUsers',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/listUsers.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationCreateSingleUserResolver', {
+      typeName: 'Mutation',
+      fieldName: 'createSingleUser',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/createSingleUser.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationBatchCreateUsersResolver', {
+      typeName: 'Mutation',
+      fieldName: 'batchCreateUsers',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/batchCreateUsers.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 

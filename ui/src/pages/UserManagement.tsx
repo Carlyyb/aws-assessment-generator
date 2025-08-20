@@ -84,6 +84,17 @@ const UserManagement: React.FC = () => {
     return options;
   };
   
+  // 验证角色选择是否有效
+  const isValidRoleForCurrentUser = (role: string) => {
+    if (role === 'students' || role === 'teachers') {
+      return true; // 所有管理员都可以创建学生和教师
+    }
+    if (role === 'admin') {
+      return adminInfo?.permissions.canCreateAdmin || false; // 只有超级管理员可以创建管理员
+    }
+    return false; // 不允许创建super_admin或其他角色
+  };
+  
   // 获取角色显示名称
   const getRoleLabel = (role: string) => {
     switch (role) {
@@ -203,14 +214,21 @@ const UserManagement: React.FC = () => {
         variables: role ? { role } : {}
       });
       
-      const userData = (response as any).data.listUsers;
-      setUsers(userData || []);
+      const userData = (response as any).data?.listUsers;
+      if (Array.isArray(userData)) {
+        setUsers(userData);
+        console.log(`加载用户列表成功，共 ${userData.length} 个用户`);
+      } else {
+        console.warn('用户数据格式异常:', userData);
+        setUsers([]);
+      }
     } catch (error) {
       console.error('加载用户列表失败:', error);
       dispatchAlert({
         type: AlertType.ERROR,
-        content: '加载用户列表失败'
+        content: '加载用户列表失败，请刷新页面重试'
       });
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -227,28 +245,57 @@ const UserManagement: React.FC = () => {
     loadUsers(role || undefined);
   };
 
+  // 检查用户名是否已存在
+  const checkUsernameExists = (username: string): boolean => {
+    return users.some(user => user.username.toLowerCase() === username.toLowerCase());
+  };
+
   // 创建单个用户
   const handleCreateSingleUser = async () => {
-    if (!singleUserForm.name || !singleUserForm.username) {
+    if (!singleUserForm.name || !singleUserForm.username || !singleUserForm.role) {
       dispatchAlert({
         type: AlertType.ERROR,
-        content: '请填写必填字段'
+        content: '请填写所有必填字段（姓名、用户名、角色）'
+      });
+      return;
+    }
+
+    // 检查用户名是否已存在
+    if (checkUsernameExists(singleUserForm.username)) {
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: `用户名 "${singleUserForm.username}" 已存在，请选择其他用户名`
+      });
+      return;
+    }
+
+    // 验证角色权限
+    if (!isValidRoleForCurrentUser(singleUserForm.role)) {
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '您没有权限创建该角色的用户'
       });
       return;
     }
 
     try {
       setLoading(true);
-      await client.graphql({
+      const response = await client.graphql({
         query: createSingleUserMutation,
         variables: {
           user: singleUserForm
         }
       });
 
+      // 检查响应数据
+      const userData = (response as any).data?.createSingleUser;
+      if (!userData) {
+        throw new Error('创建用户返回数据为空');
+      }
+
       dispatchAlert({
         type: AlertType.SUCCESS,
-        content: '用户创建成功'
+        content: `用户 "${singleUserForm.username}" 创建成功`
       });
 
       // 重置表单并关闭模态框
@@ -262,12 +309,22 @@ const UserManagement: React.FC = () => {
       setShowCreateModal(false);
       
       // 重新加载用户列表
-      loadUsers(selectedRole || undefined);
+      await loadUsers(selectedRole || undefined);
+      
     } catch (error: any) {
       console.error('创建用户失败:', error);
+      let errorMessage = '创建用户失败';
+      
+      // 解析具体错误信息
+      if (error.errors && error.errors.length > 0) {
+        errorMessage = error.errors[0].message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       dispatchAlert({
         type: AlertType.ERROR,
-        content: error.errors?.[0]?.message || '创建用户失败'
+        content: errorMessage
       });
     } finally {
       setLoading(false);
@@ -320,6 +377,15 @@ const UserManagement: React.FC = () => {
       dispatchAlert({
         type: AlertType.ERROR,
         content: '没有有效的用户数据'
+      });
+      return;
+    }
+
+    // 验证批量导入的角色权限
+    if (!isValidRoleForCurrentUser(importRole)) {
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '您没有权限创建该角色的用户'
       });
       return;
     }
@@ -380,11 +446,19 @@ const UserManagement: React.FC = () => {
             />
           </FormField>
           
-          <FormField label="用户名 *">
+          <FormField 
+            label="用户名 *" 
+            errorText={
+              singleUserForm.username && checkUsernameExists(singleUserForm.username) 
+                ? '该用户名已存在，请选择其他用户名' 
+                : undefined
+            }
+          >
             <Input
               value={singleUserForm.username}
               onChange={({ detail }) => setSingleUserForm({ ...singleUserForm, username: detail.value })}
               placeholder="请输入用户名"
+              invalid={singleUserForm.username ? checkUsernameExists(singleUserForm.username) : false}
             />
           </FormField>
           
@@ -397,7 +471,7 @@ const UserManagement: React.FC = () => {
             />
           </FormField>
           
-          <FormField label="角色">
+          <FormField label="角色 *">
             <Select
               selectedOption={{ label: getRoleLabel(singleUserForm.role), value: singleUserForm.role }}
               onChange={({ detail }) => setSingleUserForm({ 
@@ -405,6 +479,7 @@ const UserManagement: React.FC = () => {
                 role: detail.selectedOption.value as 'students' | 'teachers' | 'admin' | 'super_admin'
               })}
               options={getAvailableRoleOptions()}
+              placeholder="请选择用户角色"
             />
           </FormField>
           
@@ -431,14 +506,22 @@ const UserManagement: React.FC = () => {
           <Button
             iconName="download"
             onClick={() => {
-              // 从S3下载实际的Excel模板文件
-              const templateUrl = 'https://genassessstack-ragstackne-artifactsuploadbucket58a-vjnqte10ccbn.s3.us-west-2.amazonaws.com/public/template/Template.csv';
+              // 创建模板下载功能 - 生成CSV格式的模板
+              const templateData = [
+                ['姓名', '用户名', '密码（可选）', '邮箱（可选）'],
+                ['张三', 'zhangsan', 'Password123!', 'zhangsan@example.com'],
+                ['李四', 'lisi', '', 'lisi@example.com'],
+                ['王五', 'wangwu', 'MyPass456!', '']
+              ];
               
-              // 创建下载链接
+              // 创建CSV格式的模板并下载
+              const csvContent = templateData.map(row => row.join(',')).join('\n');
+              const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
               const link = document.createElement('a');
-              link.href = templateUrl;
-              link.download = 'UserImportTemplate.csv';
-              link.target = '_blank'; // 在新窗口打开，避免跨域问题
+              const url = URL.createObjectURL(blob);
+              link.setAttribute('href', url);
+              link.setAttribute('download', 'user_template.csv');
+              link.style.visibility = 'hidden';
               document.body.appendChild(link);
               link.click();
               document.body.removeChild(link);
@@ -447,14 +530,11 @@ const UserManagement: React.FC = () => {
             下载Excel模板
           </Button>
           
-          <FormField label="用户角色">
+          <FormField label="用户角色 *">
             <Select
               selectedOption={{ label: importRole === 'students' ? '学生' : '教师', value: importRole }}
               onChange={({ detail }) => setImportRole(detail.selectedOption.value as 'students' | 'teachers')}
-              options={[
-                { label: '学生', value: 'students' },
-                { label: '教师', value: 'teachers' }
-              ]}
+              options={getAvailableRoleOptions().filter(option => option.value !== 'admin')} // 批量导入不允许创建管理员
             />
           </FormField>
           
@@ -632,7 +712,8 @@ const UserManagement: React.FC = () => {
                   onClick={activeTabId === 'single' ? handleCreateSingleUser : handleBatchCreateUsers}
                   disabled={
                     activeTabId === 'single' 
-                      ? !singleUserForm.name || !singleUserForm.username
+                      ? !singleUserForm.name || !singleUserForm.username || !singleUserForm.role || 
+                        checkUsernameExists(singleUserForm.username)
                       : !excelPreview || excelPreview.validRows === 0
                   }
                 >

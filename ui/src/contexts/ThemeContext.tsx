@@ -93,7 +93,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, userProf
 
   // 检查用户是否可以自定义主题
   const canCustomizeTheme = (user?: UserProfile): boolean => {
-    return user?.group === 'teachers'; // 目前只有老师可以自定义，后续可改为管理员
+    return user?.group !== 'students'; 
   };
 
   // 从云端加载设置

@@ -9,7 +9,8 @@ applyTo: "**"
 在实现功能的时候直接实现并对接所需的其他功能。  
 使用控制台命令时，使用PowerShell语法，并且不需要在本地部署，只需完成代码检查。  
 不要修改 `API.ts`、`mutation.ts` 和 `query.ts` 文件，以上文件的修改都在 `lib\schema.graphql` 中声明。
-
+resolver要使用Appsync Resolver支持的格式，可以仿照现有文件创建
+lambda要使用Appsync Lambda支持的格式，可以仿照现有文件创建
 ---
 
 ### **CODING PROTOCOL（开发守则）：**
