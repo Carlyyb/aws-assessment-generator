@@ -175,6 +175,13 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    userManagementDs.createResolver('QueryPreviewExcelImportResolver', {
+      typeName: 'Query',
+      fieldName: 'previewExcelImport',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/previewExcelImport.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     /////////// Courses
 
     const coursesTable = new aws_dynamodb.TableV2(this, 'CoursesTable', {

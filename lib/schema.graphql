@@ -405,9 +405,6 @@ type Mutation {
   confirmPasswordReset(input: PasswordResetConfirmInput!): Boolean
   forcePasswordReset(username: String!): Boolean
   
-  # Excel导入mutations
-  previewExcelImport(fileContent: String!): ExcelImportResult
-  
   # 账号迁移mutations（仅超级管理员）
   migrateExistingAccounts: AccountMigrationResult
 }
@@ -427,6 +424,9 @@ type Query {
   generateAssessment(input: GenerateAssessmentInput): ID
   getKnowledgeBase(courseId: ID): KnowledgeBase
   getIngestionJob(input: IngestionJobInput): IngestionJob
+  
+  # Excel导入预览查询
+  previewExcelImport(fileContent: String!): ExcelImportResult
   
   # 管理员权限查询
   checkAdminPermissions: AdminPermissionResult
