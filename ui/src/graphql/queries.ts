@@ -1,11 +1,14 @@
 /* tslint:disable */
 /* eslint-disable */
 // this is an auto generated file. This will be overwritten
+// Manual additions for user management
 
 export const getSettings = /* GraphQL */ `
   query GetSettings {
     getSettings {
       uiLang
+      globalLogo
+      themeSettings
     }
   }
 `;
@@ -369,5 +372,84 @@ export const getIngestionJob = /* GraphQL */ `
       dataSourceId
       status
     }
+  }
+`;
+
+// User Management Queries
+export const listUsers = /* GraphQL */ `
+  query ListUsers($role: UserRole) {
+    listUsers(role: $role) {
+      id
+      username
+      name
+      email
+      phoneNumber
+      role
+      needsPasswordChange
+      lastLoginAt
+      createdAt
+      createdBy
+      isActive
+    }
+  }
+`;
+
+export const getUser = /* GraphQL */ `
+  query GetUser($username: String!) {
+    getUser(username: $username) {
+      id
+      username
+      name
+      email
+      phoneNumber
+      role
+      needsPasswordChange
+      lastLoginAt
+      createdAt
+      createdBy
+      isActive
+    }
+  }
+`;
+
+export const getCurrentUser = /* GraphQL */ `
+  query GetCurrentUser {
+    getCurrentUser {
+      id
+      username
+      name
+      email
+      phoneNumber
+      role
+      needsPasswordChange
+      lastLoginAt
+      createdAt
+      createdBy
+      isActive
+    }
+  }
+`;
+
+export const previewExcelImport = /* GraphQL */ `
+  query PreviewExcelImport($fileContent: String!) {
+    previewExcelImport(fileContent: $fileContent) {
+      preview {
+        name
+        username
+        password
+        role
+        email
+        phoneNumber
+      }
+      validRows
+      invalidRows
+      errors
+    }
+  }
+`;
+
+export const checkPasswordResetToken = /* GraphQL */ `
+  query CheckPasswordResetToken($token: String!) {
+    checkPasswordResetToken(token: $token)
   }
 `;

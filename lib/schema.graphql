@@ -3,6 +3,13 @@ enum Lang {
   zh
 }
 
+enum UserRole {
+  students
+  teachers  
+  admin
+  super_admin
+}
+
 enum Taxonomy {
   Knowledge
   Comprehension
@@ -28,10 +35,14 @@ enum AssessStatus {
 
 type Settings {
   uiLang: Lang
+  globalLogo: String  # 全局Logo URL
+  themeSettings: AWSJSON  # 主题设置JSON字符串
 }
 
 input UpsertSettingsInput {
   uiLang: Lang!
+  globalLogo: String
+  themeSettings: AWSJSON
 }
 
 type Course {
@@ -52,9 +63,102 @@ type Student {
   id: ID!
   name: String!
   email: String
+  username: String!
+  role: UserRole!
   lastLoginAt: AWSDateTime
   assessmentCount: Int
   groups: [StudentGroup!]
+  needsPasswordChange: Boolean
+  phoneNumber: String
+  createdAt: AWSDateTime
+  createdBy: String
+}
+
+# 用户管理类型
+type User {
+  id: ID!
+  username: String!
+  name: String!
+  email: String
+  phoneNumber: String
+  role: UserRole!
+  needsPasswordChange: Boolean!
+  lastLoginAt: AWSDateTime
+  createdAt: AWSDateTime!
+  createdBy: String!
+  isActive: Boolean!
+}
+
+# 批量用户创建输入
+input BatchUserInput {
+  name: String!        # 显示名称（必需）
+  username: String!    # 账号名（必需，用于登录）
+  password: String     # 密码（可选，不提供则自动生成）
+  role: UserRole!      # 用户角色（必需）
+  email: String        # 邮箱（可选，用于密码恢复）
+}
+
+# 批量用户预览输出类型（用于Excel导入预览）
+type BatchUserOutput {
+  name: String!        # 显示名称
+  username: String!    # 账号名
+  password: String     # 密码（预览时可能不显示）
+  role: UserRole!      # 用户角色
+  email: String        # 邮箱
+}
+
+# 批量用户创建结果
+type BatchUserResult {
+  success: [User!]!
+  failures: [UserCreationFailure!]!
+  totalCount: Int!
+  successCount: Int!
+  failureCount: Int!
+}
+
+# 用户创建失败信息
+type UserCreationFailure {
+  username: String!
+  name: String!
+  error: String!
+  reason: String!
+}
+
+# 密码重置请求输入
+input PasswordResetRequestInput {
+  identifier: String!  # 用户名、邮箱或手机号
+  resetMethod: String!  # email 或 sms
+}
+
+# 密码重置确认输入
+input PasswordResetConfirmInput {
+  identifier: String!
+  resetToken: String!
+  newPassword: String!
+}
+
+# 密码修改输入
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
+}
+
+# 账号迁移结果
+type AccountMigrationResult {
+  totalUsers: Int!
+  migratedUsers: Int!
+  skippedUsers: Int!
+  failedUsers: Int!
+  errors: [String!]!
+}
+
+# Excel导入结果
+type ExcelImportResult {
+  previewData: [BatchUserOutput!]!
+  totalRows: Int!
+  validRows: Int!
+  invalidRows: Int!
+  errors: [String!]!
 }
 
 type StudentGroup {
@@ -288,6 +392,24 @@ type Mutation {
   upsertStudentAssessment(input: StudentAssessmentInput): StudentAssessment
   gradeStudentAssessment(input: StudentAssessmentInput): StudentAssessment
   createKnowledgeBase(courseId: ID, locations: [String]): IngestionJob
+  
+  # 用户管理mutations
+  batchCreateUsers(users: [BatchUserInput!]!): BatchUserResult
+  createSingleUser(user: BatchUserInput!): User
+  deleteUser(username: String!): Boolean
+  updateUser(username: String!, updates: BatchUserInput!): User
+  
+  # 密码管理mutations  
+  changePassword(input: ChangePasswordInput!): Boolean
+  requestPasswordReset(input: PasswordResetRequestInput!): Boolean
+  confirmPasswordReset(input: PasswordResetConfirmInput!): Boolean
+  forcePasswordReset(username: String!): Boolean
+  
+  # Excel导入mutations
+  previewExcelImport(fileContent: String!): ExcelImportResult
+  
+  # 账号迁移mutations（仅超级管理员）
+  migrateExistingAccounts: AccountMigrationResult
 }
 
 type Query {
@@ -311,6 +433,14 @@ type Query {
   
   # 日志系统查询
   queryLogs(input: LogQueryInput): LogQueryResult
+  
+  # 用户管理查询
+  listUsers(role: UserRole): [User!]
+  getUser(username: String!): User
+  getCurrentUser: User
+  
+  # 密码管理查询
+  checkPasswordResetToken(token: String!): Boolean
 }
 
 # 日志查询输入

@@ -6,6 +6,8 @@ export const upsertSettings = /* GraphQL */ `
   mutation UpsertSettings($input: UpsertSettingsInput) {
     upsertSettings(input: $input) {
       uiLang
+      globalLogo
+      themeSettings
     }
   }
 `;
@@ -227,5 +229,98 @@ export const deleteAssessment = /* GraphQL */ `
 export const unpublishAssessment = /* GraphQL */ `
   mutation UnpublishAssessment($assessmentId: ID!) {
     unpublishAssessment(assessmentId: $assessmentId)
+  }
+`;
+
+// User Management Mutations
+export const batchCreateUsersMutation = /* GraphQL */ `
+  mutation BatchCreateUsers($users: [BatchUserInput!]!) {
+    batchCreateUsers(users: $users) {
+      success {
+        id
+        username
+        name
+        email
+        phoneNumber
+        role
+        needsPasswordChange
+        createdAt
+        createdBy
+        isActive
+      }
+      failures {
+        username
+        name
+        error
+        reason
+      }
+      totalCount
+      successCount
+      failureCount
+    }
+  }
+`;
+
+export const createSingleUserMutation = /* GraphQL */ `
+  mutation CreateSingleUser($user: BatchUserInput!) {
+    createSingleUser(user: $user) {
+      id
+      username
+      name
+      email
+      role
+      needsPasswordChange
+      createdAt
+      createdBy
+      isActive
+    }
+  }
+`;
+
+export const deleteUserMutation = /* GraphQL */ `
+  mutation DeleteUser($username: String!) {
+    deleteUser(username: $username)
+  }
+`;
+
+export const updateUserMutation = /* GraphQL */ `
+  mutation UpdateUser($username: String!, $updates: BatchUserInput!) {
+    updateUser(username: $username, updates: $updates) {
+      id
+      username
+      name
+      email
+      phoneNumber
+      role
+      needsPasswordChange
+      lastLoginAt
+      createdAt
+      createdBy
+      isActive
+    }
+  }
+`;
+
+export const changePasswordMutation = /* GraphQL */ `
+  mutation ChangePassword($input: ChangePasswordInput!) {
+    changePassword(input: $input)
+  }
+`;
+
+export const requestPasswordResetMutation = /* GraphQL */ `
+  mutation RequestPasswordReset($input: PasswordResetRequestInput!) {
+    requestPasswordReset(input: $input)
+  }
+`;
+
+export const confirmPasswordResetMutation = /* GraphQL */ `
+  mutation ConfirmPasswordReset($input: PasswordResetConfirmInput!) {
+    confirmPasswordReset(input: $input)
+  }
+`;
+
+export const forcePasswordResetMutation = /* GraphQL */ `
+  mutation ForcePasswordReset($username: String!) {
+    forcePasswordReset(username: $username)
   }
 `;
