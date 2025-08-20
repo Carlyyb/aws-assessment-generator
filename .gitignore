@@ -24,3 +24,7 @@ clear-templates-smart.js
 migration-clear-templates.js
 ui/i18n-suggestions.json
 replacer.js
+*.ps1
+*.jpg
+*.png
+.claude/settings.local.json

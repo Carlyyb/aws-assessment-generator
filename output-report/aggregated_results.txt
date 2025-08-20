@@ -56,7 +56,6 @@ Start of  /out/work/git_report_result.txt
 │   │   ├── [2.9K]  DefaultSettings.tsx
 │   │   ├── [6.8K]  EditAssessments.tsx
 │   │   ├── [4.2K]  FindAssessments.tsx
-│   │   ├── [3.2K]  FindStudent.tsx
 │   │   ├── [7.5K]  GenerateAssessments.tsx
 │   │   ├── [1.3K]  HomePage.tsx
 │   │   ├── [4.0K]  ManageKnowledgeBases.tsx

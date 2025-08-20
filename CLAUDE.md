@@ -166,6 +166,8 @@ When working on this codebase / 在此代码库中工作时：
 1. **Adding new GraphQL operations / 添加新的GraphQL操作**: Update `lib/schema.graphql` and create corresponding resolvers in `lib/resolvers/`
    - 更新GraphQL模式定义
    - 创建对应的Lambda解析器，使用中文注释解释业务逻辑
+   - 确保新操作符合现有的GraphQL规范
+   - 不需要手动更新`ui\src\graphql\mutations.ts`、`ui\src\graphql\API.ts`和`ui\src\graphql\queries.ts`，只在`lib/schema.graphql`中更新
 
 2. **Creating new UI components / 创建新的UI组件**: Follow the existing pattern in `ui/src/components/` using Cloudscape Design System
    - 遵循现有的组件模式和设计系统

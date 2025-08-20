@@ -8,6 +8,103 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ## 最新更新记录
 
+### 2025-08-21: 用户管理和课程设置功能增强
+
+- **功能描述**：增强用户管理页面Excel模板下载功能，添加课程管理页面课程设置功能
+
+- **修改位置**：
+  - `ui/src/pages/UserManagement.tsx` - 在批量导入Tab区域添加"下载Excel模板"按钮，支持CSV格式模板下载
+  - `ui/src/pages/Courses.tsx` - 为每个课程添加"课程设置"按钮，弹窗可编辑课程描述
+  - `upload-template.js` - 新建S3模板上传脚本（可选使用）
+
+- **技术实现**：
+  - **Excel模板下载**：前端生成CSV格式的用户导入模板，包含示例数据，点击按钮自动下载
+  - **课程设置弹窗**：使用Cloudscape Modal组件，支持编辑课程描述，保存时调用updateCourse GraphQL mutation
+  - **权限控制**：课程设置按钮仅对教师及以上权限用户可见
+  - **状态管理**：使用React hooks管理弹窗状态和表单数据
+
+- **解决的问题**：
+  - ✅ 批量导入用户缺少模板文件，用户不知道格式
+  - ✅ 课程创建后无法修改描述等属性
+  - ✅ 提升用户体验，简化批量导入流程
+
+- **用户体验改进**：
+  - 📥 一键下载用户导入模板，包含格式说明和示例数据
+  - ⚙️ 直观的课程设置入口，方便管理课程信息
+  - 🎯 权限控制确保只有合适的用户能够修改课程设置
+
+- **版本控制**：v1.6.0 - 用户管理和课程设置增强版本
+
+### 2025-08-21: 系统清理和权限优化
+
+- **功能描述**：删除LogManagement页面，修复用户创建问题，优化权限系统
+
+- **修改位置**：
+  - 删除 `ui/src/pages/LogManagement.tsx` 及相关路由引用
+  - `ui/src/pages/UserManagement.tsx` - 修复phoneNumber字段问题，支持超级管理员创建admin用户
+  - `lib/resolvers/createSingleUser.ts` - 增强权限检查，支持admin用户创建
+  - `ui/src/utils/adminPermissions.ts` - 移除日志管理权限，优化权限结构
+
+- **技术实现**：
+  - **页面清理**：删除LogManagement页面及路由，简化系统结构
+  - **用户创建修复**：移除GraphQL schema中不存在的phoneNumber字段，修复创建失败问题
+  - **权限分级**：超级管理员可创建admin用户，普通管理员只能创建学生和教师
+  - **代码优化**：清理重复代码，修复TypeScript类型错误
+
+- **解决的问题**：
+  - ✅ 超级管理员创建用户失败的GraphQL字段错误
+  - ✅ 移除不需要的日志管理页面
+  - ✅ 权限系统更加清晰和安全
+
+- **版本控制**：v1.5.1 - 系统清理和权限优化版本
+
+### 2025-08-20: CDK部署修复和权限系统完善
+- **功能描述**：修复CDK部署错误，完善用户管理系统，实现admin-only账号创建和简化用户属性
+- **修改位置**：
+  - `lib/auth-stack.ts` - 创建新的UserPool V2避免不可变属性冲突，配置简化的用户属性和自注册禁用
+  - `lib/lambdas/initSuperAdmin.ts` - 更新为使用simplified用户属性（preferred_username, custom:role）
+  - `lib/resolvers/createSingleUser.ts` & `batchCreateUsers.ts` - 更新用户创建流程使用简化属性
+  - `lib/schema.graphql` - 移除phoneNumber字段，添加BatchUserOutput类型，修复ExcelImportResult类型错误
+  - `ui/src/utils/adminPermissions.ts` - 完善权限检查系统，使用Cognito用户组验证
+- **技术实现**：
+  - **CDK部署修复**：通过创建userPoolV2新实例解决UsernameAttributes不可变属性部署失败问题
+  - **用户属性简化**：只保留name(preferred_username)、username、password、role、email(可选)，移除phoneNumber
+  - **权限控制增强**：禁用自注册(selfSignUpEnabled: false)，只允许管理员创建账号
+  - **GraphQL类型修复**：创建BatchUserOutput类型解决input类型不能用作output类型的错误
+  - **超级管理员初始化**：部署时自动创建超级管理员账号，支持环境变量配置
+- **解决的问题**：
+  - ✅ CDK UsernameAttributes不可变属性部署失败
+  - ✅ GraphQL schema中ExcelImportResult类型使用input类型作为output的错误  
+  - ✅ 用户属性过于复杂，简化为必需字段
+  - ✅ 自注册安全漏洞，改为admin-only创建模式
+  - ✅ TypeScript编译错误和类型不匹配问题
+- **部署结果**：
+  - 🎉 CDK部署成功完成
+  - 🔒 用户安全：只有管理员可以创建账号
+  - 🏗️ 新UserPool: us-west-2_yUj2OmiXn
+  - 🌐 应用URL: https://d1jcpgwv35lp8s.cloudfront.net
+- **版本控制**：v1.5.0 - CDK部署修复和安全增强版本
+
+### 2025-08-19: Cognito用户组权限系统实现
+- **功能描述**：将硬编码的管理员邮箱列表权限系统迁移到基于AWS Cognito用户组的权限管理系统
+- **修改位置**：
+  - `ui/src/utils/adminPermissions.ts` - 完全重写权限检查逻辑，使用JWT token解析Cognito用户组
+  - `lib/config/adminConfig.ts` - 简化用户角色枚举，移除硬编码邮箱列表
+  - `lib/services/cognitoPermissionService.ts` - 新建Cognito权限服务，提供后端权限检查API
+- **技术实现**：
+  - **前端权限检查**：通过 `fetchAuthSession()` 获取ID token，解析JWT payload中的 `cognito:groups` 字段
+  - **用户角色简化**：四种角色 - STUDENT (students), TEACHER (teachers), ADMIN (admin), SUPER_ADMIN (super_admin)
+  - **权限层级**：学生 < 教师 < 管理员 < 超级管理员，高级别包含低级别所有权限
+  - **类型安全**：定义 `CognitoTokenPayload` 接口，消除 `any` 类型使用
+  - **React Hook**：提供 `useAdminPermissions()` Hook 用于组件中权限检查
+- **权限映射**：
+  - 学生：参与测试，查看测试结果
+  - 教师：创建课程、管理知识库、设置测试
+  - 管理员：用户管理、系统管理、Logo上传
+  - 超级管理员：创建管理员、日志访问、完整权限控制
+- **向后兼容**：保留原有权限检查函数接口，确保现有代码正常工作
+- **版本控制**：v1.4.0 - Cognito权限系统版本
+
 ### 2025-08-19: 主题系统Logo支持和UI优化
 - **功能描述**：完善主题系统，支持Logo上传和显示，修复学生列表显示问题，优化按钮设计
 - **修改位置**：
