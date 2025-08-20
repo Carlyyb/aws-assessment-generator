@@ -431,22 +431,14 @@ const UserManagement: React.FC = () => {
           <Button
             iconName="download"
             onClick={() => {
-              // 创建模板下载功能 - 生成CSV格式的模板
-              const templateData = [
-                ['姓名', '用户名', '密码（可选）', '邮箱（可选）'],
-                ['张三', 'zhangsan', 'Password123!', 'zhangsan@example.com'],
-                ['李四', 'lisi', '', 'lisi@example.com'],
-                ['王五', 'wangwu', 'MyPass456!', '']
-              ];
+              // 从S3下载实际的Excel模板文件
+              const templateUrl = 'https://genassessstack-ragstackne-artifactsuploadbucket58a-vjnqte10ccbn.s3.us-west-2.amazonaws.com/public/template/Template.csv';
               
-              // 创建CSV格式的模板并下载
-              const csvContent = templateData.map(row => row.join(',')).join('\n');
-              const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+              // 创建下载链接
               const link = document.createElement('a');
-              const url = URL.createObjectURL(blob);
-              link.setAttribute('href', url);
-              link.setAttribute('download', 'user_template.csv');
-              link.style.visibility = 'hidden';
+              link.href = templateUrl;
+              link.download = 'UserImportTemplate.csv';
+              link.target = '_blank'; // 在新窗口打开，避免跨域问题
               document.body.appendChild(link);
               link.click();
               document.body.removeChild(link);
