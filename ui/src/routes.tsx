@@ -13,6 +13,7 @@ import StudentAssessment from './pages/StudentAssessment';
 import ReviewAssessment from './pages/ReviewAssessment';
 import Courses from './pages/Courses';
 import FindStudent from './pages/FindStudent';
+import ClassManagement from './pages/ClassManagement';
 
 export const routes = {
   teachers: [
@@ -35,6 +36,14 @@ export const routes = {
             {
               path: 'courses',
               element: <Courses />,
+            },
+            {
+              path: 'class-management',
+              element: <ClassManagement />,
+            },
+            {
+              path: 'class-management/:id',
+              element: <ClassDetails />,
             },
             {
               path: 'find-student',

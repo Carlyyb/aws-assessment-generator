@@ -1,0 +1,28 @@
+{
+  "teachers": {
+    "class": {
+      "title": "班级管理",
+      "create": "创建班级",
+      "name": "班级名称",
+      "description": "班级描述",
+      "student_count": "学生数量",
+      "add_student": "添加学生",
+      "remove_student": "移除学生",
+      "student_name": "学生姓名",
+      "student_email": "学生邮箱",
+      "student_email_description": "请输入要添加到班级的学生邮箱",
+      "students": "学生列表",
+      "no_classes": "暂无班级",
+      "no_students": "暂无学生",
+      "not_found": "未找到班级",
+      "load_error": "加载班级信息失败",
+      "create_success": "创建班级成功",
+      "create_error": "创建班级失败",
+      "add_student_success": "添加学生成功",
+      "add_student_error": "添加学生失败",
+      "remove_student_success": "移除学生成功",
+      "remove_student_error": "移除学生失败",
+      "remove_student_confirmation": "确定要移除学生 {name} 吗？"
+    }
+  }
+}
