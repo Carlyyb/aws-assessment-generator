@@ -2,47 +2,56 @@
 // SPDX-License-Identifier: MIT-0
 
 /**
- * 管理员权限级别显示工具
+ * 用户角色显示工具（简化版本）
  */
 
-import { AdminPermissionLevel } from './adminPermissions';
+import { UserRole } from './adminPermissions';
 import { getText } from '../i18n/lang';
 
 /**
- * 获取管理员权限级别的中文显示名称
+ * 获取用户角色的中文显示名称
  */
-export function getAdminLevelDisplayName(level?: AdminPermissionLevel): string {
-  switch (level) {
-    case AdminPermissionLevel.SUPER_ADMIN:
-      return getText('common.admin.super_admin') || '超级管理员';
-    case AdminPermissionLevel.SYSTEM_ADMIN:
-      return getText('common.admin.system_admin') || '系统管理员';
-    case AdminPermissionLevel.LOG_ADMIN:
-      return getText('common.admin.log_admin') || '日志管理员';
+export function getUserRoleDisplayName(role?: UserRole): string {
+  switch (role) {
+    case UserRole.SUPER_ADMIN:
+      return getText('common.role.super_admin') || '超级管理员';
+    case UserRole.ADMIN:
+      return getText('common.role.admin') || '管理员';
+    case UserRole.TEACHER:
+      return getText('common.role.teachers') || '教师';
+    case UserRole.STUDENT:
+      return getText('common.role.students') || '学生';
     default:
       return '';
   }
 }
 
 /**
- * 获取管理员权限级别的英文显示名称
+ * 获取用户角色的英文显示名称
  */
-export function getAdminLevelDisplayNameEn(level?: AdminPermissionLevel): string {
-  switch (level) {
-    case AdminPermissionLevel.SUPER_ADMIN:
+export function getUserRoleDisplayNameEn(role?: UserRole): string {
+  switch (role) {
+    case UserRole.SUPER_ADMIN:
       return 'Super Admin';
-    case AdminPermissionLevel.SYSTEM_ADMIN:
-      return 'System Admin';
-    case AdminPermissionLevel.LOG_ADMIN:
-      return 'Log Admin';
+    case UserRole.ADMIN:
+      return 'Admin';
+    case UserRole.TEACHER:
+      return 'Teacher';
+    case UserRole.STUDENT:
+      return 'Student';
     default:
       return '';
   }
 }
 
 /**
- * 根据当前语言获取管理员权限级别显示名称
+ * 根据当前语言获取用户角色显示名称
  */
-export function getAdminLevelDisplayNameLocalized(level?: AdminPermissionLevel, locale: string = 'zh'): string {
-  return locale === 'zh' ? getAdminLevelDisplayName(level) : getAdminLevelDisplayNameEn(level);
+export function getUserRoleDisplayNameLocalized(role?: UserRole, locale: string = 'zh'): string {
+  return locale === 'zh' ? getUserRoleDisplayName(role) : getUserRoleDisplayNameEn(role);
 }
+
+// 为了向后兼容，保留旧的函数名
+export const getAdminLevelDisplayName = getUserRoleDisplayName;
+export const getAdminLevelDisplayNameEn = getUserRoleDisplayNameEn;
+export const getAdminLevelDisplayNameLocalized = getUserRoleDisplayNameLocalized;

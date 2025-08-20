@@ -26,6 +26,7 @@ class Lambda implements LambdaInterface {
     this.userPoolId = event.userPoolId;
     const { userAttributes } = event.request;
     const userRole = userAttributes['custom:role'];
+    
     switch (userRole) {
       case "teachers":
         await this.registerTeacher(userAttributes);
@@ -33,8 +34,15 @@ class Lambda implements LambdaInterface {
       case "students":
         await this.registerStudent(userAttributes);
         break;
+      case "admin":
+        await this.registerAdmin(userAttributes);
+        break;
+      case "super_admin":
+        await this.registerSuperAdmin(userAttributes);
+        break;
       default:
-        throw new Error("Invalid role selected");
+        logger.warn(`Unknown user role: ${userRole}, assigning to students group`);
+        await this.registerStudent(userAttributes);
     }
 
     return event;
@@ -47,7 +55,8 @@ class Lambda implements LambdaInterface {
 
     const data = {
       id: userAttributes['sub'],
-      name: userAttributes['name'],
+      // 使用preferred_username作为显示名称
+      name: userAttributes['preferred_username'] || userAttributes['name'] || 'Unknown User',
       createdAt,
     };
 
@@ -61,6 +70,14 @@ class Lambda implements LambdaInterface {
 
   async registerTeacher(userAttributes) {
     await this.assignToGroup(userAttributes["sub"], "teachers");
+  }
+
+  async registerAdmin(userAttributes) {
+    await this.assignToGroup(userAttributes["sub"], "admin");
+  }
+
+  async registerSuperAdmin(userAttributes) {
+    await this.assignToGroup(userAttributes["sub"], "super_admin");
   }
 
   async assignToGroup(sub, group) {

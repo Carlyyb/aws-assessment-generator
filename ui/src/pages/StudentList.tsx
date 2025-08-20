@@ -38,16 +38,17 @@ interface StudentGroup {
 interface Student {
   id: string;
   name: string;
-  email: string;
-  lastLoginAt?: string;
-  assessmentCount: number;
-  groups: StudentGroup[];
+  email?: string | null;
+  lastLoginAt?: string | null;
+  assessmentCount?: number | null;
+  groups?: StudentGroup[] | null;
 }
 
 const StudentList = () => {
   const dispatchAlert = useContext(DispatchAlertContext);
   
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [groups, setGroups] = useState<StudentGroup[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
@@ -78,6 +79,15 @@ const StudentList = () => {
       console.log('API返回的学生数据:', studentsData);
       console.log('API返回的分组数据:', groupsData);
 
+      // 处理学生数据，确保字段不为null
+      const processedStudents = studentsData.map((student: any) => ({
+        ...student,
+        email: student.email || '',
+        lastLoginAt: student.lastLoginAt || undefined,
+        assessmentCount: student.assessmentCount || 0,
+        groups: student.groups || []
+      }));
+
       // 添加默认的"所有学生"分组
       const allStudentsGroup: StudentGroup = {
         id: 'ALL',
@@ -86,17 +96,21 @@ const StudentList = () => {
         color: '#0073bb',
         createdBy: 'system',
         teachers: [],
-        students: studentsData.map((s: any) => s.id),
+        students: processedStudents.map((s: any) => s.id),
         createdAt: new Date().toISOString()
       };
 
-      setStudents(studentsData);
+      setStudents(processedStudents);
       setGroups([allStudentsGroup, ...groupsData]);
       
-      dispatchAlert({
-        type: AlertType.SUCCESS,
-        content: `成功加载 ${studentsData.length} 名学生和 ${groupsData.length + 1} 个分组`
-      });
+      // 只在首次加载时显示通知
+      if (!initialized) {
+        setInitialized(true);
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: `成功加载 ${processedStudents.length} 名学生和 ${groupsData.length + 1} 个分组`
+        });
+      }
 
     } catch (error) {
       console.error('加载学生数据失败:', error);
@@ -110,7 +124,7 @@ const StudentList = () => {
     } finally {
       setLoading(false);
     }
-  }, [dispatchAlert]);
+  }, [dispatchAlert, initialized]);
 
   // 后备模拟数据函数
   const loadMockData = () => {
@@ -193,14 +207,14 @@ const StudentList = () => {
     if (filterText) {
       filtered = filtered.filter(student => 
         student.name.toLowerCase().includes(filterText.toLowerCase()) ||
-        student.email?.toLowerCase().includes(filterText.toLowerCase())
+        (student.email && student.email.toLowerCase().includes(filterText.toLowerCase()))
       );
     }
 
     // 按分组过滤
     if (selectedGroupFilter && selectedGroupFilter.value !== 'ALL') {
       filtered = filtered.filter(student => 
-        student.groups.some(group => group.id === selectedGroupFilter.value)
+        student.groups && student.groups.some(group => group.id === selectedGroupFilter.value)
       );
     }
 
@@ -222,7 +236,7 @@ const StudentList = () => {
   const totalPages = Math.ceil(filteredStudents.length / pageSize);
 
   // 格式化最后登录时间
-  const formatLastLogin = (lastLoginAt?: string) => {
+  const formatLastLogin = (lastLoginAt?: string | null) => {
     if (!lastLoginAt) return '从未登录';
     const date = new Date(lastLoginAt);
     const now = new Date();
@@ -483,8 +497,43 @@ const StudentList = () => {
             groups={groups.filter(g => g.id !== 'ALL')}
             students={students}
             onGroupsChange={() => {
-              // 重新加载数据
-              loadStudentsAndGroups();
+              // 重新加载数据，但不显示通知
+              const reloadData = async () => {
+                try {
+                  const [studentsResponse, groupsResponse] = await Promise.all([
+                    client.graphql({ query: listStudents }),
+                    client.graphql({ query: listStudentGroups })
+                  ]);
+
+                  const studentsData = (studentsResponse as any).data.listStudents || [];
+                  const groupsData = (groupsResponse as any).data.listStudentGroups || [];
+
+                  const processedStudents = studentsData.map((student: any) => ({
+                    ...student,
+                    email: student.email || '',
+                    lastLoginAt: student.lastLoginAt || undefined,
+                    assessmentCount: student.assessmentCount || 0,
+                    groups: student.groups || []
+                  }));
+
+                  const allStudentsGroup: StudentGroup = {
+                    id: 'ALL',
+                    name: '所有学生',
+                    description: '默认分组，包含所有学生',
+                    color: '#0073bb',
+                    createdBy: 'system',
+                    teachers: [],
+                    students: processedStudents.map((s: any) => s.id),
+                    createdAt: new Date().toISOString()
+                  };
+
+                  setStudents(processedStudents);
+                  setGroups([allStudentsGroup, ...groupsData]);
+                } catch (error) {
+                  console.error('重新加载数据失败:', error);
+                }
+              };
+              reloadData();
             }}
           />
         </Modal>

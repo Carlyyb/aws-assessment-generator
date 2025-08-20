@@ -31,7 +31,10 @@ interface StudentGroup {
 interface Student {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
+  lastLoginAt?: string | null;
+  assessmentCount?: number | null;
+  groups?: StudentGroup[] | null;
 }
 
 interface GroupManagementProps {

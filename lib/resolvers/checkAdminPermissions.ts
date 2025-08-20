@@ -3,7 +3,7 @@
 
 import { util } from '@aws-appsync/utils';
 import { isAdminFromContext, getUserRoleInfo, hasAdminPermission } from '../utils/adminUtils';
-import { AdminPermissionLevel } from '../config/adminConfig';
+import { UserRole } from '../config/adminConfig';
 
 /**
  * 检查用户管理员权限的 resolver
@@ -28,13 +28,9 @@ export const response = (ctx) => {
   return {
     userId: userInfo.userId,
     email: userInfo.email,
-    group: userInfo.group,
+    group: userInfo.userRole,
     isAdmin: userInfo.isAdmin,
-    adminLevel: userInfo.adminLevel,
-    permissions: {
-      canAccessLogManagement: userInfo.isAdmin && hasAdminPermission(userInfo.email, AdminPermissionLevel.LOG_ADMIN),
-      canManageUsers: userInfo.isAdmin && hasAdminPermission(userInfo.email, AdminPermissionLevel.SYSTEM_ADMIN),
-      canManageSystem: userInfo.isAdmin && hasAdminPermission(userInfo.email, AdminPermissionLevel.SUPER_ADMIN),
-    }
+    adminLevel: userInfo.userRole,
+    permissions: userInfo.permissions
   };
 };

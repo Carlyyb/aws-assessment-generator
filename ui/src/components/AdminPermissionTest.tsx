@@ -64,7 +64,7 @@ export default function AdminPermissionTest() {
               header="权限检查完成"
             >
               {adminInfo?.isAdmin 
-                ? `您是管理员用户，权限级别: ${getAdminLevelDisplayName(adminInfo.adminLevel)}`
+                ? `您是管理员用户，权限级别: ${getAdminLevelDisplayName(adminInfo.highestRole)}`
                 : '您不是管理员用户'
               }
             </Alert>
@@ -77,12 +77,11 @@ export default function AdminPermissionTest() {
             <Header variant="h2">详细权限信息</Header>
             <ColumnLayout columns={2}>
               <Box>
-                <strong>管理员级别:</strong> {adminInfo.adminLevel}<br/>
-                <strong>显示名称:</strong> {getAdminLevelDisplayName(adminInfo.adminLevel)}
+                <strong>管理员级别:</strong> {adminInfo.highestRole}<br/>
+                <strong>显示名称:</strong> {getAdminLevelDisplayName(adminInfo.highestRole)}
               </Box>
               <Box>
                 <strong>权限详情:</strong><br/>
-                • 日志管理: {adminInfo.permissions.canAccessLogManagement ? '✅' : '❌'}<br/>
                 • 用户管理: {adminInfo.permissions.canManageUsers ? '✅' : '❌'}<br/>
                 • 系统管理: {adminInfo.permissions.canManageSystem ? '✅' : '❌'}
               </Box>

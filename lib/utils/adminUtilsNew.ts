@@ -74,7 +74,7 @@ export function hasPermission(userGroups: string[], requiredRole: UserRole): boo
  * @param context - AppSync context
  * @returns string[] - 用户组数组
  */
-export function getUserGroupsFromContext(context: any): string[] {
+function getUserGroupsFromContext(context: any): string[] {
   try {
     // 从Cognito Identity context中获取groups
     if (context.identity && context.identity.groups) {

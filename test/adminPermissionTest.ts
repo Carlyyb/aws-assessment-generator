@@ -6,8 +6,8 @@
  * 用于验证管理员权限配置是否正确
  */
 
-import { isAdmin, getAdminPermissionLevel, hasAdminPermission } from '../lib/utils/adminUtils';
-import { ADMIN_EMAILS, AdminPermissionLevel } from '../lib/config/adminConfig';
+import { isAdmin, getUserHighestRole, hasPermission } from '../lib/utils/adminUtils';
+import { UserRole } from '../lib/config/adminConfig';
 
 // 测试数据
 const testUsers = [

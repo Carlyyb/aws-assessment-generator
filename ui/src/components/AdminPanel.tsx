@@ -79,7 +79,7 @@ export default function AdminPanel() {
       header={
         <Header 
           variant="h1"
-          description={`管理员级别: ${adminInfo.adminLevel || '未知'}`}
+          description={`管理员级别: ${adminInfo.highestRole || '未知'}`}
         >
           管理员控制面板
         </Header>
@@ -92,8 +92,8 @@ export default function AdminPanel() {
           <Box variant="p">
             <strong>用户ID:</strong> {adminInfo.userId}<br/>
             <strong>邮箱:</strong> {adminInfo.email}<br/>
-            <strong>用户组:</strong> {adminInfo.group}<br/>
-            <strong>管理员级别:</strong> {adminInfo.adminLevel || '未指定'}
+            <strong>用户组:</strong> {adminInfo.groups.join(', ')}<br/>
+            <strong>管理员级别:</strong> {adminInfo.highestRole || '未指定'}
           </Box>
         </Box>
 
@@ -101,15 +101,6 @@ export default function AdminPanel() {
         <Box>
           <Header variant="h2">可用功能</Header>
           <SpaceBetween size="s">
-            {adminInfo.permissions.canAccessLogManagement && (
-              <Button 
-                variant="primary"
-                onClick={() => window.location.href = '/settings/log-management'}
-              >
-                访问日志管理
-              </Button>
-            )}
-            
             {adminInfo.permissions.canManageUsers && (
               <Button 
                 variant="normal"
@@ -134,7 +125,6 @@ export default function AdminPanel() {
         <Box>
           <Header variant="h3">权限说明</Header>
           <ul>
-            <li><strong>日志管理权限:</strong> {adminInfo.permissions.canAccessLogManagement ? '✅ 已授权' : '❌ 未授权'}</li>
             <li><strong>用户管理权限:</strong> {adminInfo.permissions.canManageUsers ? '✅ 已授权' : '❌ 未授权'}</li>
             <li><strong>系统管理权限:</strong> {adminInfo.permissions.canManageSystem ? '✅ 已授权' : '❌ 未授权'}</li>
           </ul>
