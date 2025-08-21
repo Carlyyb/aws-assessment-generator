@@ -281,7 +281,7 @@ export default () => {
                   <Container header={<Header variant="h2">{getText('students.assessments.review.answer')}</Header>}>
                     <SpaceBetween size="l">
                       {assessType === AssessType.multiChoiceAssessment || assessType === AssessType.singleChoiceAssessment ? (
-                        (assessment as MultiChoice | SingleChoice).answerChoices.map((answerChoice, i) => (
+                        ((assessment as MultiChoice | SingleChoice).answerChoices || []).map((answerChoice, i) => (
                           <div
                             key={i}
                             style={{
@@ -300,7 +300,7 @@ export default () => {
                           </div>
                         ))
                       ) : assessType === AssessType.trueFalseAssessment ? (
-                        (assessment as TrueFalse).answerChoices.map((answerChoice, i) => (
+                        ((assessment as TrueFalse).answerChoices || []).map((answerChoice, i) => (
                           <div
                             key={i}
                             style={{

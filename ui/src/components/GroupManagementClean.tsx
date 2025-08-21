@@ -16,6 +16,10 @@ import {
   ColumnLayout
 } from '@cloudscape-design/components';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
+import { generateClient } from 'aws-amplify/api';
+import { createStudentGroup, updateStudentGroup, deleteStudentGroup } from '../graphql/mutations';
+
+const client = generateClient();
 
 interface StudentGroup {
   id: string;
@@ -81,7 +85,7 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
     return presetColors[Math.floor(Math.random() * presetColors.length)];
   };
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (!newGroupName.trim()) {
       dispatchAlert({
         type: AlertType.ERROR,
@@ -90,33 +94,43 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
       return;
     }
 
-    const newGroup: StudentGroup = {
-      id: `group-${Date.now()}`,
-      name: newGroupName.trim(),
-      description: newGroupDescription.trim(),
-      color: newGroupColor,
-      createdBy: 'current-teacher',
-      teachers: ['current-teacher'],
-      students: [],
-      createdAt: new Date().toISOString()
-    };
+    try {
+      const input = {
+        name: newGroupName.trim(),
+        description: newGroupDescription.trim(),
+        color: newGroupColor,
+        students: []
+      };
 
-    const updatedGroups = [...groups, newGroup];
-    onGroupsChange(updatedGroups);
-    
-    // 重置表单
-    setNewGroupName('');
-    setNewGroupDescription('');
-    setNewGroupColor('#0073bb');
-    setShowCreateModal(false);
-    
-    dispatchAlert({
-      type: AlertType.SUCCESS,
-      content: `分组 "${newGroup.name}" 创建成功`
-    });
+      const response = await client.graphql({
+        query: createStudentGroup,
+        variables: { input }
+      });
+
+      const newGroup = (response as any).data.createStudentGroup;
+      const updatedGroups = [...groups, newGroup];
+      onGroupsChange(updatedGroups);
+      
+      // 重置表单
+      setNewGroupName('');
+      setNewGroupDescription('');
+      setNewGroupColor('#0073bb');
+      setShowCreateModal(false);
+      
+      dispatchAlert({
+        type: AlertType.SUCCESS,
+        content: `分组 "${newGroup.name}" 创建成功`
+      });
+    } catch (error: any) {
+      console.error('创建分组失败:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: `创建分组失败: ${error.message || '未知错误'}`
+      });
+    }
   };
 
-  const handleEditGroup = () => {
+  const handleEditGroup = async () => {
     if (!editingGroup || !newGroupName.trim()) {
       dispatchAlert({
         type: AlertType.ERROR,
@@ -125,23 +139,42 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
       return;
     }
 
-    const updatedGroups = groups.map(group => 
-      group.id === editingGroup.id 
-        ? { ...group, name: newGroupName.trim(), description: newGroupDescription.trim(), color: newGroupColor }
-        : group
-    );
-    
-    onGroupsChange(updatedGroups);
-    setShowEditModal(false);
-    setEditingGroup(null);
-    
-    dispatchAlert({
-      type: AlertType.SUCCESS,
-      content: `分组 "${newGroupName}" 更新成功`
-    });
+    try {
+      const input = {
+        name: newGroupName.trim(),
+        description: newGroupDescription.trim(),
+        color: newGroupColor,
+        students: editingGroup.students
+      };
+
+      const response = await client.graphql({
+        query: updateStudentGroup,
+        variables: { id: editingGroup.id, input }
+      });
+
+      const updatedGroup = (response as any).data.updateStudentGroup;
+      const updatedGroups = groups.map(group => 
+        group.id === editingGroup.id ? updatedGroup : group
+      );
+      
+      onGroupsChange(updatedGroups);
+      setShowEditModal(false);
+      setEditingGroup(null);
+      
+      dispatchAlert({
+        type: AlertType.SUCCESS,
+        content: `分组 "${updatedGroup.name}" 更新成功`
+      });
+    } catch (error: any) {
+      console.error('更新分组失败:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: `更新分组失败: ${error.message || '未知错误'}`
+      });
+    }
   };
 
-  const handleDeleteGroups = () => {
+  const handleDeleteGroups = async () => {
     const groupsToDelete = selectedGroups.filter(g => g.id !== 'ALL');
     if (groupsToDelete.length === 0) {
       dispatchAlert({
@@ -151,18 +184,33 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
       return;
     }
 
-    const updatedGroups = groups.filter(group => 
-      !groupsToDelete.some(deleteGroup => deleteGroup.id === group.id)
-    );
-    
-    onGroupsChange(updatedGroups);
-    setSelectedGroups([]);
-    setShowDeleteModal(false);
-    
-    dispatchAlert({
-      type: AlertType.SUCCESS,
-      content: `已删除 ${groupsToDelete.length} 个分组`
-    });
+    try {
+      for (const group of groupsToDelete) {
+        await client.graphql({
+          query: deleteStudentGroup,
+          variables: { id: group.id }
+        });
+      }
+
+      const updatedGroups = groups.filter(group => 
+        !groupsToDelete.some(deleteGroup => deleteGroup.id === group.id)
+      );
+      
+      onGroupsChange(updatedGroups);
+      setSelectedGroups([]);
+      setShowDeleteModal(false);
+      
+      dispatchAlert({
+        type: AlertType.SUCCESS,
+        content: `已删除 ${groupsToDelete.length} 个分组`
+      });
+    } catch (error: any) {
+      console.error('删除分组失败:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: `删除分组失败: ${error.message || '未知错误'}`
+      });
+    }
   };
 
   const handleCopyGroup = (group: StudentGroup) => {

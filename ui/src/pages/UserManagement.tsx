@@ -23,7 +23,7 @@ import {
 import { useCollection } from '@cloudscape-design/collection-hooks';
 import { generateClient } from 'aws-amplify/api';
 import { listUsers, previewExcelImport } from '../graphql/queries';
-import { batchCreateUsersMutation, createSingleUserMutation, updateUserMutation, deleteUserMutation } from '../graphql/mutations';
+import { batchCreateUsersMutation, createSingleUserMutation, updateUserMutation, deleteUserMutation, resetUserPasswordMutation } from '../graphql/mutations';
 import { getText } from '../i18n/lang';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { useAdminPermissions } from '../utils/adminPermissions';
@@ -52,7 +52,8 @@ interface BatchUserInput {
 }
 
 interface ExcelImportResult {
-  preview: BatchUserInput[];
+  previewData: BatchUserInput[];
+  totalRows: number;
   validRows: number;
   invalidRows: number;
   errors: string[];
@@ -77,6 +78,7 @@ const UserManagement: React.FC = () => {
   // 密码显示相关状态
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [generatedUserInfo, setGeneratedUserInfo] = useState<{username: string, password: string} | null>(null);
+  const [passwordModalType, setPasswordModalType] = useState<'create' | 'reset'>('create');
   
   // 用户设置相关状态
   const [showUserSettingsModal, setShowUserSettingsModal] = useState(false);
@@ -318,13 +320,38 @@ const UserManagement: React.FC = () => {
     try {
       setLoading(true);
       
-      // 这里需要添加重置密码的 GraphQL mutation
-      // 暂时先显示成功信息
-      
-      dispatchAlert({
-        type: AlertType.SUCCESS,
-        content: `用户 "${selectedUser.username}" 的密码已重置${useDefaultPassword ? '为默认密码' : ''}`
+      // 调用重置密码的 GraphQL mutation
+      const response = await client.graphql({
+        query: resetUserPasswordMutation,
+        variables: {
+          username: selectedUser.username,
+          customPassword: useDefaultPassword ? null : newPassword
+        }
       });
+
+      const result = (response as any).data.resetUserPassword;
+      
+      if (result.success) {
+        // 重新加载用户列表
+        await loadUsers();
+        
+        // 如果是默认密码，显示密码弹窗
+        if (result.isDefaultPassword && result.newPassword) {
+          setGeneratedUserInfo({
+            username: result.username,
+            password: result.newPassword
+          });
+          setPasswordModalType('reset');
+          setShowPasswordModal(true);
+        }
+        
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: `用户 "${selectedUser.username}" 的密码已重置${result.isDefaultPassword ? '为默认密码' : ''}`
+        });
+      } else {
+        throw new Error('重置密码失败');
+      }
 
       setShowResetPasswordModal(false);
       setSelectedUser(null);
@@ -541,6 +568,7 @@ const UserManagement: React.FC = () => {
           username: userData.username,
           password: userData.generatedPassword
         });
+        setPasswordModalType('create');
         setShowPasswordModal(true);
       } else {
         dispatchAlert({
@@ -624,7 +652,7 @@ const UserManagement: React.FC = () => {
 
   // 批量创建用户
   const handleBatchCreateUsers = async () => {
-    if (!excelPreview || excelPreview.preview.length === 0) {
+    if (!excelPreview || !excelPreview.previewData || excelPreview.previewData.length === 0) {
       dispatchAlert({
         type: AlertType.ERROR,
         content: '没有有效的用户数据'
@@ -645,7 +673,7 @@ const UserManagement: React.FC = () => {
       setLoading(true);
       
       // 为预览数据设置角色
-      const usersToCreate = excelPreview.preview.map(user => ({
+      const usersToCreate = excelPreview.previewData.map(user => ({
         ...user,
         role: importRole
       }));
@@ -815,6 +843,7 @@ const UserManagement: React.FC = () => {
               <Header variant="h3">预览结果</Header>
               <SpaceBetween direction="vertical" size="s">
                 <div>
+                  <Badge color="blue">总行数: {excelPreview.totalRows}</Badge>
                   <Badge color="green">有效行: {excelPreview.validRows}</Badge>
                   {excelPreview.invalidRows > 0 && (
                     <Badge color="red">无效行: {excelPreview.invalidRows}</Badge>
@@ -831,14 +860,14 @@ const UserManagement: React.FC = () => {
                   </Alert>
                 )}
                 
-                {excelPreview.preview.length > 0 && (
+                {excelPreview.previewData.length > 0 && (
                   <Table
                     columnDefinitions={[
-                      { id: 'name', header: '姓名', cell: item => item.name },
-                      { id: 'username', header: '用户名', cell: item => item.username },
-                      { id: 'email', header: '邮箱', cell: item => item.email || '-' }
+                      { id: 'name', header: '姓名', cell: (item: BatchUserInput) => item.name },
+                      { id: 'username', header: '用户名', cell: (item: BatchUserInput) => item.username },
+                      { id: 'email', header: '邮箱', cell: (item: BatchUserInput) => item.email || '-' }
                     ]}
-                    items={excelPreview.preview.slice(0, 5)} // 只显示前5行
+                    items={excelPreview.previewData.slice(0, 5)} // 只显示前5行
                     loadingText="加载中..."
                     empty="没有数据"
                     header={<Header>预览数据（显示前5行）</Header>}
@@ -1230,9 +1259,10 @@ const UserManagement: React.FC = () => {
                 onClick={() => {
                   setShowPasswordModal(false);
                   setGeneratedUserInfo(null);
+                  const action = passwordModalType === 'create' ? '创建' : '密码重置';
                   dispatchAlert({
                     type: AlertType.SUCCESS,
-                    content: `用户 "${generatedUserInfo?.username}" 创建成功`
+                    content: `用户 "${generatedUserInfo?.username}" ${action}成功`
                   });
                 }}
               >
@@ -1240,11 +1270,14 @@ const UserManagement: React.FC = () => {
               </Button>
             </Box>
           }
-          header="用户创建成功"
+          header={passwordModalType === 'create' ? '用户创建成功' : '密码重置成功'}
         >
           <SpaceBetween direction="vertical" size="m">
             <Alert type="info" header="请记录以下登录信息">
-              系统已为您生成默认密码，请将此信息安全地传达给用户。
+              {passwordModalType === 'create' 
+                ? '系统已为您生成默认密码，请将此信息安全地传达给用户。'
+                : '用户密码已重置为默认密码，请将新密码安全地传达给用户。'
+              }
             </Alert>
             
             <Box>
@@ -1255,7 +1288,7 @@ const UserManagement: React.FC = () => {
                 />
               </FormField>
               
-              <FormField label="默认密码">
+              <FormField label={passwordModalType === 'create' ? '默认密码' : '新密码'}>
                 <Input
                   value={generatedUserInfo?.password || ''}
                   readOnly

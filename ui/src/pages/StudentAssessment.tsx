@@ -767,7 +767,7 @@ export default () => {
                       <Tiles
                         columns={1}
                         value={answers[activeStepIndex] || ''}
-                        items={(questions[activeStepIndex] as MultiChoice | SingleChoice | TrueFalse).answerChoices!.map((answerChoice, i) => ({ 
+                        items={((questions[activeStepIndex] as MultiChoice | SingleChoice | TrueFalse).answerChoices || []).map((answerChoice, i) => ({ 
                           label: answerChoice, 
                           value: i.toString() 
                         }))}
