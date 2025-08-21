@@ -8,8 +8,8 @@
 
 import { AppSyncResolverEvent } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, ScanCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
-import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand, AdminSetUserPasswordCommand, AdminGetUserCommand, AdminUpdateUserAttributesCommand, AdminDeleteUserCommand } from '@aws-sdk/client-cognito-identity-provider';
+import { DynamoDBDocumentClient, PutCommand, ScanCommand, UpdateCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand, AdminSetUserPasswordCommand, AdminGetUserCommand, AdminUpdateUserAttributesCommand, AdminDeleteUserCommand, ListUsersCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
 
 // 客户端初始化
@@ -17,6 +17,12 @@ const ddbClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(ddbClient);
 const cognitoClient = new CognitoIdentityProviderClient({});
 const ssmClient = new SSMClient({});
+
+// 环境变量
+const USER_POOL_ID = process.env.USER_POOL_ID!;
+const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME!;
+const STUDENTS_TABLE_NAME = process.env.STUDENTS_TABLE_NAME!;
+const STUDENT_GROUPS_TABLE_NAME = process.env.STUDENT_GROUPS_TABLE_NAME!;
 
 // 接口定义
 interface UserInput {
@@ -102,8 +108,25 @@ function parseCSVContent(csvContent: string): { rows: string[][], errors: string
     const line = lines[i].trim();
     if (!line) continue;
     
-    // 简单的CSV解析，支持逗号分隔
-    const columns = line.split(',').map(col => col.trim().replace(/"/g, ''));
+    // 支持多种分隔符：制表符、逗号、分号
+    let columns: string[] = [];
+    
+    // 首先尝试制表符分隔（Excel复制粘贴常用）
+    if (line.includes('\t')) {
+      columns = line.split('\t').map(col => col.trim().replace(/"/g, ''));
+    }
+    // 然后尝试逗号分隔
+    else if (line.includes(',')) {
+      columns = line.split(',').map(col => col.trim().replace(/"/g, ''));
+    }
+    // 最后尝试分号分隔
+    else if (line.includes(';')) {
+      columns = line.split(';').map(col => col.trim().replace(/"/g, ''));
+    }
+    // 如果没有分隔符，尝试空格分隔
+    else {
+      columns = line.split(/\s+/).map(col => col.trim().replace(/"/g, ''));
+    }
     
     if (columns.length < 2) {
       errors.push(`第 ${i + 1} 行格式错误：至少需要姓名和用户名两列`);
@@ -176,6 +199,7 @@ function convertRowToUserInput(row: string[], defaultRole: string, rowIndex: num
  */
 async function previewExcelImport(fileContent: string): Promise<any> {
   console.log('Excel导入预览开始');
+  console.log('文件内容预览（前200字符）:', fileContent.substring(0, 200));
 
   if (!fileContent || fileContent.trim() === '') {
     throw new Error('文件内容不能为空');
@@ -195,6 +219,11 @@ async function previewExcelImport(fileContent: string): Promise<any> {
     result.errors.push(...parseErrors);
     result.totalRows = rows.length;
     
+    console.log(`解析到 ${rows.length} 行数据`);
+    if (rows.length > 0) {
+      console.log('第一行数据示例:', rows[0]);
+    }
+    
     if (rows.length === 0) {
       result.errors.push('没有找到有效的数据行');
       return result;
@@ -209,6 +238,7 @@ async function previewExcelImport(fileContent: string): Promise<any> {
       const { user, error } = convertRowToUserInput(row, defaultRole, i);
       
       if (error) {
+        console.log(`第 ${i + 1} 行错误:`, error, '原始数据:', row);
         result.errors.push(error);
         result.invalidRows++;
       } else if (user) {
@@ -257,7 +287,7 @@ function checkPermission(groups: string[], targetRole: string): boolean {
 
   // 普通管理员只能创建学生和教师
   if (isAdmin) {
-    return targetRole === 'student' || targetRole === 'teacher';
+    return targetRole === 'students' || targetRole === 'teachers' || targetRole === 'student' || targetRole === 'teacher';
   }
 
   return false;
@@ -311,9 +341,11 @@ async function createSingleUser(userInput: UserInput, userPoolId: string, usersT
   let groupName: string;
   switch (role) {
     case 'student':
+    case 'students':
       groupName = 'students';
       break;
-    case 'teacher':
+    case 'teacher':  
+    case 'teachers':
       groupName = 'teachers';
       break;
     case 'admin':
@@ -369,12 +401,6 @@ export const handler = async (event: any): Promise<any> => {
   const groups = identity?.groups || [];
 
   try {
-    // 获取系统参数
-    const [userPoolId, usersTableName] = await Promise.all([
-      getSystemParameter('/gen-assess/user-pool-id'),
-      getSystemParameter('/gen-assess/users-table-name')
-    ]);
-
     switch (operation) {
       case 'createSingleUser': {
         const { user } = args;
@@ -388,7 +414,7 @@ export const handler = async (event: any): Promise<any> => {
           }
         }
 
-        const result = await createSingleUser(user, userPoolId, usersTableName, requestorUsername);
+        const result = await createSingleUser(user, USER_POOL_ID, USERS_TABLE_NAME, requestorUsername);
         console.log(`用户 ${user.username} 创建成功`);
         return result;
       }
@@ -417,7 +443,7 @@ export const handler = async (event: any): Promise<any> => {
               throw new Error(`没有权限创建 ${userInput.role} 角色的用户`);
             }
 
-            const createdUser = await createSingleUser(userInput, userPoolId, usersTableName, requestorUsername);
+            const createdUser = await createSingleUser(userInput, USER_POOL_ID, USERS_TABLE_NAME, requestorUsername);
             result.success.push(createdUser);
             result.successCount++;
           } catch (error: any) {
@@ -442,15 +468,216 @@ export const handler = async (event: any): Promise<any> => {
           throw new Error('没有权限查看用户列表');
         }
 
-        const response = await docClient.send(new ScanCommand({
-          TableName: usersTableName,
-          FilterExpression: 'isActive = :isActive',
-          ExpressionAttributeValues: {
-            ':isActive': true
-          }
-        }));
+        try {
+          // 从UserPool获取所有用户（除了super_admin）
+          const listUsersResponse = await cognitoClient.send(new ListUsersCommand({
+            UserPoolId: USER_POOL_ID,
+            Limit: 60
+          }));
 
-        return response.Items || [];
+          // 获取数据库中现有的用户记录
+          const dbResponse = await docClient.send(new ScanCommand({
+            TableName: USERS_TABLE_NAME,
+            FilterExpression: 'isActive = :isActive',
+            ExpressionAttributeValues: {
+              ':isActive': true
+            }
+          }));
+
+          const existingUsers = new Set((dbResponse.Items || []).map(item => item.username));
+          const users = [];
+          const usersToSync = [];
+
+          for (const user of listUsersResponse.Users || []) {
+            const attributes = user.Attributes || [];
+            const getAttributeValue = (name: string) => {
+              const attr = attributes.find(a => a.Name === name);
+              return attr?.Value || null;
+            };
+
+            const role = getAttributeValue('custom:role') || 'students';
+            
+            // 排除super_admin用户
+            if (role === 'super_admin') {
+              continue;
+            }
+
+            const userData = {
+              username: user.Username,
+              name: getAttributeValue('preferred_username') || getAttributeValue('name') || user.Username,
+              email: getAttributeValue('email'),
+              role: role,
+              needsPasswordChange: user.UserStatus === 'FORCE_CHANGE_PASSWORD',
+              phoneNumber: getAttributeValue('phone_number'),
+              createdAt: user.UserCreateDate?.toISOString() || new Date().toISOString(),
+              createdBy: 'system',
+              isActive: true,
+              lastLoginAt: null
+            };
+
+            users.push(userData);
+
+            // 如果数据库中不存在此用户，准备同步
+            if (!existingUsers.has(user.Username)) {
+              usersToSync.push(userData);
+            }
+          }
+
+          // 批量同步新用户到数据库
+          if (usersToSync.length > 0) {
+            console.log(`发现 ${usersToSync.length} 个新用户需要同步到数据库`);
+            
+            for (const user of usersToSync) {
+              try {
+                await docClient.send(new PutCommand({
+                  TableName: USERS_TABLE_NAME,
+                  Item: user,
+                  ConditionExpression: 'attribute_not_exists(username)'
+                }));
+                console.log(`同步用户 ${user.username} 到数据库成功`);
+              } catch (error) {
+                console.error(`同步用户 ${user.username} 失败:`, error);
+              }
+            }
+          }
+
+          console.log(`从UserPool查询到 ${users.length} 个用户（已排除super_admin）`);
+          return users;
+        } catch (error) {
+          console.error('从UserPool查询用户失败:', error);
+          // 如果UserPool查询失败，从DynamoDB查询
+          const response = await docClient.send(new ScanCommand({
+            TableName: USERS_TABLE_NAME,
+            FilterExpression: 'isActive = :isActive',
+            ExpressionAttributeValues: {
+              ':isActive': true
+            }
+          }));
+
+          return response.Items || [];
+        }
+      }
+
+      case 'listStudents': {
+        // 查询学生用户 - 从Cognito UserPool直接获取学生列表，并同步到数据库
+        try {
+          const listUsersResponse = await cognitoClient.send(new ListUsersCommand({
+            UserPoolId: USER_POOL_ID,
+            Filter: `"custom:role" = "students"`,
+            Limit: 60
+          }));
+
+          // 获取数据库中现有的学生记录
+          const dbResponse = await docClient.send(new ScanCommand({
+            TableName: USERS_TABLE_NAME,
+            FilterExpression: '#role = :studentRole',
+            ExpressionAttributeNames: {
+              '#role': 'role'
+            },
+            ExpressionAttributeValues: {
+              ':studentRole': 'students'
+            }
+          }));
+
+          const existingUsers = new Set((dbResponse.Items || []).map(item => item.username));
+
+          const students = [];
+          const usersToSync = [];
+
+          for (const user of listUsersResponse.Users || []) {
+            const attributes = user.Attributes || [];
+            const getAttributeValue = (name: string) => {
+              const attr = attributes.find(a => a.Name === name);
+              return attr?.Value || null;
+            };
+
+            const studentData = {
+              id: user.Username,
+              name: getAttributeValue('preferred_username') || getAttributeValue('name') || user.Username,
+              email: getAttributeValue('email'),
+              username: user.Username,
+              role: 'students',
+              lastLoginAt: null,
+              assessmentCount: 0,
+              groups: [],
+              needsPasswordChange: user.UserStatus === 'FORCE_CHANGE_PASSWORD',
+              phoneNumber: getAttributeValue('phone_number'),
+              createdAt: user.UserCreateDate?.toISOString() || new Date().toISOString(),
+              createdBy: 'system',
+              isActive: true
+            };
+
+            students.push(studentData);
+
+            // 如果数据库中不存在此用户，准备同步
+            if (!existingUsers.has(user.Username)) {
+              usersToSync.push({
+                username: user.Username,
+                name: studentData.name,
+                email: studentData.email,
+                role: 'students',
+                needsPasswordChange: studentData.needsPasswordChange,
+                phoneNumber: studentData.phoneNumber,
+                createdAt: studentData.createdAt,
+                createdBy: 'system',
+                isActive: true
+              });
+            }
+          }
+
+          // 批量同步新用户到数据库
+          if (usersToSync.length > 0) {
+            console.log(`发现 ${usersToSync.length} 个新学生用户需要同步到数据库`);
+            
+            for (const user of usersToSync) {
+              try {
+                await docClient.send(new PutCommand({
+                  TableName: USERS_TABLE_NAME,
+                  Item: user,
+                  ConditionExpression: 'attribute_not_exists(username)'
+                }));
+                console.log(`同步学生用户 ${user.username} 到数据库成功`);
+              } catch (error) {
+                console.error(`同步学生用户 ${user.username} 失败:`, error);
+              }
+            }
+          }
+
+          console.log(`从UserPool查询到 ${students.length} 个学生用户`);
+          return students;
+        } catch (error) {
+          console.error('从UserPool查询学生失败:', error);
+          // 如果UserPool查询失败，尝试从DynamoDB查询
+          const response = await docClient.send(new ScanCommand({
+            TableName: USERS_TABLE_NAME,
+            FilterExpression: '#role = :studentRole AND isActive = :isActive',
+            ExpressionAttributeNames: {
+              '#role': 'role'
+            },
+            ExpressionAttributeValues: {
+              ':studentRole': 'students',
+              ':isActive': true
+            }
+          }));
+
+          // 将User类型转换为Student类型
+          const students = (response.Items || []).map(user => ({
+            id: user.username,
+            name: user.name,
+            email: user.email || null,
+            username: user.username,
+            role: user.role,
+            lastLoginAt: user.lastLoginAt || null,
+            assessmentCount: 0,
+            groups: [],
+            needsPasswordChange: user.needsPasswordChange || false,
+            phoneNumber: user.phoneNumber || null,
+            createdAt: user.createdAt,
+            createdBy: user.createdBy
+          }));
+
+          return students;
+        }
       }
 
       case 'updateUser': {
@@ -488,7 +715,7 @@ export const handler = async (event: any): Promise<any> => {
           expressionAttributeValues[':updatedAt'] = new Date().toISOString();
 
           const updateParams = {
-            TableName: usersTableName,
+            TableName: USERS_TABLE_NAME,
             Key: { username },
             UpdateExpression: `SET ${updateExpression.join(', ')}`,
             ExpressionAttributeValues: expressionAttributeValues,
@@ -503,7 +730,7 @@ export const handler = async (event: any): Promise<any> => {
             // 这里可以添加更复杂的组管理逻辑
             // 暂时简化处理
             await cognitoClient.send(new AdminAddUserToGroupCommand({
-              UserPoolId: userPoolId,
+              UserPoolId: USER_POOL_ID,
               Username: username,
               GroupName: updates.role
             }));
@@ -528,13 +755,13 @@ export const handler = async (event: any): Promise<any> => {
         try {
           // 从 Cognito 删除用户
           await cognitoClient.send(new AdminDeleteUserCommand({
-            UserPoolId: userPoolId,
+            UserPoolId: USER_POOL_ID,
             Username: username
           }));
 
           // 从 DynamoDB 软删除用户（设置 isActive 为 false）
           await docClient.send(new UpdateCommand({
-            TableName: usersTableName,
+            TableName: USERS_TABLE_NAME,
             Key: { username },
             UpdateExpression: 'SET isActive = :isActive, deletedAt = :deletedAt, deletedBy = :deletedBy',
             ExpressionAttributeValues: {
@@ -564,6 +791,241 @@ export const handler = async (event: any): Promise<any> => {
         }
 
         return await previewExcelImport(fileContent);
+      }
+
+      case 'resetUserPassword': {
+        const { username, customPassword } = args;
+        
+        // 检查权限
+        if (!groups.includes('admin') && !groups.includes('super_admin')) {
+          throw new Error('没有权限重置用户密码');
+        }
+
+        try {
+          // 获取用户信息
+          const userResponse = await docClient.send(new ScanCommand({
+            TableName: USERS_TABLE_NAME,
+            FilterExpression: 'username = :username AND isActive = :isActive',
+            ExpressionAttributeValues: {
+              ':username': username,
+              ':isActive': true
+            }
+          }));
+
+          const user = userResponse.Items?.[0];
+          if (!user) {
+            throw new Error(`用户 ${username} 不存在或已被禁用`);
+          }
+
+          // 生成新密码（使用自定义密码或默认密码）
+          const newPassword = customPassword || generateDefaultPassword(user.role, username);
+          
+          if (!validatePassword(newPassword)) {
+            throw new Error('密码不符合复杂度要求');
+          }
+
+          // 在Cognito中重置密码
+          await cognitoClient.send(new AdminSetUserPasswordCommand({
+            UserPoolId: USER_POOL_ID,
+            Username: username,
+            Password: newPassword,
+            Permanent: true
+          }));
+
+          // 更新DynamoDB中的用户记录
+          await docClient.send(new UpdateCommand({
+            TableName: USERS_TABLE_NAME,
+            Key: { username },
+            UpdateExpression: 'SET needsPasswordChange = :needsPasswordChange, updatedAt = :updatedAt, updatedBy = :updatedBy',
+            ExpressionAttributeValues: {
+              ':needsPasswordChange': !customPassword, // 如果是默认密码则需要用户首次登录修改
+              ':updatedAt': new Date().toISOString(),
+              ':updatedBy': requestorUsername
+            }
+          }));
+
+          console.log(`用户 ${username} 密码重置成功`);
+          
+          // 返回新密码（仅当使用默认密码时）
+          return {
+            success: true,
+            username,
+            newPassword: !customPassword ? newPassword : undefined,
+            isDefaultPassword: !customPassword
+          };
+        } catch (error: any) {
+          console.error('重置用户密码失败:', error);
+          throw new Error(`重置密码失败: ${error.message}`);
+        }
+      }
+
+      // 分组管理相关操作
+      case 'createStudentGroup': {
+        const { input } = args;
+        
+        // 检查权限
+        if (!groups.includes('admin') && !groups.includes('super_admin') && !groups.includes('teachers')) {
+          throw new Error('没有权限创建分组');
+        }
+
+        // 创建分组
+        const groupId = `group-${Date.now()}`;
+        const newGroup = {
+          id: groupId,
+          name: input.name,
+          description: input.description || '',
+          color: input.color,
+          createdBy: requestorUsername,
+          teachers: [requestorUsername],
+          students: input.students || [],
+          createdAt: new Date().toISOString()
+        };
+        
+        try {
+          await docClient.send(new PutCommand({
+            TableName: STUDENT_GROUPS_TABLE_NAME,
+            Item: newGroup,
+            ConditionExpression: 'attribute_not_exists(id)'
+          }));
+          
+          console.log(`分组 ${input.name} 创建成功`);
+          return newGroup;
+        } catch (error) {
+          console.error('创建分组失败:', error);
+          throw new Error(`创建分组失败: ${error.message}`);
+        }
+      }
+
+      case 'updateStudentGroup': {
+        const { id, input } = args;
+        
+        // 检查权限
+        if (!groups.includes('admin') && !groups.includes('super_admin') && !groups.includes('teachers')) {
+          throw new Error('没有权限更新分组');
+        }
+
+        // 更新分组
+        try {
+          const updateExpression = [];
+          const expressionAttributeNames = {};
+          const expressionAttributeValues = {};
+          
+          if (input.name) {
+            updateExpression.push('#name = :name');
+            expressionAttributeNames['#name'] = 'name';
+            expressionAttributeValues[':name'] = input.name;
+          }
+          
+          if (input.description !== undefined) {
+            updateExpression.push('description = :description');
+            expressionAttributeValues[':description'] = input.description;
+          }
+          
+          if (input.color) {
+            updateExpression.push('color = :color');
+            expressionAttributeValues[':color'] = input.color;
+          }
+          
+          if (input.students) {
+            updateExpression.push('students = :students');
+            expressionAttributeValues[':students'] = input.students;
+          }
+          
+          if (input.teachers) {
+            updateExpression.push('teachers = :teachers');
+            expressionAttributeValues[':teachers'] = input.teachers;
+          }
+
+          const updateResult = await docClient.send(new UpdateCommand({
+            TableName: STUDENT_GROUPS_TABLE_NAME,
+            Key: { id },
+            UpdateExpression: `SET ${updateExpression.join(', ')}`,
+            ExpressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
+            ExpressionAttributeValues: expressionAttributeValues,
+            ReturnValues: 'ALL_NEW'
+          }));
+          
+          console.log(`分组 ${id} 更新成功`);
+          return updateResult.Attributes;
+        } catch (error) {
+          console.error('更新分组失败:', error);
+          throw new Error(`更新分组失败: ${error.message}`);
+        }
+      }
+
+      case 'deleteStudentGroup': {
+        const { id } = args;
+        
+        // 检查权限
+        if (!groups.includes('admin') && !groups.includes('super_admin') && !groups.includes('teachers')) {
+          throw new Error('没有权限删除分组');
+        }
+
+        // 防止删除系统默认分组
+        if (id === 'ALL') {
+          throw new Error('不能删除系统默认分组');
+        }
+
+        // 删除分组
+        try {
+          await docClient.send(new DeleteCommand({
+            TableName: STUDENT_GROUPS_TABLE_NAME,
+            Key: { id }
+          }));
+          
+          console.log(`分组 ${id} 删除成功`);
+          return true;
+        } catch (error) {
+          console.error('删除分组失败:', error);
+          throw new Error(`删除分组失败: ${error.message}`);
+        }
+      }
+
+      case 'listStudentGroups': {
+        // 检查权限
+        if (!groups.includes('admin') && !groups.includes('super_admin') && !groups.includes('teachers')) {
+          throw new Error('没有权限查看分组列表');
+        }
+
+        try {
+          // 查询所有分组
+          const response = await docClient.send(new ScanCommand({
+            TableName: STUDENT_GROUPS_TABLE_NAME
+          }));
+          
+          const groups = response.Items || [];
+          
+          // 确保包含系统默认分组
+          const hasDefaultGroup = groups.some(group => group.id === 'ALL');
+          if (!hasDefaultGroup) {
+            groups.unshift({
+              id: 'ALL',
+              name: '全部学生',
+              description: '系统默认分组，包含所有学生',
+              color: '#0073bb',
+              createdBy: 'system',
+              teachers: [requestorUsername],
+              students: [],
+              createdAt: new Date().toISOString()
+            });
+          }
+          
+          console.log(`分组列表查询成功，共 ${groups.length} 个分组`);
+          return groups;
+        } catch (error) {
+          console.error('查询分组列表失败:', error);
+          // 如果查询失败，至少返回默认分组
+          return [{
+            id: 'ALL',
+            name: '全部学生',
+            description: '系统默认分组，包含所有学生',
+            color: '#0073bb',
+            createdBy: 'system',
+            teachers: [requestorUsername],
+            students: [],
+            createdAt: new Date().toISOString()
+          }];
+        }
       }
 
       default:

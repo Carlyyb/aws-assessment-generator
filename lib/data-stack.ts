@@ -90,6 +90,20 @@ export class DataStack extends NestedStack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    /////////// Students
+
+    const studentsTable = new aws_dynamodb.TableV2(this, 'StudentsTable', {
+      partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    /////////// Student Groups
+
+    const studentGroupsTable = new aws_dynamodb.TableV2(this, 'StudentGroupsTable', {
+      partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
     // 将用户表名保存到SSM参数
     new StringParameter(this, 'UsersTableNameParameter', {
       parameterName: '/gen-assess/users-table-name',
@@ -106,6 +120,8 @@ export class DataStack extends NestedStack {
       environment: {
         USER_POOL_ID: userPool.userPoolId,
         USERS_TABLE_NAME: usersTable.tableName,
+        STUDENTS_TABLE_NAME: studentsTable.tableName,
+        STUDENT_GROUPS_TABLE_NAME: studentGroupsTable.tableName,
         REGION: Stack.of(this).region
       },
       bundling: {
@@ -116,6 +132,8 @@ export class DataStack extends NestedStack {
 
     // 给 Lambda 函数权限访问 DynamoDB、Cognito 和 SSM
     usersTable.grantReadWriteData(userManagementFunction);
+    studentsTable.grantReadWriteData(userManagementFunction);
+    studentGroupsTable.grantReadWriteData(userManagementFunction);
     userManagementFunction.addToRolePolicy(new aws_iam.PolicyStatement({
       effect: aws_iam.Effect.ALLOW,
       actions: [
@@ -182,6 +200,42 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    userManagementDs.createResolver('MutationResetUserPasswordResolver', {
+      typeName: 'Mutation',
+      fieldName: 'resetUserPassword',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/resetUserPassword.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 分组管理resolvers
+    userManagementDs.createResolver('QueryListStudentGroupsResolver', {
+      typeName: 'Query',
+      fieldName: 'listStudentGroups',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/listStudentGroups.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationCreateStudentGroupResolver', {
+      typeName: 'Mutation',
+      fieldName: 'createStudentGroup',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/createStudentGroup.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationUpdateStudentGroupResolver', {
+      typeName: 'Mutation',
+      fieldName: 'updateStudentGroup',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/updateStudentGroup.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationDeleteStudentGroupResolver', {
+      typeName: 'Mutation',
+      fieldName: 'deleteStudentGroup',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteStudentGroup.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     /////////// Courses
 
     const coursesTable = new aws_dynamodb.TableV2(this, 'CoursesTable', {
@@ -219,12 +273,6 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
-    /////////// Students
-
-    const studentsTable = new aws_dynamodb.TableV2(this, 'StudentsTable', {
-      partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
     const studentsTableParam = new StringParameter(this, 'StudentsTableParameter', {
       parameterName: '/gen-assess/student-table-name',
       stringValue: studentsTable.tableName,
@@ -242,13 +290,12 @@ export class DataStack extends NestedStack {
     }
     policy.attachToRole(props.postConfirmationLambda.role);
 
-    const studentsDs = api.addDynamoDbDataSource('StudentsDataSource', studentsTable);
-
-    studentsDs.createResolver('QueryListStudentsResolver', {
+    // 添加listStudents resolver到userManagement Lambda数据源
+    userManagementDs.createResolver('QueryListStudentsResolver', {
       typeName: 'Query',
       fieldName: 'listStudents',
-      requestMappingTemplate: aws_appsync.MappingTemplate.dynamoDbScanTable(),
-      responseMappingTemplate: aws_appsync.MappingTemplate.dynamoDbResultList(),
+      code: aws_appsync.Code.fromAsset('lib/resolvers/listStudents.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
     /////////// AssessTemplates
@@ -309,6 +356,14 @@ export class DataStack extends NestedStack {
       typeName: 'Query',
       fieldName: 'listAssessments',
       code: aws_appsync.Code.fromAsset('lib/resolvers/listAssessments.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 学生查看已发布测试的resolver
+    assessmentsDs.createResolver('QueryListPublishedAssessmentsResolver', {
+      typeName: 'Query',
+      fieldName: 'listPublishedAssessments',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/listPublishedAssessments.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
@@ -377,13 +432,17 @@ export class DataStack extends NestedStack {
       managedPolicies: [ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')],
     });
 
-    //Add Bedrock permissions on the Lambda function
-    //TODO scope it down to what's required
+    //Add Bedrock permissions on the Lambda function - scoped to required actions
     assessmentLambdaRole.addToPolicy(
       new PolicyStatement({
         effect: aws_iam.Effect.ALLOW,
         resources: ['*'],
-        actions: ['bedrock:*'],
+        actions: [
+          'bedrock:InvokeModel',
+          'bedrock:InvokeModelWithResponseStream',
+          'bedrock:GetFoundationModel',
+          'bedrock:ListFoundationModels'
+        ],
       })
     );
 

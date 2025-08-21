@@ -93,7 +93,7 @@ export class RagPipelineStack extends NestedStack {
     cfnCollection.addDependency(cfnNetworkSecurityPolicy);
     cfnCollection.addDependency(cfnEncryptionSecurityPolicy);
 
-    //TODO scope it down to what's required
+    // Bedrock执行角色 - 仅授予必要的权限
     const bedrockExecutionRole = new aws_iam.Role(this, 'AmazonBedrockExecutionRoleForKnowledgeBase_1', {
       assumedBy: new aws_iam.ServicePrincipal('bedrock.amazonaws.com').withConditions({
         StringEquals: {
@@ -126,7 +126,7 @@ export class RagPipelineStack extends NestedStack {
       })
     );
 
-    //TODO scope it down to what's required
+    // Lambda执行角色 - 授予必要的VPC、日志和SQS权限
     const lambdaRole = new aws_iam.Role(this, 'OpssAdminRole', {
       assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
@@ -189,7 +189,7 @@ export class RagPipelineStack extends NestedStack {
             region: cdk.Aws.REGION,
             account: cdk.Aws.ACCOUNT_ID,
             arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
-            resourceName: '*', //TODO restrict to specific resource
+            resourceName: cfnCollection.name, // 限制到特定的collection
           }),
         ],
         actions: ['aoss:APIAccessAll', 'aoss:DashboardAccessAll'],

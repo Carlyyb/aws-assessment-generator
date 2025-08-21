@@ -324,3 +324,47 @@ export const forcePasswordResetMutation = /* GraphQL */ `
     forcePasswordReset(username: $username)
   }
 `;
+
+export const resetUserPasswordMutation = /* GraphQL */ `
+  mutation ResetUserPassword($username: String!, $customPassword: String) {
+    resetUserPassword(username: $username, customPassword: $customPassword) {
+      success
+      username
+      newPassword
+      isDefaultPassword
+    }
+  }
+`;
+export const createStudentGroup = /* GraphQL */ `
+  mutation CreateStudentGroup($input: StudentGroupInput!) {
+    createStudentGroup(input: $input) {
+      id
+      name
+      description
+      color
+      createdBy
+      teachers
+      students
+      createdAt
+    }
+  }
+`;
+export const updateStudentGroup = /* GraphQL */ `
+  mutation UpdateStudentGroup($id: ID!, $input: StudentGroupInput!) {
+    updateStudentGroup(id: $id, input: $input) {
+      id
+      name
+      description
+      color
+      createdBy
+      teachers
+      students
+      createdAt
+    }
+  }
+`;
+export const deleteStudentGroup = /* GraphQL */ `
+  mutation DeleteStudentGroup($id: ID!) {
+    deleteStudentGroup(id: $id)
+  }
+`;

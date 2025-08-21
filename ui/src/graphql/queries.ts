@@ -170,6 +170,33 @@ export const listAssessTemplates = /* GraphQL */ `
     }
   }
 `;
+export const listPublishedAssessments = /* GraphQL */ `
+  query ListPublishedAssessments {
+    listPublishedAssessments {
+      id
+      name
+      courseId
+      lectureDate
+      deadline
+      updatedAt
+      assessType
+      published
+      status
+      timeLimited
+      timeLimit
+      allowAnswerChange
+      studentGroups
+      courses
+      attemptLimit
+      scoreMethod
+      course {
+        id
+        name
+        description
+      }
+    }
+  }
+`;
 export const getStudentAssessment = /* GraphQL */ `
   query GetStudentAssessment($parentAssessId: ID!) {
     getStudentAssessment(parentAssessId: $parentAssessId) {

@@ -143,6 +143,14 @@ input ChangePasswordInput {
   newPassword: String!
 }
 
+# 重置密码结果
+type ResetPasswordResult {
+  success: Boolean!
+  username: String!
+  newPassword: String # 仅在使用默认密码时返回
+  isDefaultPassword: Boolean!
+}
+
 # 账号迁移结果
 type AccountMigrationResult {
   totalUsers: Int!
@@ -404,9 +412,15 @@ type Mutation {
   requestPasswordReset(input: PasswordResetRequestInput!): Boolean
   confirmPasswordReset(input: PasswordResetConfirmInput!): Boolean
   forcePasswordReset(username: String!): Boolean
+  resetUserPassword(username: String!, customPassword: String): ResetPasswordResult
   
   # 账号迁移mutations（仅超级管理员）
   migrateExistingAccounts: AccountMigrationResult
+  
+  # 分组管理mutations
+  createStudentGroup(input: StudentGroupInput!): StudentGroup
+  updateStudentGroup(id: ID!, input: StudentGroupInput!): StudentGroup
+  deleteStudentGroup(id: ID!): Boolean
 }
 
 type Query {
@@ -420,6 +434,7 @@ type Query {
   getStudentAssessment(parentAssessId: ID!): StudentAssessment
   listStudentAssessments: [StudentAssessment]
   listMyStudentAssessments(studentId: ID!): [StudentAssessment]
+  listPublishedAssessments: [Assessment]  # 学生查看已发布的测试
   publishAssessment(assessmentId: ID!): Boolean
   generateAssessment(input: GenerateAssessmentInput): ID
   getKnowledgeBase(courseId: ID): KnowledgeBase

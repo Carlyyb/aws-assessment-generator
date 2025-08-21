@@ -9,10 +9,17 @@ import { ReferenceDocuments } from '../models/referenceDocuments';
 
 export function getInitialQuestionsPrompt(assessmentTemplate: AssessmentTemplate, topicsExtractionOutput: string, customPrompt?: string) {
   // TODO add topic to response for each question
+  const languageInstructions = assessmentTemplate.docLang === 'zh' 
+    ? '请严格使用中文生成所有题目、答案选项和解释内容' 
+    : 'Please generate all questions, answer options, and explanations strictly in English';
+    
   let prompt = `
 You are creating a ${assessmentTemplate.assessType} questionnaire with exactly ${
     assessmentTemplate.totalQuestions
   } questions for a university student. The questions should be based STRICTLY on the academic content provided in the Summarised Transcript below.
+
+CRITICAL LANGUAGE REQUIREMENT:
+${languageInstructions}
 
 IMPORTANT INSTRUCTIONS:
 - Generate ONLY ${assessmentTemplate.totalQuestions} questions
@@ -23,7 +30,8 @@ IMPORTANT INSTRUCTIONS:
 - The quiz should be clear, academic, and directly related to the learning material
 - Do not reference the transcript itself, focus on the knowledge it contains
 - Create ${assessmentTemplate.easyQuestions} easy, ${assessmentTemplate.mediumQuestions} medium, and ${assessmentTemplate.hardQuestions} hard questions
-- Use language code: ${assessmentTemplate.docLang}
+- CRITICAL: The <question> field must contain ONLY the question text itself, no additional context or explanations
+- ALL content (questions, answers, explanations) must be in the specified language: ${assessmentTemplate.docLang}
 
 ${customPrompt ? `
 CUSTOM REQUIREMENTS (HIGHEST PRIORITY - MUST FOLLOW):
@@ -47,7 +55,8 @@ ${
   The answer choices must be around the topics covered in the lecture.
   Ensure that only one answer is correct.
   Indicate the correct answer labeled as 'answer'.
-  Articulate a reasoned and concise defense for your chosen answer without relying on direct references to the text labeled as "explanation"
+  Articulate a reasoned and concise defense for your chosen answer without relying on direct references to the text labeled as "explanation".
+  ALL answer choices and explanations must be in the language: ${assessmentTemplate.docLang}.
 `
     : ''
 }
@@ -56,6 +65,7 @@ ${
   assessmentTemplate.assessType === AssessType.freeTextAssessment
     ? `
   The questions are free text questions. for every question create a rubric weight grading guidance in a <rubric> tag. In <rubric> there should be a list (minimum 2) of expected points to be covered in the answer and the weight associated with this point, only use single digit integer values for weights.
+  ALL rubric points must be in the language: ${assessmentTemplate.docLang}.
 `
     : ''
 }
@@ -64,7 +74,8 @@ ${
   assessmentTemplate.assessType === AssessType.trueFalseAssessment
     ? `
   The questions are true/false questions. Provide two options: True and False, and indicate the correct answer.
-  Articulate a reasoned and concise defense for your chosen answer without relying on direct references to the text labeled as "explanation" .
+  Articulate a reasoned and concise defense for your chosen answer without relying on direct references to the text labeled as "explanation".
+  ALL answer choices and explanations must be in the language: ${assessmentTemplate.docLang}.
 `
     : ''
 }
@@ -77,6 +88,7 @@ ${
   Ensure that only one answer is correct.
   Articulate a reasoned and concise defense for your chosen answer without relying on direct references
   to the text labeled as "explanation".
+  ALL answer choices and explanations must be in the language: ${assessmentTemplate.docLang}.
 `
     : ''
 } 
@@ -91,22 +103,23 @@ RESPONSE FORMAT INSTRUCTIONS:
 Your response should be formatted as XML data structure (this is just the format, NOT the content topic).
 The actual question content should be about the academic subject matter from the transcript.
 Do not include any additional text outside the XML structure.
+CRITICAL: The <question> field must contain ONLY the pure question text, no additional context, explanations, or prefixes.
 
 Use this exact XML format for your response:
 \`\`\`xml
 <response>
     <questions>
-        <title>[Brief question title about the academic topic]</title>
-        <question>[Question about the subject matter from the transcript]</question>
+        <title>[Brief question title about the academic topic in ${assessmentTemplate.docLang} language]</title>
+        <question>[Pure question text only, in ${assessmentTemplate.docLang} language]</question>
     ${
       assessmentTemplate.assessType === AssessType.multiChoiceAssessment
         ? `
-            <answerChoices>[Option 1]</answerChoices>
-            <answerChoices>[Option 2]</answerChoices>
-            <answerChoices>[Option 3]</answerChoices>
-            <answerChoices>[Option 4]</answerChoices>
+            <answerChoices>[Option 1 in ${assessmentTemplate.docLang}]</answerChoices>
+            <answerChoices>[Option 2 in ${assessmentTemplate.docLang}]</answerChoices>
+            <answerChoices>[Option 3 in ${assessmentTemplate.docLang}]</answerChoices>
+            <answerChoices>[Option 4 in ${assessmentTemplate.docLang}]</answerChoices>
             <correctAnswer>[Correct Answer Number]</correctAnswer>
-            <explanation>[Explanation for Correctness]</explanation>
+            <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
     `
         : ''
     }
@@ -115,11 +128,11 @@ Use this exact XML format for your response:
         ? `
           <rubric>
             <weight>[weight_value]</weight>
-            <point>[Point 1]</point>
+            <point>[Point 1 in ${assessmentTemplate.docLang}]</point>
           </rubric>
           <rubric>
             <weight>[weight_value]</weight>
-            <point>[Point 2]</point>
+            <point>[Point 2 in ${assessmentTemplate.docLang}]</point>
           </rubric>
           <!-- all other rubric points below   -->
     `
@@ -127,17 +140,17 @@ Use this exact XML format for your response:
     }
     </questions>
     <questions>
-        <title>[Brief question title for question 2]</title>
-        <question>[Question 2]</question>
+        <title>[Brief question title for question 2 in ${assessmentTemplate.docLang}]</title>
+        <question>[Pure question text only, in ${assessmentTemplate.docLang} language]</question>
     ${
       assessmentTemplate.assessType === AssessType.multiChoiceAssessment
         ? `
-            <answerChoices>[Option 1]</answerChoices>
-            <answerChoices>[Option 2]</answerChoices>
-            <answerChoices>[Option 3]</answerChoices>
-            <answerChoices>[Option 4]</answerChoices>
+            <answerChoices>[Option 1 in ${assessmentTemplate.docLang}]</answerChoices>
+            <answerChoices>[Option 2 in ${assessmentTemplate.docLang}]</answerChoices>
+            <answerChoices>[Option 3 in ${assessmentTemplate.docLang}]</answerChoices>
+            <answerChoices>[Option 4 in ${assessmentTemplate.docLang}]</answerChoices>
             <correctAnswer>[Correct Answer Number]</correctAnswer>
-            <explanation>[Explanation for Correctness]</explanation>
+            <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
     `
         : ''
     }
@@ -146,11 +159,11 @@ Use this exact XML format for your response:
         ? `
           <rubric>
             <weight>[weight_value]</weight>
-            <point>[Point 1]</point>
+            <point>[Point 1 in ${assessmentTemplate.docLang}]</point>
           </rubric>
           <rubric>
             <weight>[weight_value]</weight>
-            <point>[Point 2]</point>
+            <point>[Point 2 in ${assessmentTemplate.docLang}]</point>
           </rubric>
           <!-- all other rubric points below   -->
     `
@@ -164,19 +177,19 @@ Use this exact XML format for your response:
             <answerChoices>True</answerChoices>
             <answerChoices>False</answerChoices>
             <correctAnswer>[True/False]</correctAnswer>
-            <explanation>[Explanation for Correctness]</explanation>
+            <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
     `
     : ''
     }
     ${
       assessmentTemplate.assessType === AssessType.singleChoiceAssessment
         ? `
-                <answerChoices>[Option 1]</answerChoices>
-                <answerChoices>[Option 2]</answerChoices>
-                <answerChoices>[Option 3]</answerChoices>
-                <answerChoices>[Option 4]</answerChoices>
+                <answerChoices>[Option 1 in ${assessmentTemplate.docLang}]</answerChoices>
+                <answerChoices>[Option 2 in ${assessmentTemplate.docLang}]</answerChoices>
+                <answerChoices>[Option 3 in ${assessmentTemplate.docLang}]</answerChoices>
+                <answerChoices>[Option 4 in ${assessmentTemplate.docLang}]</answerChoices>
                 <correctAnswer>[Correct Answer Number]</correctAnswer>
-                <explanation>[Explanation for Correctness]</explanation>
+                <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
         `
         : ''
     }
@@ -297,12 +310,21 @@ export function getRelevantDocumentsPrompt(question: MultiChoice | FreeText | Tr
 }
 
 export function improveQuestionPrompt(xmlQuestion: any, xmlDocs: any, assessmentTemplate: AssessmentTemplate) {
+  const languageInstructions = assessmentTemplate.docLang === 'zh' 
+    ? '请严格使用中文生成所有改进的题目、答案选项和解释内容' 
+    : 'Please generate all improved questions, answer options, and explanations strictly in English';
+    
   let prompt = `
 TASK: Improve the academic question using the provided extracted documents if relevant.
 Focus on enhancing the educational content, not the format.
 
+CRITICAL LANGUAGE REQUIREMENT:
+${languageInstructions}
+
 If relevant, use the content in the EXTRACTED_DOCUMENTS to improve the QUESTION's academic accuracy and depth.
 Any reference to the EXTRACTED_DOCUMENTS should include the uri of the document.
+CRITICAL: The <question> field must contain ONLY the pure question text, no additional context or explanations.
+ALL content (questions, answers, explanations) must be in the specified language: ${assessmentTemplate.docLang}
 
 CURRENT QUESTION:
 ${xmlQuestion}
@@ -313,25 +335,26 @@ ${xmlDocs}
 RESPONSE FORMAT INSTRUCTIONS:
 Format your response as XML data structure (this is just the format requirement, NOT the content topic).
 The question content should be about the academic subject matter, not about XML or document formats.
+CRITICAL: The <question> field must contain ONLY the pure question text, no additional context, explanations, or prefixes.
 
 Use this exact XML format:
 \`\`\`xml
 <question>
-    <title>[Brief question title]</title>
+    <title>[Brief question title in ${assessmentTemplate.docLang}]</title>
     <question>
-        [Question]
+        [Pure question text only, in ${assessmentTemplate.docLang} language]
     </question>
     ${
       assessmentTemplate.assessType === AssessType.multiChoiceAssessment
         ? `
         <!-- for multiple choice questions only -->
-            <answerChoices>[Option 1]</answerChoices>
-            <answerChoices>[Option 2]</answerChoices>
-            <answerChoices>[Option 3]</answerChoices>
-            <answerChoices>[Option 4]</answerChoices>
+            <answerChoices>[Option 1 in ${assessmentTemplate.docLang}]</answerChoices>
+            <answerChoices>[Option 2 in ${assessmentTemplate.docLang}]</answerChoices>
+            <answerChoices>[Option 3 in ${assessmentTemplate.docLang}]</answerChoices>
+            <answerChoices>[Option 4 in ${assessmentTemplate.docLang}]</answerChoices>
             <correctAnswer>[Correct Answer Number]</correctAnswer>
         <!-- for multiple choice questions only -->
-        <explanation>[Explanation for Correctness]</explanation>
+        <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
     `
         : ''
     }
@@ -340,11 +363,11 @@ Use this exact XML format:
         ? `
           <rubric>
             <weight>[weight_value]</weight>
-            <point>[Point 1]</point>
+            <point>[Point 1 in ${assessmentTemplate.docLang}]</point>
           </rubric>
           <rubric>
             <weight>[weight_value]</weight>
-            <point>[Point 2]</point>
+            <point>[Point 2 in ${assessmentTemplate.docLang}]</point>
           </rubric>
           <!-- all other rubric points below   -->
     `
@@ -356,19 +379,19 @@ Use this exact XML format:
             <answerChoices>True</answerChoices>
             <answerChoices>False</answerChoices>
             <correctAnswer>[True/False]</correctAnswer>
-            <explanation>[Explanation for Correctness]</explanation>
+            <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
         `
         : ''
     }
     ${
       assessmentTemplate.assessType === AssessType.singleChoiceAssessment
         ? `
-            <answerChoices>[Option 1]</answerChoices>
-            <answerChoices>[Option 2]</answerChoices>
-            <answerChoices>[Option 3]</answerChoices>
-            <answerChoices>[Option 4]</answerChoices>
+            <answerChoices>[Option 1 in ${assessmentTemplate.docLang}]</answerChoices>
+            <answerChoices>[Option 2 in ${assessmentTemplate.docLang}]</answerChoices>
+            <answerChoices>[Option 3 in ${assessmentTemplate.docLang}]</answerChoices>
+            <answerChoices>[Option 4 in ${assessmentTemplate.docLang}]</answerChoices>
             <correctAnswer>[Correct Answer Number]</correctAnswer>
-            <explanation>[Explanation for Correctness]</explanation>
+            <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
         `
         : ''
     }

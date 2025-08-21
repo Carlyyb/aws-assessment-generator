@@ -30,3 +30,4 @@ replacer.js
 .claude/settings.local.json
 *.xlsx
 Template.xlsx
+*.csv
