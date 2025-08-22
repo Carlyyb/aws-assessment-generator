@@ -194,16 +194,7 @@ export class RagPipelineStack extends NestedStack {
       new PolicyStatement({
         sid: 'OpenSearchServerlessDataPlaneAccess1',
         effect: aws_iam.Effect.ALLOW,
-        resources: [
-          this.formatArn({
-            service: 'aoss',
-            resource: 'collection',
-            region: cdk.Aws.REGION,
-            account: cdk.Aws.ACCOUNT_ID,
-            arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
-            resourceName: cfnCollection.name, // 限制到特定的collection
-          }),
-        ],
+        resources: [cfnCollection.attrArn], // 使用实际的集合ARN
         actions: ['aoss:APIAccessAll', 'aoss:DashboardAccessAll'],
       })
     );
