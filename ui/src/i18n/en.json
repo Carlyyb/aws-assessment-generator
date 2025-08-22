@@ -578,7 +578,7 @@
   "assessType": {
     "multiChoiceAssessment": "Multiple Choice Assessment",
     "freeTextAssessment": "Free Text Assessment",
-    "singleChoiceAssessment": "Single Choice Assessment",
+    "singleAnswerAssessment": "Single answer Assessment",
     "trueFalseAssessment": "True/False Assessment"
   },
   "formats": {

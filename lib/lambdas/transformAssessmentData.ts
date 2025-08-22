@@ -40,15 +40,22 @@ function transform(obj: any): any {
 }
 
 export const handler = async (
-  event: TransformDataPayload,
+  event: any,
   context: Context
 ): Promise<any> => {
   console.log('Transform data event:', JSON.stringify(event, null, 2));
   
   try {
-    const { operation, data } = event;
+    // AppSync Lambda数据源的事件结构
+    // 从 resolver 传递过来的参数在 event 中直接可用
+    const operation = event.operation || 'transformAssessmentData';
+    const data = event.data;
+    const identity = event.identity;
+    
+    console.log('Extracted params:', { operation, hasData: !!data, identity });
     
     if (!data) {
+      console.log('No data provided, returning null');
       return null;
     }
     

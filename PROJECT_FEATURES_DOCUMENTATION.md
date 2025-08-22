@@ -8,6 +8,27 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ## 最新更新记录
 
+### 2025-08-22: Bedrock知识库权限修复
+
+- **功能描述**：修复了Lambda函数访问Bedrock知识库时的权限不足错误(AccessDeniedException)
+- **问题分析**：Lambda函数的执行角色 AssessmentLambdaRole 缺少 `bedrock:Retrieve` 等知识库操作权限，导致无法访问知识库进行文档检索
+- **修改位置**：
+  - `lib/data-stack.ts` - 更新了 assessmentLambdaRole 的Bedrock权限配置
+- **修复内容**：
+  - 为评估生成相关的Lambda函数添加了完整的Bedrock知识库权限
+  - 新增权限包括：知识库管理、数据摄取、内容检索和生成、Agent相关操作
+  - 确保Lambda函数能够正常访问知识库进行RAG(检索增强生成)操作
+- **技术细节**：
+  - 添加了以下关键权限：
+    - `bedrock:Retrieve` - 知识库文档检索
+    - `bedrock:RetrieveAndGenerate` - 检索增强生成
+    - `bedrock:GetKnowledgeBase` - 获取知识库信息
+    - `bedrock:StartIngestionJob` 等数据摄取权限
+  - 权限资源设置为 `*` 以支持所有区域的知识库访问
+- **部署状态**：✅ 需要重新部署以应用权限更改
+- **已知问题与限制**：无
+- **未来扩展**：可考虑基于具体知识库ARN进行更精确的权限控制
+
 ### 2025-08-22: OpenSearch Serverless权限问题修复
 
 - **功能描述**：修复了知识库创建失败的OpenSearch Serverless 403权限错误

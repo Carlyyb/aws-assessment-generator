@@ -3,7 +3,7 @@ import { Wizard, Container, Header, SpaceBetween, Box, Table, AppLayout } from '
 import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
-import { StudentAssessment as RawStudentAssessment, AssessType, MultiChoice, SingleChoice, TrueFalse } from '../graphql/API';
+import { StudentAssessment as RawStudentAssessment, AssessType, MultiChoice, SingleAnswer, TrueFalse } from '../graphql/API';
 import { getStudentAssessment } from '../graphql/queries';
 import { getText, getTextWithParams } from '../i18n/lang';
 
@@ -43,8 +43,8 @@ export default () => {
         return studentAssessment.assessment.multiChoiceAssessment || [];
       case AssessType.freeTextAssessment:
         return studentAssessment.assessment.freeTextAssessment || [];
-      case AssessType.singleChoiceAssessment:
-        return studentAssessment.assessment.singleChoiceAssessment || [];
+      case AssessType.singleAnswerAssessment:
+        return studentAssessment.assessment.singleAnswerAssessment || [];
       case AssessType.trueFalseAssessment:
         return studentAssessment.assessment.trueFalseAssessment || [];
       default:
@@ -64,8 +64,8 @@ export default () => {
     
     switch (assessType) {
       case AssessType.multiChoiceAssessment:
-      case AssessType.singleChoiceAssessment:
-        return userAnswer === (question as MultiChoice | SingleChoice).correctAnswer;
+      case AssessType.singleAnswerAssessment:
+        return userAnswer === (question as MultiChoice | SingleAnswer).correctAnswer;
       case AssessType.trueFalseAssessment:
         return userAnswer === (question as TrueFalse).correctAnswer;
       case AssessType.freeTextAssessment:
@@ -280,16 +280,16 @@ export default () => {
                   </Container>
                   <Container header={<Header variant="h2">{getText('students.assessments.review.answer')}</Header>}>
                     <SpaceBetween size="l">
-                      {assessType === AssessType.multiChoiceAssessment || assessType === AssessType.singleChoiceAssessment ? (
-                        ((assessment as MultiChoice | SingleChoice).answerChoices || []).map((answerChoice, i) => (
+                      {assessType === AssessType.multiChoiceAssessment || assessType === AssessType.singleAnswerAssessment ? (
+                        ((assessment as MultiChoice | SingleAnswer).answerChoices || []).map((answerChoice, i) => (
                           <div
                             key={i}
                             style={{
                               border:
-                                (assessment as MultiChoice | SingleChoice).correctAnswer! - 1 === i
+                                (assessment as MultiChoice | SingleAnswer).correctAnswer! - 1 === i
                                   ? `3px solid green`
                                   : studentAssessment.answers![activeStepIndex] === i + 1 &&
-                                    studentAssessment.answers![activeStepIndex] !== (assessment as MultiChoice | SingleChoice).correctAnswer
+                                    studentAssessment.answers![activeStepIndex] !== (assessment as MultiChoice | SingleAnswer).correctAnswer
                                   ? `3px solid red`
                                   : '',
                             }}
@@ -348,7 +348,7 @@ export default () => {
                     </>
                   ) : (
                     <Container header={<Header variant="h2">{getText('students.assessments.review.explanation')}</Header>}>
-                      <Box variant="p">{(assessment as MultiChoice | SingleChoice | TrueFalse).explanation}</Box>
+                      <Box variant="p">{(assessment as MultiChoice | SingleAnswer | TrueFalse).explanation}</Box>
                     </Container>
                   )}
                 </SpaceBetween>

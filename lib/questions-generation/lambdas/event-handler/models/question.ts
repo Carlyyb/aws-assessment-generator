@@ -11,4 +11,4 @@ export class Question {
 
 }
 
-export type QuestionType = 'multiChoice' | 'freeText' | 'trueFalse' | 'singleChoice';     // CHANGELOG 2025-08-15 by 邱语堂: 新增题型（暂时没有在其他地方用到）
+export type QuestionType = 'multiChoice' | 'freeText' | 'trueFalse' | 'singleAnswer';     // CHANGELOG 2025-08-15 by 邱语堂: 新增题型（暂时没有在其他地方用到）

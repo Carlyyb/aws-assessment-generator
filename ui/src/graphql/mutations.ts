@@ -71,7 +71,7 @@ export const upsertAssessment = /* GraphQL */ `
           point
         }
       }
-      singleChoiceAssessment {
+      singleAnswerAssessment {
         title
         question
         answerChoices
@@ -122,7 +122,7 @@ export const upsertStudentAssessment = /* GraphQL */ `
             point
           }
         }
-        singleChoiceAssessment {
+        singleAnswerAssessment {
           title
           question
           answerChoices
@@ -179,7 +179,7 @@ export const gradeStudentAssessment = /* GraphQL */ `
             point
           }
         }
-        singleChoiceAssessment {
+        singleAnswerAssessment {
           title
           question
           answerChoices

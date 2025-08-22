@@ -54,11 +54,11 @@ export default () => {
   const checkDataIntegrity = (assessment: any): string | null => {
     try {
       const hasMultiChoice = assessment.multiChoiceAssessment && Array.isArray(assessment.multiChoiceAssessment) && assessment.multiChoiceAssessment.length > 0;
-      const hasSingleChoice = assessment.singleChoiceAssessment && Array.isArray(assessment.singleChoiceAssessment) && assessment.singleChoiceAssessment.length > 0;
+      const hasSingleAnswer = assessment.singleAnswerAssessment && Array.isArray(assessment.singleAnswerAssessment) && assessment.singleAnswerAssessment.length > 0;
       const hasTrueFalse = assessment.trueFalseAssessment && Array.isArray(assessment.trueFalseAssessment) && assessment.trueFalseAssessment.length > 0;
       const hasFreeText = assessment.freeTextAssessment && Array.isArray(assessment.freeTextAssessment) && assessment.freeTextAssessment.length > 0;
       
-      if (!hasMultiChoice && !hasSingleChoice && !hasTrueFalse && !hasFreeText) {
+      if (!hasMultiChoice && !hasSingleAnswer && !hasTrueFalse && !hasFreeText) {
         return '所有题目内容为空，数据完全异常';
       }
 
@@ -79,9 +79,9 @@ export default () => {
         }
       }
 
-      if (assessment.singleChoiceAssessment && Array.isArray(assessment.singleChoiceAssessment)) {
-        for (let i = 0; i < assessment.singleChoiceAssessment.length; i++) {
-          const question = assessment.singleChoiceAssessment[i];
+      if (assessment.singleAnswerAssessment && Array.isArray(assessment.singleAnswerAssessment)) {
+        for (let i = 0; i < assessment.singleAnswerAssessment.length; i++) {
+          const question = assessment.singleAnswerAssessment[i];
           if (question && question.correctAnswer === null) {
             return `单选题 ${i + 1} 的答案数据已被清理（原数据格式异常）`;
           }

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { logger } from '../../../../rag-pipeline/lambdas/event-handler/utils/pt';
-import { Assessment, AssessStatus, GenerateAssessmentInput, MultiChoice, FreeText, AssessType, TrueFalse, SingleChoice } from '../../../../../ui/src/graphql/API';
+import { Assessment, AssessStatus, GenerateAssessmentInput, MultiChoice, FreeText, AssessType, TrueFalse, SingleAnswer } from '../../../../../ui/src/graphql/API';
 import { AssessmentTemplate } from '../models/assessmentTemplate';
 
 const ASSESSMENT_TABLE = process.env.ASSESSMENTS_TABLE;
@@ -20,7 +20,7 @@ export class DataService {
     this.docClient = DynamoDBDocumentClient.from(client);
   }
 
-  async updateAssessment(improvedQuestions: MultiChoice[] | FreeText[] | TrueFalse[] | SingleChoice[], userId: string, assessmentId: string) {
+  async updateAssessment(improvedQuestions: MultiChoice[] | FreeText[] | TrueFalse[] | SingleAnswer[], userId: string, assessmentId: string) {
     const currentAssessment = await this.getExistingAssessment(userId, assessmentId);
     
     // 根据评估类型安全地分配问题数组
@@ -34,8 +34,8 @@ export class DataService {
       case 'trueFalseAssessment':
         currentAssessment.trueFalseAssessment = improvedQuestions as TrueFalse[];
         break;
-      case 'singleChoiceAssessment':
-        currentAssessment.singleChoiceAssessment = improvedQuestions as SingleChoice[];
+      case 'singleAnswerAssessment':
+        currentAssessment.singleAnswerAssessment = improvedQuestions as SingleAnswer[];
         break;
       default:
         throw new Error(`Unsupported assessment type: ${currentAssessment.assessType}`);

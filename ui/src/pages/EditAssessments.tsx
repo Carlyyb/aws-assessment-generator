@@ -2,7 +2,7 @@ import { useState, useReducer, useEffect, useContext } from 'react';
 import { Wizard, AppLayout } from '@cloudscape-design/components';
 import { useParams, useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
-import { Assessment, AssessType, MultiChoice, FreeText, SingleChoice, TrueFalse } from '../graphql/API'; // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断
+import { Assessment, AssessType, MultiChoice, FreeText, SingleAnswer, TrueFalse } from '../graphql/API'; // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断
 import { getAssessment } from '../graphql/queries';
 import { upsertAssessment } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
@@ -39,9 +39,9 @@ const reducer: Reducer = (state, actions) => {
         case AssessType.freeTextAssessment:
           const newFreeText = [...(state.freeTextAssessment || []), content];
           return { ...state, freeTextAssessment: newFreeText, assessType: questionType };
-        case AssessType.singleChoiceAssessment:
-          const newSingleChoice = [...(state.singleChoiceAssessment || []), content];
-          return { ...state, singleChoiceAssessment: newSingleChoice, assessType: questionType };
+        case AssessType.singleAnswerAssessment:
+          const newSingleAnswer = [...(state.singleAnswerAssessment || []), content];
+          return { ...state, singleAnswerAssessment: newSingleAnswer, assessType: questionType };
         case AssessType.trueFalseAssessment:
           const newTrueFalse = [...(state.trueFalseAssessment || []), content];
           return { ...state, trueFalseAssessment: newTrueFalse, assessType: questionType };
@@ -58,9 +58,9 @@ const reducer: Reducer = (state, actions) => {
         case AssessType.freeTextAssessment:
           newQuestions = state.freeTextAssessment?.filter((_, i) => i !== stepIndex!) || [];
           return { ...state, freeTextAssessment: newQuestions };
-        case AssessType.singleChoiceAssessment:
-          newQuestions = state.singleChoiceAssessment?.filter((_, i) => i !== stepIndex!) || [];
-          return { ...state, singleChoiceAssessment: newQuestions };
+        case AssessType.singleAnswerAssessment:
+          newQuestions = state.singleAnswerAssessment?.filter((_, i) => i !== stepIndex!) || [];
+          return { ...state, singleAnswerAssessment: newQuestions };
         case AssessType.trueFalseAssessment:
           newQuestions = state.trueFalseAssessment?.filter((_, i) => i !== stepIndex!) || [];
           return { ...state, trueFalseAssessment: newQuestions };
@@ -88,14 +88,14 @@ const reducer: Reducer = (state, actions) => {
           }) || [];
           return { ...state, freeTextAssessment: newQuestions };
         }
-        case AssessType.singleChoiceAssessment: {
-          const newQuestions = state.singleChoiceAssessment?.map((section, i) => {
+        case AssessType.singleAnswerAssessment: {
+          const newQuestions = state.singleAnswerAssessment?.map((section, i) => {
             if (stepIndex !== i) return section;
             const newSection: any = { ...section };
             newSection[key!] = content;
             return newSection;
           }) || [];
-          return { ...state, singleChoiceAssessment: newQuestions };
+          return { ...state, singleAnswerAssessment: newQuestions };
         }
         case AssessType.trueFalseAssessment: {
           const newQuestions = state.trueFalseAssessment?.map((section, i) => {
@@ -185,8 +185,8 @@ export default () => {
         return assessment.multiChoiceAssessment || [];
       case AssessType.freeTextAssessment:
         return assessment.freeTextAssessment || [];
-      case AssessType.singleChoiceAssessment:
-        return assessment.singleChoiceAssessment || [];
+      case AssessType.singleAnswerAssessment:
+        return assessment.singleAnswerAssessment || [];
       case AssessType.trueFalseAssessment:
         return assessment.trueFalseAssessment || [];
       default:
@@ -201,8 +201,8 @@ export default () => {
         <QAView activeStepIndex={activeStepIndex} assessment={q as MultiChoice} updateAssessment={wrappedUpdateAssessment} />
       ) : assessment.assessType === AssessType.freeTextAssessment ? (
         <FreeTextView activeStepIndex={activeStepIndex} freetextAssessment={q as FreeText} updateAssessment={wrappedUpdateAssessment} />
-      ) : assessment.assessType === AssessType.singleChoiceAssessment ? (
-        <QAView activeStepIndex={activeStepIndex} assessment={q as SingleChoice} updateAssessment={wrappedUpdateAssessment} />
+      ) : assessment.assessType === AssessType.singleAnswerAssessment ? (
+        <QAView activeStepIndex={activeStepIndex} assessment={q as SingleAnswer} updateAssessment={wrappedUpdateAssessment} />
       ) : assessment.assessType === AssessType.trueFalseAssessment ? (
         <QAView activeStepIndex={activeStepIndex} assessment={q as TrueFalse} updateAssessment={wrappedUpdateAssessment} />
       ) : null,

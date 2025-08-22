@@ -42,9 +42,9 @@ function sanitizeAssessmentData(assessment) {
     });
   }
   
-  // 处理singleChoiceAssessment
-  if (assessment.singleChoiceAssessment && Array.isArray(assessment.singleChoiceAssessment)) {
-    assessment.singleChoiceAssessment = assessment.singleChoiceAssessment.map(question => {
+  // 处理singleAnswerAssessment
+  if (assessment.singleAnswerAssessment && Array.isArray(assessment.singleAnswerAssessment)) {
+    assessment.singleAnswerAssessment = assessment.singleAnswerAssessment.map(question => {
       if (!question) return question;
       
       if (Array.isArray(question.correctAnswer)) {

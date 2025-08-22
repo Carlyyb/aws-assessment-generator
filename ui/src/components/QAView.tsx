@@ -1,19 +1,19 @@
 import { Container, Header, SpaceBetween, Button, Textarea, Tiles } from '@cloudscape-design/components';
 import { ActionTypes } from '../pages/EditAssessments';
 import { getText, getTextWithParams } from '../i18n/lang';
-import { MultiChoice, FreeText, TrueFalse, SingleChoice } from '../graphql/API'; // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断
+import { MultiChoice, FreeText, TrueFalse, SingleAnswer } from '../graphql/API'; // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断
 
 
 type QAViewProps = {
   activeStepIndex: number;
-  assessment: MultiChoice | FreeText | TrueFalse | SingleChoice;    // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断
+  assessment: MultiChoice | FreeText | TrueFalse | SingleAnswer;    // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断
   updateAssessment: (props: { type: ActionTypes; stepIndex: number; key: string; content: any }) => void;
 };
 
 export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAViewProps) => {
   // 判断题型
   const isMultiChoice = 'answerChoices' in assessment && typeof assessment.correctAnswer === 'number';  
-  const isSingleChoice = 'answerChoices' in assessment && typeof assessment.correctAnswer === 'number' && assessment.answerChoices.length === 4;  // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断（单选默认四个选项）
+  const isSingleAnswer = 'answerChoices' in assessment && typeof assessment.correctAnswer === 'number' && assessment.answerChoices.length === 4;  // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断（单选默认四个选项）
   const isTrueFalse = 'answerChoices' in assessment && typeof assessment.correctAnswer === 'string' && assessment.answerChoices.length === 2;     //  单选默认四个选项，判断默认两个选项
   const isFreeText = 'rubric' in assessment;  
 
@@ -28,7 +28,7 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
         />
       </Container>
 
-      {(isMultiChoice || isSingleChoice || isTrueFalse) && (      // CHANGELOG 2025-08-15 by 邱语堂: 修改函数校验逻辑，兼容新题型，判断和单选
+      {(isMultiChoice || isSingleAnswer || isTrueFalse) && (      // CHANGELOG 2025-08-15 by 邱语堂: 修改函数校验逻辑，兼容新题型，判断和单选
         <Container header={<Header variant="h2">{getText('assessment.edit_answers')}</Header>}>
           <SpaceBetween size="l" direction="horizontal" alignItems="center">
             {assessment.answerChoices?.map((answerChoice, answerIndex) => (
@@ -85,7 +85,7 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
         </Container>
       )}
 
-      {(isMultiChoice || isSingleChoice) && (
+      {(isMultiChoice || isSingleAnswer) && (
         <Container header={<Header variant="h2">{getText('assessment.choose_answer')}</Header>}>
           <Tiles
             value={((assessment.correctAnswer as number) - 1).toString()}
@@ -119,7 +119,7 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
         </Container>
       )}
 
-      {(isMultiChoice || isSingleChoice || isTrueFalse) && (
+      {(isMultiChoice || isSingleAnswer || isTrueFalse) && (
         <Container header={<Header variant="h2">{getText('assessment.explanation')}</Header>}>
           <Textarea
             onChange={({ detail }) =>

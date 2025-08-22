@@ -4,7 +4,7 @@
 //CHANGELOG 2025-08-15 by 邱语堂:直接新增了单选/判断题型的定义，兼容新题型。具体改动：第46-66，114-137，161，212-234行
 
 import { AssessmentTemplate } from '../models/assessmentTemplate';
-import { AssessType, MultiChoice, FreeText, TrueFalse , SingleChoice} from '../../../../../ui/src/graphql/API';
+import { AssessType, MultiChoice, FreeText, TrueFalse , SingleAnswer} from '../../../../../ui/src/graphql/API';
 import { ReferenceDocuments } from '../models/referenceDocuments';
 
 export function getInitialQuestionsPrompt(assessmentTemplate: AssessmentTemplate, topicsExtractionOutput: string, customPrompt?: string) {
@@ -55,6 +55,7 @@ ${
   Ensure that only one answer is correct.
   Indicate the correct answer labeled as 'answer'.
   Articulate a reasoned and concise defense for your chosen answer without relying on direct references to the text labeled as "explanation".
+  CRITICAL: The explanation must NOT contain any S3 URLs, file paths, document references, or technical metadata. Focus only on the educational concept being tested.
   ALL answer choices and explanations must be in the language: ${assessmentTemplate.docLang}.
 `
     : ''
@@ -74,19 +75,21 @@ ${
     ? `
   The questions are true/false questions. Provide two options: True and False, and indicate the correct answer.
   Articulate a reasoned and concise defense for your chosen answer without relying on direct references to the text labeled as "explanation".
+  CRITICAL: The explanation must NOT contain any S3 URLs, file paths, document references, or technical metadata. Focus only on the educational concept being tested.
   ALL answer choices and explanations must be in the language: ${assessmentTemplate.docLang}.
 `
     : ''
 }
 
 ${
-  assessmentTemplate.assessType === AssessType.singleChoiceAssessment
+  assessmentTemplate.assessType === AssessType.singleAnswerAssessment
     ? `  
-  The questions are single choice questions. Provide four options, and indicate the correct answer.
+  The questions are single answer questions. Provide four options, and indicate the correct answer.
   The answer choices must be around the topics covered in the lecture.
   Ensure that only one answer is correct.
   Articulate a reasoned and concise defense for your chosen answer without relying on direct references
   to the text labeled as "explanation".
+  CRITICAL: The explanation must NOT contain any S3 URLs, file paths, document references, or technical metadata. Focus only on the educational concept being tested.
   ALL answer choices and explanations must be in the language: ${assessmentTemplate.docLang}.
 `
     : ''
@@ -181,7 +184,7 @@ Use this exact XML format for your response:
     : ''
     }
     ${
-      assessmentTemplate.assessType === AssessType.singleChoiceAssessment
+      assessmentTemplate.assessType === AssessType.singleAnswerAssessment
         ? `
                 <answerChoices>[Option 1 in ${assessmentTemplate.docLang}]</answerChoices>
                 <answerChoices>[Option 2 in ${assessmentTemplate.docLang}]</answerChoices>
@@ -303,7 +306,7 @@ Please analyze the following educational documents and extract the academic topi
   return prompt;
 }
 
-export function getRelevantDocumentsPrompt(question: MultiChoice | FreeText | TrueFalse | SingleChoice) {     //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断兼容
+export function getRelevantDocumentsPrompt(question: MultiChoice | FreeText | TrueFalse | SingleAnswer) {     //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断兼容
   const kbQuery = `Find the relevant documents for the following quiz question:\n${JSON.stringify(question)}`;
   return kbQuery;
 }
@@ -323,6 +326,7 @@ ${languageInstructions}
 If relevant, use the content in the EXTRACTED_DOCUMENTS to improve the QUESTION's academic accuracy and depth.
 Any reference to the EXTRACTED_DOCUMENTS should include the uri of the document.
 CRITICAL: The <question> field must contain ONLY the pure question text, no additional context or explanations.
+CRITICAL: The explanation must NOT contain any S3 URLs, file paths, document references, or technical metadata. Focus only on the educational concept being tested.
 ALL content (questions, answers, explanations) must be in the specified language: ${assessmentTemplate.docLang}
 
 CURRENT QUESTION:
@@ -383,7 +387,7 @@ Use this exact XML format:
         : ''
     }
     ${
-      assessmentTemplate.assessType === AssessType.singleChoiceAssessment
+      assessmentTemplate.assessType === AssessType.singleAnswerAssessment
         ? `
             <answerChoices>[Option 1 in ${assessmentTemplate.docLang}]</answerChoices>
             <answerChoices>[Option 2 in ${assessmentTemplate.docLang}]</answerChoices>

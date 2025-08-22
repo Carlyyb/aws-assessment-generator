@@ -18,7 +18,7 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
-import { MultiChoice, FreeText, TrueFalse, SingleChoice, AssessType, type StudentAssessment } from '../graphql/API';
+import { MultiChoice, FreeText, TrueFalse, SingleAnswer, AssessType, type StudentAssessment } from '../graphql/API';
 import { getStudentAssessment, getAssessment } from '../graphql/queries';
 import { gradeStudentAssessment } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
@@ -37,7 +37,7 @@ export default function StudentAssessment() {
   const isPreviewMode = searchParams.get('preview') === 'true';
 
   const [assessmentId, setAssessmentId] = useState<string>();
-  const [questions, setQuestions] = useState<(MultiChoice | FreeText | TrueFalse | SingleChoice)[]>([]);
+  const [questions, setQuestions] = useState<(MultiChoice | FreeText | TrueFalse | SingleAnswer)[]>([]);
   const [assessType, setAssessType] = useState<AssessType>();
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
@@ -75,15 +75,15 @@ export default function StudentAssessment() {
           }
           
           // 根据评估类型获取正确的问题数组
-          let questionArray: (MultiChoice | FreeText | TrueFalse | SingleChoice)[] = [];
+          let questionArray: (MultiChoice | FreeText | TrueFalse | SingleAnswer)[] = [];
           if (assessment?.assessType === AssessType.multiChoiceAssessment && assessment.multiChoiceAssessment) {
             questionArray = assessment.multiChoiceAssessment;
           } else if (assessment?.assessType === AssessType.freeTextAssessment && assessment.freeTextAssessment) {
             questionArray = assessment.freeTextAssessment;
           } else if (assessment?.assessType === AssessType.trueFalseAssessment && assessment.trueFalseAssessment) {
             questionArray = assessment.trueFalseAssessment;
-          } else if (assessment?.assessType === AssessType.singleChoiceAssessment && assessment.singleChoiceAssessment) {
-            questionArray = assessment.singleChoiceAssessment;
+          } else if (assessment?.assessType === AssessType.singleAnswerAssessment && assessment.singleAnswerAssessment) {
+            questionArray = assessment.singleAnswerAssessment;
           }
           
           setQuestions(questionArray);
@@ -116,15 +116,15 @@ export default function StudentAssessment() {
           }
           
           // 根据评估类型获取正确的问题数组
-          let questionArray: (MultiChoice | FreeText | TrueFalse | SingleChoice)[] = [];
+          let questionArray: (MultiChoice | FreeText | TrueFalse | SingleAnswer)[] = [];
           if (result.assessment?.assessType === AssessType.multiChoiceAssessment && result.assessment.multiChoiceAssessment) {
             questionArray = result.assessment.multiChoiceAssessment;
           } else if (result.assessment?.assessType === AssessType.freeTextAssessment && result.assessment.freeTextAssessment) {
             questionArray = result.assessment.freeTextAssessment;
           } else if (result.assessment?.assessType === AssessType.trueFalseAssessment && result.assessment.trueFalseAssessment) {
             questionArray = result.assessment.trueFalseAssessment;
-          } else if (result.assessment?.assessType === AssessType.singleChoiceAssessment && result.assessment.singleChoiceAssessment) {
-            questionArray = result.assessment.singleChoiceAssessment;
+          } else if (result.assessment?.assessType === AssessType.singleAnswerAssessment && result.assessment.singleAnswerAssessment) {
+            questionArray = result.assessment.singleAnswerAssessment;
           }
           
           setQuestions(questionArray);
@@ -767,7 +767,7 @@ export default function StudentAssessment() {
                       <Tiles
                         columns={1}
                         value={answers[activeStepIndex] || ''}
-                        items={((questions[activeStepIndex] as MultiChoice | SingleChoice | TrueFalse).answerChoices || []).map((answerChoice, i) => ({ 
+                        items={((questions[activeStepIndex] as MultiChoice | SingleAnswer | TrueFalse).answerChoices || []).map((answerChoice, i) => ({ 
                           label: answerChoice, 
                           value: i.toString() 
                         }))}

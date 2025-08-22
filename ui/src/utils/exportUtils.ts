@@ -2,7 +2,12 @@ import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import html2canvas from 'html2canvas';
 import { Assessment } from '../graphql/API';
+
+// 添加中文字体支持到jsPDF
+// 注意：这需要安装 @types/jspdf 和中文字体
+// 如果需要更好的中文支持，可以考虑使用 jspdf-autotable 或 pdfmake
 
 // 导出选项接口
 export interface ExportOptions {
@@ -12,6 +17,19 @@ export interface ExportOptions {
   exportPDF: boolean;
   exportWord: boolean;
   exportJSON: boolean;
+}
+
+// 解析数据接口
+interface ExplanationItem {
+  questionIndex: number;
+  explanation: string | null;
+  correctAnswer: string | number | null;
+}
+
+interface ExplanationsData {
+  multiChoiceExplanations?: ExplanationItem[];
+  singleAnswerExplanations?: ExplanationItem[];
+  trueFalseExplanations?: ExplanationItem[];
 }
 
 // 格式化题目内容
@@ -38,9 +56,9 @@ const formatQuestionContent = (
   }
 
   // 处理单选题
-  if (assessment.singleChoiceAssessment && Array.isArray(assessment.singleChoiceAssessment)) {
+  if (assessment.singleAnswerAssessment && Array.isArray(assessment.singleAnswerAssessment)) {
     const startIndex = questions.length;
-    assessment.singleChoiceAssessment.forEach((q, index) => {
+    assessment.singleAnswerAssessment.forEach((q, index) => {
       if (q) {
         const questionText = `${startIndex + index + 1}. ${q.question || ''}\n${
           q.answerChoices ? q.answerChoices.join('\n') : ''
@@ -88,13 +106,116 @@ const formatQuestionContent = (
   return { questions, explanations };
 };
 
-// 生成PDF内容
-const generatePDF = (assessment: Assessment, options: ExportOptions): Uint8Array => {
-  const doc = new jsPDF();
+// 使用HTML和canvas生成更好的PDF（支持中文）
+const generatePDFWithCanvas = async (assessment: Assessment, options: ExportOptions): Promise<Uint8Array> => {
   const { questions, explanations } = formatQuestionContent(assessment);
   
-  // 设置字体（中文使用宋体风格，英文使用Times）
-  doc.setFont('times');
+  // 创建临时的HTML元素
+  const tempDiv = document.createElement('div');
+  tempDiv.style.position = 'absolute';
+  tempDiv.style.left = '-9999px';
+  tempDiv.style.top = '-9999px';
+  tempDiv.style.width = '800px';
+  tempDiv.style.padding = '20px';
+  tempDiv.style.fontFamily = 'Microsoft YaHei, SimSun, Arial, sans-serif';
+  tempDiv.style.fontSize = '14px';
+  tempDiv.style.lineHeight = '1.6';
+  tempDiv.style.color = '#000';
+  tempDiv.style.backgroundColor = '#fff';
+  
+  let htmlContent = `<h1 style="font-size: 18px; margin-bottom: 20px;">${assessment.name} - ${assessment.course?.name || ''}</h1>`;
+  
+  if (options.includeExplanationsOnly) {
+    htmlContent += '<h2 style="font-size: 16px; margin: 15px 0 10px 0;">答案解析</h2>';
+    explanations.forEach(explanation => {
+      htmlContent += `<div style="margin: 10px 0; color: #666;">${explanation}</div>`;
+    });
+  } else {
+    if (options.includeQuestions) {
+      htmlContent += '<h2 style="font-size: 16px; margin: 15px 0 10px 0;">题目</h2>';
+      questions.forEach((question, index) => {
+        htmlContent += `<div style="margin: 15px 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">${question}</div>`;
+        
+        if (options.includeExplanations && explanations[index]) {
+          htmlContent += `<div style="margin-left: 20px; color: #666; font-style: italic;">解析: ${explanations[index]}</div>`;
+        }
+      });
+    }
+  }
+  
+  tempDiv.innerHTML = htmlContent;
+  document.body.appendChild(tempDiv);
+  
+  try {
+    // 使用html2canvas捕获内容
+    const canvas = await html2canvas(tempDiv, {
+      scale: 2, // 提高分辨率
+      useCORS: true,
+      backgroundColor: '#ffffff'
+    });
+    
+    // 创建PDF
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    
+    // 计算缩放比例
+    const ratio = Math.min(pdfWidth / canvasWidth * 96 / 25.4, pdfHeight / canvasHeight * 96 / 25.4);
+    const scaledWidth = canvasWidth * ratio * 25.4 / 96;
+    const scaledHeight = canvasHeight * ratio * 25.4 / 96;
+    
+    // 如果内容高度超过一页，需要分页
+    if (scaledHeight > pdfHeight) {
+      const pageHeight = pdfHeight;
+      const totalPages = Math.ceil(scaledHeight / pageHeight);
+      
+      for (let i = 0; i < totalPages; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+        
+        const startY = i * pageHeight;
+        const remainingHeight = Math.min(pageHeight, scaledHeight - startY);
+        
+        // 裁剪canvas
+        const cropCanvas = document.createElement('canvas');
+        const cropCtx = cropCanvas.getContext('2d');
+        if (cropCtx) {
+          cropCanvas.width = canvasWidth;
+          cropCanvas.height = remainingHeight * 96 / 25.4 / ratio;
+          
+          cropCtx.drawImage(
+            canvas,
+            0, startY * 96 / 25.4 / ratio,
+            canvasWidth, cropCanvas.height,
+            0, 0,
+            canvasWidth, cropCanvas.height
+          );
+          
+          pdf.addImage(cropCanvas.toDataURL('image/png'), 'PNG', 0, 0, scaledWidth, remainingHeight);
+        }
+      }
+    } else {
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, scaledWidth, scaledHeight);
+    }
+    
+    return new Uint8Array(pdf.output('arraybuffer') as ArrayBuffer);
+  } finally {
+    // 清理临时元素
+    document.body.removeChild(tempDiv);
+  }
+};
+
+// 为PDF创建改进的文本处理（后备方案）
+const generatePDFFromHTML = (assessment: Assessment, options: ExportOptions): Uint8Array => {
+  const { questions, explanations } = formatQuestionContent(assessment);
+  
+  // 直接使用jsPDF但改进文本处理，移除未使用的HTML内容
+  const doc = new jsPDF();
+  doc.setFont('helvetica', 'normal');
   
   let y = 20;
   const lineHeight = 8;
@@ -102,14 +223,13 @@ const generatePDF = (assessment: Assessment, options: ExportOptions): Uint8Array
   
   // 标题
   doc.setFontSize(16);
-  doc.text(`${assessment.name} - ${assessment.course?.name || ''}`, 20, y);
+  const title = `${assessment.name} - ${assessment.course?.name || ''}`;
+  doc.text(title, 20, y);
   y += lineHeight * 2;
   
   doc.setFontSize(12);
   
-  // 根据选项输出内容
   if (options.includeExplanationsOnly) {
-    // 只输出解析
     doc.text('答案解析:', 20, y);
     y += lineHeight;
     
@@ -126,12 +246,11 @@ const generatePDF = (assessment: Assessment, options: ExportOptions): Uint8Array
       y += lineHeight / 2;
     });
   } else {
-    // 输出题目
     if (options.includeQuestions) {
       doc.text('题目:', 20, y);
       y += lineHeight;
       
-      questions.forEach(question => {
+      questions.forEach((question, index) => {
         const lines = doc.splitTextToSize(question, 170);
         lines.forEach((line: string) => {
           if (y > pageHeight - 20) {
@@ -143,33 +262,41 @@ const generatePDF = (assessment: Assessment, options: ExportOptions): Uint8Array
         });
         y += lineHeight;
         
-        // 如果选择了题目+解析，在每题后面紧跟解析
-        if (options.includeExplanations && explanations.length > 0) {
-          const questionIndex = questions.indexOf(question);
-          if (questionIndex < explanations.length && explanations[questionIndex]) {
-            doc.setFontSize(10);
-            doc.text('解析:', 25, y);
+        if (options.includeExplanations && explanations[index]) {
+          doc.setFontSize(10);
+          doc.text('解析:', 25, y);
+          y += lineHeight;
+          
+          const explanationLines = doc.splitTextToSize(explanations[index], 165);
+          explanationLines.forEach((line: string) => {
+            if (y > pageHeight - 20) {
+              doc.addPage();
+              y = 20;
+            }
+            doc.text(line, 25, y);
             y += lineHeight;
-            
-            const explanationLines = doc.splitTextToSize(explanations[questionIndex], 165);
-            explanationLines.forEach((line: string) => {
-              if (y > pageHeight - 20) {
-                doc.addPage();
-                y = 20;
-              }
-              doc.text(line, 25, y);
-              y += lineHeight;
-            });
-            
-            doc.setFontSize(12);
-            y += lineHeight;
-          }
+          });
+          
+          doc.setFontSize(12);
+          y += lineHeight;
         }
       });
     }
   }
   
   return new Uint8Array(doc.output('arraybuffer') as ArrayBuffer);
+};
+
+// 生成PDF内容 - 使用改进的版本
+const generatePDF = async (assessment: Assessment, options: ExportOptions): Promise<Uint8Array> => {
+  try {
+    // 优先使用canvas方法以获得更好的中文支持
+    return await generatePDFWithCanvas(assessment, options);
+  } catch (error) {
+    console.warn('Canvas PDF生成失败，使用后备方案:', error);
+    // 如果canvas方法失败，使用后备方案
+    return generatePDFFromHTML(assessment, options);
+  }
 };
 
 // 生成Word文档
@@ -186,7 +313,7 @@ const generateWordDoc = async (assessment: Assessment, options: ExportOptions): 
           text: `${assessment.name} - ${assessment.course?.name || ''}`,
           bold: true,
           size: 32,
-          font: "Times New Roman"
+          font: "Microsoft YaHei" // 改为支持中文的字体
         }),
       ],
       heading: HeadingLevel.HEADING_1,
@@ -203,7 +330,7 @@ const generateWordDoc = async (assessment: Assessment, options: ExportOptions): 
             text: '答案解析',
             bold: true,
             size: 24,
-            font: "Times New Roman"
+            font: "Microsoft YaHei" // 改为支持中文的字体
           }),
         ],
         heading: HeadingLevel.HEADING_2,
@@ -215,7 +342,7 @@ const generateWordDoc = async (assessment: Assessment, options: ExportOptions): 
         new Paragraph({
           children: [new TextRun({ 
             text: explanation,
-            font: "Times New Roman"
+            font: "Microsoft YaHei" // 改为支持中文的字体
           })],
         })
       );
@@ -230,7 +357,7 @@ const generateWordDoc = async (assessment: Assessment, options: ExportOptions): 
               text: '题目',
               bold: true,
               size: 24,
-              font: "Times New Roman"
+              font: "Microsoft YaHei" // 改为支持中文的字体
             }),
           ],
           heading: HeadingLevel.HEADING_2,
@@ -242,7 +369,7 @@ const generateWordDoc = async (assessment: Assessment, options: ExportOptions): 
           new Paragraph({
             children: [new TextRun({ 
               text: question,
-              font: "Times New Roman"
+              font: "Microsoft YaHei" // 改为支持中文的字体
             })],
           })
         );
@@ -255,11 +382,11 @@ const generateWordDoc = async (assessment: Assessment, options: ExportOptions): 
                 new TextRun({
                   text: '解析: ',
                   bold: true,
-                  font: "Times New Roman"
+                  font: "Microsoft YaHei" // 改为支持中文的字体
                 }),
                 new TextRun({
                   text: explanations[index],
-                  font: "Times New Roman"
+                  font: "Microsoft YaHei" // 改为支持中文的字体
                 }),
               ],
             })
@@ -285,9 +412,27 @@ const generateWordDoc = async (assessment: Assessment, options: ExportOptions): 
   });
 };
 
+interface ExportData {
+  id?: string;
+  name?: string;
+  course?: unknown;
+  lectureDate?: string;
+  deadline?: string;
+  status?: string;
+  published?: boolean;
+  updatedAt?: string;
+  multiChoiceAssessment?: unknown[];
+  singleAnswerAssessment?: unknown[];
+  trueFalseAssessment?: unknown[];
+  freeTextAssessment?: unknown[];
+  multiChoiceExplanations?: ExplanationItem[];
+  singleAnswerExplanations?: ExplanationItem[];
+  trueFalseExplanations?: ExplanationItem[];
+}
+
 // 生成JSON数据
 const generateJSON = (assessment: Assessment, options: ExportOptions): string => {
-  let data: any = {
+  let data: ExportData = {
     id: assessment.id,
     name: assessment.name,
     course: assessment.course,
@@ -302,8 +447,8 @@ const generateJSON = (assessment: Assessment, options: ExportOptions): string =>
     if (assessment.multiChoiceAssessment) {
       data.multiChoiceAssessment = assessment.multiChoiceAssessment;
     }
-    if (assessment.singleChoiceAssessment) {
-      data.singleChoiceAssessment = assessment.singleChoiceAssessment;
+    if (assessment.singleAnswerAssessment) {
+      data.singleAnswerAssessment = assessment.singleAnswerAssessment;
     }
     if (assessment.trueFalseAssessment) {
       data.trueFalseAssessment = assessment.trueFalseAssessment;
@@ -315,7 +460,7 @@ const generateJSON = (assessment: Assessment, options: ExportOptions): string =>
 
   if (options.includeExplanationsOnly) {
     // 只包含解析部分
-    const explanationsData: any = {};
+    const explanationsData: ExplanationsData = {};
     
     if (assessment.multiChoiceAssessment) {
       explanationsData.multiChoiceExplanations = assessment.multiChoiceAssessment.map((q, index) => ({
@@ -325,8 +470,8 @@ const generateJSON = (assessment: Assessment, options: ExportOptions): string =>
       }));
     }
     
-    if (assessment.singleChoiceAssessment) {
-      explanationsData.singleChoiceExplanations = assessment.singleChoiceAssessment.map((q, index) => ({
+    if (assessment.singleAnswerAssessment) {
+      explanationsData.singleAnswerExplanations = assessment.singleAnswerAssessment.map((q, index) => ({
         questionIndex: index + 1,
         explanation: q?.explanation || null,
         correctAnswer: q?.correctAnswer || null
@@ -384,7 +529,7 @@ export const exportAssessments = async (
     for (const version of versions) {
       if (options.exportPDF) {
         try {
-          const pdfBuffer = generatePDF(assessment, version.opts);
+          const pdfBuffer = await generatePDF(assessment, version.opts);
           zip.file(`${baseName}-${version.name}.pdf`, pdfBuffer);
         } catch (error) {
           console.error(`生成PDF失败 (${baseName}-${version.name}):`, error);

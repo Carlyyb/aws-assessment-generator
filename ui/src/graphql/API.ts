@@ -20,7 +20,7 @@ export enum AssessType {
   multiChoiceAssessment = "multiChoiceAssessment",
   freeTextAssessment = "freeTextAssessment",
   trueFalseAssessment = "trueFalseAssessment",
-  singleChoiceAssessment = "singleChoiceAssessment",
+  singleAnswerAssessment = "singleAnswerAssessment",
 }
 
 
@@ -89,7 +89,7 @@ export type AssessmentInput = {
   multiChoiceAssessment?: Array< MultiChoiceInput | null > | null,
   freeTextAssessment?: Array< FreeTextInput | null > | null,
   trueFalseAssessment?: Array< TrueFalseInput | null > | null,
-  singleChoiceAssessment?: Array< SingleChoiceInput | null > | null,
+  singleAnswerAssessment?: Array< SingleAnswerInput | null > | null,
   published?: boolean | null,
   status: AssessStatus,
 };
@@ -116,7 +116,7 @@ export type TrueFalseInput = {
   explanation: string,
 };
 
-export type SingleChoiceInput = {
+export type SingleAnswerInput = {
   title: string,
   question: string,
   answerChoices?: Array< string | null > | null,
@@ -133,8 +133,8 @@ export type TrueFalse = {
   explanation: string,
 };
 
-export type SingleChoice = {
-  __typename: "SingleChoice",
+export type SingleAnswer = {
+  __typename: "SingleAnswer",
   title: string,
   question: string,
   answerChoices: Array<string>, // 选项数组
@@ -167,7 +167,7 @@ export type Assessment = {
   multiChoiceAssessment?:  Array<MultiChoice > | null,
   freeTextAssessment?:  Array<FreeText > | null,
   trueFalseAssessment?:  Array<TrueFalse > | null,
-  singleChoiceAssessment?:  Array<SingleChoice > | null,
+  singleAnswerAssessment?:  Array<SingleAnswer > | null,
   published: boolean,
   status: AssessStatus,
   course?: Course | null,
@@ -338,8 +338,8 @@ export type UpsertAssessmentMutation = {
       correctAnswer: string,
       explanation: string,
     } > | null,
-    singleChoiceAssessment?:  Array< {
-      __typename: "SingleChoice",
+    singleAnswerAssessment?:  Array< {
+      __typename: "SingleAnswer",
       title: string,
       question: string,
       answerChoices: Array< string >,
@@ -400,8 +400,8 @@ export type UpsertStudentAssessmentMutation = {
       correctAnswer: string,
       explanation: string,
       } > | null,
-      singleChoiceAssessment?:  Array< {
-        __typename: "SingleChoice",
+      singleAnswerAssessment?:  Array< {
+        __typename: "SingleAnswer",
         title: string,
         question: string,
         answerChoices: Array< string >,
@@ -468,8 +468,8 @@ export type GradeStudentAssessmentMutation = {
       correctAnswer: string,
       explanation: string,
       } > | null,
-      singleChoiceAssessment?:  Array< {
-        __typename: "SingleChoice",
+      singleAnswerAssessment?:  Array< {
+        __typename: "SingleAnswer",
         title: string,
         question: string,
         answerChoices: Array< string >,
@@ -580,8 +580,8 @@ export type GetAssessmentQuery = {
       correctAnswer: string,
       explanation: string,
       } > | null,
-    singleChoiceAssessment?:  Array< {
-      __typename: "SingleChoice",
+    singleAnswerAssessment?:  Array< {
+      __typename: "SingleAnswer",
       title: string,
       question: string,
       answerChoices: Array< string >,
@@ -635,8 +635,8 @@ export type ListAssessmentsQuery = {
       correctAnswer: string,
       explanation: string,
     } > | null,
-    singleChoiceAssessment?:  Array< {
-      __typename: "SingleChoice",
+    singleAnswerAssessment?:  Array< {
+      __typename: "SingleAnswer",
       title: string,
       question: string,
       answerChoices: Array< string >,
@@ -713,8 +713,8 @@ export type GetStudentAssessmentQuery = {
       correctAnswer: string,
       explanation: string,
     } > | null,
-    singleChoiceAssessment?:  Array< {
-      __typename: "SingleChoice",
+    singleAnswerAssessment?:  Array< {
+      __typename: "SingleAnswer",
       title: string,
       question: string,
       answerChoices: Array< string >,
@@ -777,8 +777,8 @@ export type ListStudentAssessmentsQuery = {
       correctAnswer: string,
       explanation: string,
     } > | null,
-    singleChoiceAssessment?:  Array< {
-      __typename: "SingleChoice",
+    singleAnswerAssessment?:  Array< {
+      __typename: "SingleAnswer",
       title: string,
       question: string,
       answerChoices: Array< string >,
@@ -845,8 +845,8 @@ export type ListMyStudentAssessmentsQuery = {
       correctAnswer: string,
       explanation: string,
     } > | null,
-    singleChoiceAssessment?:  Array< {
-      __typename: "SingleChoice",
+    singleAnswerAssessment?:  Array< {
+      __typename: "SingleAnswer",
       title: string,
       question: string,
       answerChoices: Array< string >,

@@ -81,7 +81,7 @@ export const getAssessment = /* GraphQL */ `
           point
         }
       }
-      singleChoiceAssessment {
+      singleAnswerAssessment {
         title
         question
         answerChoices
@@ -130,7 +130,7 @@ export const listAssessments = /* GraphQL */ `
           point
         }
       }
-      singleChoiceAssessment {
+      singleAnswerAssessment {
         title
         question
         answerChoices
@@ -224,7 +224,7 @@ export const getStudentAssessment = /* GraphQL */ `
             point
           }
         }
-        singleChoiceAssessment {
+        singleAnswerAssessment {
           title
           question
           answerChoices
@@ -281,7 +281,7 @@ export const listStudentAssessments = /* GraphQL */ `
             point
           }
         }
-        singleChoiceAssessment {
+        singleAnswerAssessment {
           title
           question
           answerChoices
@@ -338,7 +338,7 @@ export const listMyStudentAssessments = /* GraphQL */ `
             point
           }
         }
-        singleChoiceAssessment {
+        singleAnswerAssessment {
           title
           question
           answerChoices

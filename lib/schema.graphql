@@ -23,7 +23,7 @@ enum AssessType {
   multiChoiceAssessment
   freeTextAssessment
   trueFalseAssessment
-  singleChoiceAssessment
+  singleAnswerAssessment
 }
 
 enum AssessStatus {
@@ -252,7 +252,7 @@ type TrueFalse {
   explanation: String
 }
 
-type SingleChoice {
+type SingleAnswer {
   title: String
   question: String
   answerChoices: [String!]
@@ -276,7 +276,7 @@ input TrueFalseInput {
   explanation: String!
 }
 
-input SingleChoiceInput {
+input SingleAnswerInput {
   title: String!
   question: String!
   answerChoices: [String]
@@ -295,7 +295,7 @@ type Assessment {
   multiChoiceAssessment: [MultiChoice!]
   freeTextAssessment: [FreeText!]
   trueFalseAssessment: [TrueFalse!]
-  singleChoiceAssessment: [SingleChoice!]
+  singleAnswerAssessment: [SingleAnswer!]
   published: Boolean!
   status: AssessStatus!
   course: Course
@@ -320,7 +320,7 @@ input AssessmentInput {
   multiChoiceAssessment: [MultiChoiceInput]
   freeTextAssessment: [FreeTextInput]
   trueFalseAssessment: [TrueFalseInput]
-  singleChoiceAssessment: [SingleChoiceInput]
+  singleAnswerAssessment: [SingleAnswerInput]
   published: Boolean
   status: AssessStatus!
   # 新增字段

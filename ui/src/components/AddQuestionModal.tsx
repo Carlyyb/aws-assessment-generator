@@ -13,7 +13,7 @@ import {
   Header,
   Alert
 } from '@cloudscape-design/components';
-import { AssessType, MultiChoiceInput, FreeTextInput, SingleChoiceInput, TrueFalseInput, RubricInput } from '../graphql/API';
+import { AssessType, MultiChoiceInput, FreeTextInput, SingleAnswerInput, TrueFalseInput, RubricInput } from '../graphql/API';
 
 interface AddQuestionModalProps {
   visible: boolean;
@@ -43,7 +43,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
   // 题型选项
   const questionTypeOptions: SelectProps.Option[] = [
     { label: '多选题', value: AssessType.multiChoiceAssessment },
-    { label: '单选题', value: AssessType.singleChoiceAssessment },
+    { label: '单选题', value: AssessType.singleAnswerAssessment },
     { label: '判断题', value: AssessType.trueFalseAssessment },
     { label: '简答题', value: AssessType.freeTextAssessment }
   ];
@@ -61,7 +61,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
     if (questionType?.value === AssessType.trueFalseAssessment) {
       setAnswerChoices(['正确', '错误']);
       setCorrectAnswer(null);
-    } else if (questionType?.value === AssessType.singleChoiceAssessment || questionType?.value === AssessType.multiChoiceAssessment) {
+    } else if (questionType?.value === AssessType.singleAnswerAssessment || questionType?.value === AssessType.multiChoiceAssessment) {
       setAnswerChoices(['', '', '', '']);
       setCorrectAnswer(null);
     } else if (questionType?.value === AssessType.freeTextAssessment) {
@@ -96,14 +96,14 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
         } as MultiChoiceInput;
         break;
 
-      case AssessType.singleChoiceAssessment:
+      case AssessType.singleAnswerAssessment:
         newQuestion = {
           title: title.trim(),
           question: question.trim(),
           answerChoices: answerChoices.filter(choice => choice.trim() !== ''),
           correctAnswer: typeof correctAnswer === 'number' ? correctAnswer : 1,
           explanation: explanation.trim()
-        } as SingleChoiceInput;
+        } as SingleAnswerInput;
         break;
 
       case AssessType.trueFalseAssessment:
@@ -177,7 +177,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
       return false;
     }
 
-    if (questionType.value === AssessType.multiChoiceAssessment || questionType.value === AssessType.singleChoiceAssessment) {
+    if (questionType.value === AssessType.multiChoiceAssessment || questionType.value === AssessType.singleAnswerAssessment) {
       const validChoices = answerChoices.filter(choice => choice.trim() !== '');
       return validChoices.length >= 2 && correctAnswer !== null;
     }
@@ -257,7 +257,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
         </FormField>
 
         {/* 选择题选项 */}
-        {questionType && (questionType.value === AssessType.multiChoiceAssessment || questionType.value === AssessType.singleChoiceAssessment) && (
+        {questionType && (questionType.value === AssessType.multiChoiceAssessment || questionType.value === AssessType.singleAnswerAssessment) && (
           <Container header={<Header variant="h3">答案选项</Header>}>
             <SpaceBetween size="m">
               {answerChoices.map((choice, index) => (
