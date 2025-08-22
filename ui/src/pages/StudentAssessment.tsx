@@ -45,8 +45,8 @@ export default function StudentAssessment() {
   const [toolsOpen, setToolsOpen] = useState(true); // 右侧工具栏开关状态
 
   // 计时器相关状态
-  const [isTimeLimited, setIsTimeLimited] = useState(false);
-  const [timeLimit, setTimeLimit] = useState(0); // 时间限制（分钟）
+  const [isTimeLimited] = useState(false);
+  const [timeLimit] = useState(0); // 时间限制（分钟）
   const [remainingTime, setRemainingTime] = useState(0); // 剩余时间（秒）
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
@@ -61,18 +61,18 @@ export default function StudentAssessment() {
       const loadAssessmentData = async () => {
         try {
           const response = await client.graphql({ query: getAssessment, variables: { id: params.id! } });
-          const data = (response as any).data;
+          const data = (response as { data: { getAssessment: any } }).data;
           const assessment = data.getAssessment;
           setAssessmentId(assessment.id);
           setAssessType(assessment.assessType);
           
-          // 检查是否有时间限制
-          if (assessment?.timeLimited && assessment?.timeLimit) {
-            setIsTimeLimited(true);
-            setTimeLimit(assessment.timeLimit);
-            setRemainingTime(assessment.timeLimit * 60); // 转换为秒
-            setShowStartDialog(true); // 显示开始确认对话框
-          }
+          // 检查是否有时间限制 (注意：Assessment 类型可能没有 timeLimited 属性)
+          // if (assessment?.timeLimited && assessment?.timeLimit) {
+          //   setIsTimeLimited(true);
+          //   setTimeLimit(assessment.timeLimit);
+          //   setRemainingTime(assessment.timeLimit * 60); // 转换为秒
+          //   setShowStartDialog(true); // 显示开始确认对话框
+          // }
           
           // 根据评估类型获取正确的问题数组
           let questionArray: (MultiChoice | FreeText | TrueFalse | SingleAnswer)[] = [];
@@ -88,7 +88,7 @@ export default function StudentAssessment() {
           
           setQuestions(questionArray);
           setAnswers(new Array(questionArray.length).fill(''));
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Preview mode: Failed to load assessment:', error);
           dispatchAlert({ 
             type: AlertType.ERROR, 
@@ -98,39 +98,47 @@ export default function StudentAssessment() {
       };
       
       loadAssessmentData();
+    } else {
       // 正常学生模式
-      client
-        .graphql<any>({ query: getStudentAssessment, variables: { parentAssessId: params.id! } })
-        .then(({ data }) => {
-          const result: StudentAssessment = data.getStudentAssessment;
-          setAssessmentId(result.parentAssessId);
-          setAssessType(result.assessment?.assessType);
+      const loadStudentAssessment = async () => {
+        try {
+          const result = await client
+            .graphql<{ getStudentAssessment: StudentAssessment }>({ query: getStudentAssessment, variables: { parentAssessId: params.id! } });
+          
+          const data = (result as { data: any }).data;
+          const studentAssessment: StudentAssessment = data.getStudentAssessment;
+          setAssessmentId(studentAssessment.parentAssessId);
+          setAssessType(studentAssessment.assessment?.assessType);
           
           // 检查是否有时间限制
-          const assessment = result.assessment as any;
-          if (assessment?.timeLimited && assessment?.timeLimit) {
-            setIsTimeLimited(true);
-            setTimeLimit(assessment.timeLimit);
-            setRemainingTime(assessment.timeLimit * 60); // 转换为秒
-            setShowStartDialog(true); // 显示开始确认对话框
-          }
+          // const assessment = studentAssessment.assessment;
+          // if (assessment?.timeLimited && assessment?.timeLimit) {
+          //   setIsTimeLimited(true);
+          //   setTimeLimit(assessment.timeLimit);
+          //   setRemainingTime(assessment.timeLimit * 60); // 转换为秒
+          //   setShowStartDialog(true); // 显示开始确认对话框
+          // }
           
           // 根据评估类型获取正确的问题数组
           let questionArray: (MultiChoice | FreeText | TrueFalse | SingleAnswer)[] = [];
-          if (result.assessment?.assessType === AssessType.multiChoiceAssessment && result.assessment.multiChoiceAssessment) {
-            questionArray = result.assessment.multiChoiceAssessment;
-          } else if (result.assessment?.assessType === AssessType.freeTextAssessment && result.assessment.freeTextAssessment) {
-            questionArray = result.assessment.freeTextAssessment;
-          } else if (result.assessment?.assessType === AssessType.trueFalseAssessment && result.assessment.trueFalseAssessment) {
-            questionArray = result.assessment.trueFalseAssessment;
-          } else if (result.assessment?.assessType === AssessType.singleAnswerAssessment && result.assessment.singleAnswerAssessment) {
-            questionArray = result.assessment.singleAnswerAssessment;
+          if (studentAssessment.assessment?.assessType === AssessType.multiChoiceAssessment && studentAssessment.assessment.multiChoiceAssessment) {
+            questionArray = studentAssessment.assessment.multiChoiceAssessment;
+          } else if (studentAssessment.assessment?.assessType === AssessType.freeTextAssessment && studentAssessment.assessment.freeTextAssessment) {
+            questionArray = studentAssessment.assessment.freeTextAssessment;
+          } else if (studentAssessment.assessment?.assessType === AssessType.trueFalseAssessment && studentAssessment.assessment.trueFalseAssessment) {
+            questionArray = studentAssessment.assessment.trueFalseAssessment;
+          } else if (studentAssessment.assessment?.assessType === AssessType.singleAnswerAssessment && studentAssessment.assessment.singleAnswerAssessment) {
+            questionArray = studentAssessment.assessment.singleAnswerAssessment;
           }
           
           setQuestions(questionArray);
           setAnswers(new Array(questionArray.length).fill(''));
-        })
-        .catch(() => {});
+        } catch (error) {
+          console.error('Error loading assessment:', error);
+        }
+      };
+      
+      loadStudentAssessment();
     }
   }, [isPreviewMode, params.id, dispatchAlert]);
 
@@ -161,7 +169,7 @@ export default function StudentAssessment() {
   }, [isTimeLimited]);
 
   // 自动提交（时间到期）
-  const handleAutoSubmit = useCallback(() => {
+  const handleAutoSubmit = useCallback(async () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
@@ -187,22 +195,26 @@ export default function StudentAssessment() {
     } else {
       // 正常学生模式：真实提交
       setShowSpinner(true);
-      client
-        .graphql<any>({
-          query: gradeStudentAssessment,
-          variables: {
-            input: {
-              parentAssessId: params.id!,
-              answers: JSON.stringify(answers.map((answer) => (isNaN(+answer) ? answer : +answer + 1))),
+      try {
+        const result = await client
+          .graphql<{ gradeStudentAssessment: StudentAssessment }>({
+            query: gradeStudentAssessment,
+            variables: {
+              input: {
+                parentAssessId: params.id!,
+                answers: JSON.stringify(answers.map((answer) => (isNaN(+answer) ? answer : +answer + 1))),
+              },
             },
-          },
-        })
-        .then(({ data }) => {
-          const { score } = data.gradeStudentAssessment;
-          setScore(score);
-        })
-        .catch(() => dispatchAlert({ type: AlertType.ERROR }))
-        .finally(() => setShowSpinner(false));
+          });
+          
+        const data = (result as { data: any }).data;
+        const { score } = data.gradeStudentAssessment;
+        setScore(score);
+      } catch (error) {
+        dispatchAlert({ type: AlertType.ERROR });
+      } finally {
+        setShowSpinner(false);
+      }
     }
   }, [answers, params.id, dispatchAlert, isPreviewMode, questions.length]);
 
@@ -236,7 +248,7 @@ export default function StudentAssessment() {
   }, []);
 
   // 最终提交处理
-  const handleFinalSubmit = useCallback(() => {
+  const handleFinalSubmit = useCallback(async () => {
     // 清理计时器
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -251,7 +263,7 @@ export default function StudentAssessment() {
       // 模拟评分逻辑
       setTimeout(() => {
         let simulatedScore = 0;
-        let totalQuestions = questions.length;
+        const totalQuestions = questions.length;
         
         // 基于答案完成度生成模拟分数
         const answeredCount = answers.filter(answer => answer !== undefined && answer !== '').length;
@@ -273,22 +285,26 @@ export default function StudentAssessment() {
       // 正常学生模式：真实提交
       setShowSpinner(true);
       
-      client
-        .graphql<any>({
-          query: gradeStudentAssessment,
-          variables: {
-            input: {
-              parentAssessId: params.id!,
-              answers: JSON.stringify(answers.map((answer) => (isNaN(+answer) ? answer : +answer + 1))),
+      try {
+        const result = await client
+          .graphql<{ gradeStudentAssessment: StudentAssessment }>({
+            query: gradeStudentAssessment,
+            variables: {
+              input: {
+                parentAssessId: params.id!,
+                answers: JSON.stringify(answers.map((answer) => (isNaN(+answer) ? answer : +answer + 1))),
+              },
             },
-          },
-        })
-        .then(({ data }) => {
-          const { score } = data.gradeStudentAssessment;
-          setScore(score);
-        })
-        .catch(() => dispatchAlert({ type: AlertType.ERROR }))
-        .finally(() => setShowSpinner(false));
+          });
+          
+        const data = (result as any).data;
+        const { score } = data.gradeStudentAssessment;
+        setScore(score);
+      } catch (error) {
+        dispatchAlert({ type: AlertType.ERROR });
+      } finally {
+        setShowSpinner(false);
+      }
     }
   }, [answers, params.id, dispatchAlert, isPreviewMode, questions.length]);
 
@@ -762,12 +778,45 @@ export default function StudentAssessment() {
                         }}
                       />
                     </FormField>
+                  ) : assessType === AssessType.multiChoiceAssessment ? (
+                    // 多选题处理
+                    <FormField label={getText('student.assessments.detail.choose_multiple_answers')}>
+                      <SpaceBetween size="s">
+                        {((questions[activeStepIndex] as MultiChoice).answerChoices || []).map((answerChoice, i) => {
+                          const currentAnswers = answers[activeStepIndex] ? answers[activeStepIndex].split(',') : [];
+                          const isSelected = currentAnswers.includes(i.toString());
+                          
+                          return (
+                            <Tiles
+                              key={`answer-${i}`}
+                              columns={1}
+                              value={isSelected ? "selected" : "unselected"}
+                              items={[
+                                { label: `${String.fromCharCode(65 + i)}: ${answerChoice}`, value: "selected" }
+                              ]}
+                              onChange={() => {
+                                const newAnswers = currentAnswers.filter(ans => ans !== i.toString());
+                                if (!isSelected) {
+                                  newAnswers.push(i.toString());
+                                }
+                                newAnswers.sort();
+                                
+                                const newAnswersArray = [...answers];
+                                newAnswersArray[activeStepIndex] = newAnswers.join(',');
+                                setAnswers(newAnswersArray);
+                              }}
+                            />
+                          );
+                        })}
+                      </SpaceBetween>
+                    </FormField>
                   ) : (
+                    // 单选题和判断题处理
                     <FormField label={getText('student.assessments.detail.choose_answer')}>
                       <Tiles
                         columns={1}
                         value={answers[activeStepIndex] || ''}
-                        items={((questions[activeStepIndex] as MultiChoice | SingleAnswer | TrueFalse).answerChoices || []).map((answerChoice, i) => ({ 
+                        items={((questions[activeStepIndex] as SingleAnswer | TrueFalse).answerChoices || []).map((answerChoice, i) => ({ 
                           label: answerChoice, 
                           value: i.toString() 
                         }))}
@@ -835,4 +884,4 @@ export default function StudentAssessment() {
       </Modal>
     </>
   );
-};
+}

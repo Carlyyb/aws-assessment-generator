@@ -12,7 +12,7 @@ type QAViewProps = {
 
 export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAViewProps) => {
   // 判断题型
-  const isMultiChoice = 'answerChoices' in assessment && typeof assessment.correctAnswer === 'number';  
+  const isMultiChoice = 'answerChoices' in assessment && Array.isArray(assessment.correctAnswer);  
   const isSingleAnswer = 'answerChoices' in assessment && typeof assessment.correctAnswer === 'number' && assessment.answerChoices.length === 4;  // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断（单选默认四个选项）
   const isTrueFalse = 'answerChoices' in assessment && typeof assessment.correctAnswer === 'string' && assessment.answerChoices.length === 2;     //  单选默认四个选项，判断默认两个选项
   const isFreeText = 'rubric' in assessment;  
@@ -85,7 +85,52 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
         </Container>
       )}
 
-      {(isMultiChoice || isSingleAnswer) && (
+      {isMultiChoice && (
+        <Container header={<Header variant="h2">{getText('assessment.choose_multiple_answers')}</Header>}>
+          <SpaceBetween size="s">
+            {assessment.answerChoices.map((answerChoice, i) => {
+              const correctAnswers = Array.isArray(assessment.correctAnswer) 
+                ? assessment.correctAnswer 
+                : [assessment.correctAnswer];
+              const isSelected = correctAnswers.includes(i + 1);
+              
+              return (
+                <Tiles
+                  key={`answer-${i}`}
+                  value={isSelected ? "selected" : "unselected"}
+                  items={[
+                    { label: `${String.fromCharCode(65 + i)}: ${answerChoice}`, value: "selected" }
+                  ]}
+                  onChange={() => {
+                    let newCorrectAnswers = [...correctAnswers];
+                    if (isSelected) {
+                      // 取消选择
+                      newCorrectAnswers = newCorrectAnswers.filter(ans => ans !== (i + 1));
+                    } else {
+                      // 添加选择
+                      newCorrectAnswers.push(i + 1);
+                    }
+                    // 确保至少有一个答案被选中
+                    if (newCorrectAnswers.length === 0) {
+                      newCorrectAnswers = [1];
+                    }
+                    newCorrectAnswers.sort();
+                    
+                    updateAssessment({
+                      type: ActionTypes.Update,
+                      stepIndex: activeStepIndex,
+                      key: 'correctAnswer',
+                      content: newCorrectAnswers,
+                    });
+                  }}
+                />
+              );
+            })}
+          </SpaceBetween>
+        </Container>
+      )}
+
+      {isSingleAnswer && (
         <Container header={<Header variant="h2">{getText('assessment.choose_answer')}</Header>}>
           <Tiles
             value={((assessment.correctAnswer as number) - 1).toString()}

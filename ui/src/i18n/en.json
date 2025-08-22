@@ -164,7 +164,8 @@
       "multi_choice": "Multi Choice",
       "free_text": "Free Text",
       "edit_answers": "Edit Answers",
-      "choose_answer": "Choose Correct Answer"
+      "choose_answer": "Choose Correct Answer",
+      "choose_multiple_answers": "Choose Multiple Correct Answers (at least 2)"
     }
   },
   "teachers": {
@@ -559,6 +560,7 @@
         "skip_to": "Skip to {title}",
         "provide_answer": "Provide:",
         "choose_answer": "Choose:",
+        "choose_multiple_answers": "Please choose multiple answers (you may select multiple options):",
         "grading": "Grading...",
         "explanation": "Explanation",
         "answer": "Answer",
@@ -576,9 +578,9 @@
     "Evaluation": "Evaluation"
   },
   "assessType": {
-    "multiChoiceAssessment": "Multiple Choice Assessment",
+    "multiChoiceAssessment": "Multiple Choice Assessment (Multiple Answers)",
     "freeTextAssessment": "Free Text Assessment",
-    "singleAnswerAssessment": "Single answer Assessment",
+    "singleAnswerAssessment": "Single Answer Assessment",
     "trueFalseAssessment": "True/False Assessment"
   },
   "formats": {

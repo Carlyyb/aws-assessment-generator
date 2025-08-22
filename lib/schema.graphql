@@ -240,7 +240,7 @@ type MultiChoice {
   title: String
   question: String
   answerChoices: [String!]
-  correctAnswer: Int
+  correctAnswer: [Int!]
   explanation: String
 }
 
@@ -264,7 +264,7 @@ input MultiChoiceInput {
   title: String!
   question: String!
   answerChoices: [String]
-  correctAnswer: Int
+  correctAnswer: [Int!]
   explanation: String!
 }
 

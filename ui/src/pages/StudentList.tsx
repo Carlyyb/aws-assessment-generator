@@ -68,7 +68,6 @@ const StudentList = () => {
       setLoading(true);
     }
     try {
-      console.log('开始加载学生和分组数据...');
       
       // 并行加载学生和分组数据
       const [studentsResponse, groupsResponse] = await Promise.all([
@@ -78,9 +77,6 @@ const StudentList = () => {
 
       const studentsData = (studentsResponse as any).data.listStudents || [];
       const groupsData = (groupsResponse as any).data.listStudentGroups || [];
-
-      console.log('API返回的学生数据:', studentsData);
-      console.log('API返回的分组数据:', groupsData);
 
       // 处理学生数据，确保字段不为null
       const processedStudents = studentsData.map((student: any) => ({
@@ -262,15 +258,11 @@ const StudentList = () => {
     }
 
     try {
-      // 真实调用：遍历分组，依次更新分组的students字段
       for (const group of selectedGroups) {
         const groupId = group.value;
-        // 获取原分组对象
         const targetGroup = groups.find(g => g.id === groupId);
         if (!targetGroup) continue;
-        // 合并学生ID，去重
         const newStudentIds = Array.from(new Set([...targetGroup.students, ...selectedStudents.map(s => s.id)]));
-        // 调用updateStudentGroup mutation
         await client.graphql({
           query: updateStudentGroup,
           variables: {
@@ -348,7 +340,7 @@ const StudentList = () => {
               </Box>
               <Box>
                 <Box variant="h3" color="text-label">分组数量</Box>
-                <Box variant="h1">{groups.length}</Box>
+                <Box variant="h1">{groups.length - 2}</Box>
               </Box>
               <Box>
                 <Box variant="h3" color="text-label">活跃学生</Box>

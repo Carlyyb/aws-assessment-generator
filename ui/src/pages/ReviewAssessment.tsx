@@ -286,10 +286,17 @@ export default () => {
                             key={i}
                             style={{
                               border:
-                                (assessment as MultiChoice | SingleAnswer).correctAnswer! - 1 === i
+                                // 处理多选题的正确答案数组和单选题的单个答案
+                                assessType === AssessType.multiChoiceAssessment
+                                  ? (assessment as MultiChoice).correctAnswer!.includes(i + 1)
+                                    ? `3px solid green`
+                                    : studentAssessment.answers![activeStepIndex] === i + 1
+                                    ? `3px solid red`
+                                    : ''
+                                  : (assessment as SingleAnswer).correctAnswer! - 1 === i
                                   ? `3px solid green`
                                   : studentAssessment.answers![activeStepIndex] === i + 1 &&
-                                    studentAssessment.answers![activeStepIndex] !== (assessment as MultiChoice | SingleAnswer).correctAnswer
+                                    studentAssessment.answers![activeStepIndex] !== (assessment as SingleAnswer).correctAnswer
                                   ? `3px solid red`
                                   : '',
                             }}

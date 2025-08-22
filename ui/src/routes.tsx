@@ -37,10 +37,6 @@ export const routes = {
               path: 'student-list',
               element: <StudentList />,
             },
-            {
-              path: 'user-management',
-              element: <UserManagement />,
-            },
           ],
         },
         {

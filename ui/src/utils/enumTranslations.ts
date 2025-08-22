@@ -50,6 +50,14 @@ export const getAssessTypeOptions = () => [
     value: AssessType.multiChoiceAssessment,
   },
   {
+    label: getAssessTypeText(AssessType.singleAnswerAssessment),
+    value: AssessType.singleAnswerAssessment,
+  },
+  {
+    label: getAssessTypeText(AssessType.trueFalseAssessment),
+    value: AssessType.trueFalseAssessment,
+  },
+  {
     label: getAssessTypeText(AssessType.freeTextAssessment),
     value: AssessType.freeTextAssessment,
   },

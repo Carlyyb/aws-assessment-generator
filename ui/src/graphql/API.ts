@@ -98,7 +98,7 @@ export type MultiChoiceInput = {
   title: string,
   question: string,
   answerChoices?: Array< string | null > | null,
-  correctAnswer?: number | null,
+  correctAnswer?: Array< number | null > | null,
   explanation: string,
 };
 
@@ -178,7 +178,7 @@ export type MultiChoice = {
   title: string,
   question: string,
   answerChoices: Array< string >,
-  correctAnswer: number,
+  correctAnswer: Array< number >,
   explanation: string,
 };
 

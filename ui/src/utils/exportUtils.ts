@@ -23,7 +23,7 @@ export interface ExportOptions {
 interface ExplanationItem {
   questionIndex: number;
   explanation: string | null;
-  correctAnswer: string | number | null;
+  correctAnswer: string | number | number[] | null;
 }
 
 interface ExplanationsData {

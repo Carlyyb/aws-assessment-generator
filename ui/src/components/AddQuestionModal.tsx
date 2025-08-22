@@ -91,7 +91,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
           title: title.trim(),
           question: question.trim(),
           answerChoices: answerChoices.filter(choice => choice.trim() !== ''),
-          correctAnswer: typeof correctAnswer === 'number' ? correctAnswer : 1,
+          correctAnswer: [typeof correctAnswer === 'number' ? correctAnswer : 1],
           explanation: explanation.trim()
         } as MultiChoiceInput;
         break;

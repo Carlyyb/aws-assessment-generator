@@ -83,20 +83,33 @@ export class GenAiService {
       
       // 预处理问题，修复correctAnswer类型问题
       questions.forEach((question, index) => {
-        if ((assessmentTemplate.assessType === AssessType.multiChoiceAssessment || 
-             assessmentTemplate.assessType === AssessType.singleAnswerAssessment) && 
+        if (assessmentTemplate.assessType === AssessType.multiChoiceAssessment && 
             question && 'correctAnswer' in question) {
           
-          logger.debug(`Processing correctAnswer for question ${index + 1}:`, { 
+          logger.debug(`Processing MultiChoice correctAnswer for question ${index + 1}:`, { 
             originalAnswer: question.correctAnswer, 
             type: typeof question.correctAnswer 
           });
           
-          // 处理各种可能的AI输出格式
+          // 多选题处理 - 转换为数组
+          const originalAnswer = question.correctAnswer;
+          const convertedAnswer = this.convertAnswerToNumberArray(question.correctAnswer);
+          (question as any).correctAnswer = convertedAnswer;
+          logger.debug(`Converted MultiChoice answer: ${JSON.stringify(originalAnswer)} -> ${JSON.stringify(convertedAnswer)}`);
+          
+        } else if (assessmentTemplate.assessType === AssessType.singleAnswerAssessment && 
+                   question && 'correctAnswer' in question) {
+          
+          logger.debug(`Processing SingleAnswer correctAnswer for question ${index + 1}:`, { 
+            originalAnswer: question.correctAnswer, 
+            type: typeof question.correctAnswer 
+          });
+          
+          // 单选题处理 - 转换为单个数字
           const originalAnswer = question.correctAnswer;
           const convertedAnswer = this.convertAnswerToNumber(question.correctAnswer);
           (question as any).correctAnswer = convertedAnswer;
-          logger.debug(`Converted answer: ${JSON.stringify(originalAnswer)} -> ${convertedAnswer}`);
+          logger.debug(`Converted SingleAnswer answer: ${JSON.stringify(originalAnswer)} -> ${convertedAnswer}`);
         }
         
         // 同样处理TrueFalse题型
@@ -156,7 +169,7 @@ export class GenAiService {
               title: `${mergedQuestion.title} - Part ${j + 1}`,
               question: typeof questionTexts[j] === 'object' ? (questionTexts[j] as any).text : questionTexts[j],
               answerChoices: mergedQuestion.answerChoices,
-              correctAnswer: this.convertAnswerToNumber(correctAnswers[j]),
+              correctAnswer: this.convertAnswerToNumberArray(correctAnswers[j]),
               explanation: typeof explanations[j] === 'object' ? (explanations[j] as any).text : explanations[j]
             } as MultiChoice;
             
@@ -204,7 +217,82 @@ export class GenAiService {
   }
 
   /**
-   * 将各种可能的AI输出转换为数字索引
+   * 将各种可能的AI输出转换为数字索引数组（用于多选题）
+   * 处理以下情况：
+   * - 单个数字: 1, 2, 3, 4 -> [1], [2], [3], [4]
+   * - 数字数组: [1, 2], [2, 4] -> [1, 2], [2, 4]
+   * - 字符串数字: "1", "2" -> [1], [2]
+   * - 字母选项: "A", "AB", "A,C" -> [1], [1,2], [1,3]
+   * - 混合数组: ["A", "B"], ["1", "3"] -> [1,2], [1,3]
+   * A=1, B=2, C=3, D=4
+   */
+  private convertAnswerToNumberArray(answer: any): number[] {
+    logger.debug(`Converting answer to number array:`, { answer, type: typeof answer });
+    
+    // 处理null或undefined
+    if (answer == null) {
+      logger.warn(`Answer is null or undefined, defaulting to [1]`);
+      return [1];
+    }
+    
+    // 处理数组类型
+    if (Array.isArray(answer)) {
+      if (answer.length === 0) {
+        logger.warn(`Answer array is empty, defaulting to [1]`);
+        return [1];
+      }
+      // 递归处理数组中的每个元素
+      const results: number[] = [];
+      answer.forEach(item => {
+        const converted = this.convertAnswerToNumber(item);
+        if (converted && !results.includes(converted)) {
+          results.push(converted);
+        }
+      });
+      return results.length > 0 ? results.sort() : [1];
+    }
+    
+    // 处理字符串类型 - 可能包含多个答案
+    if (typeof answer === 'string') {
+      const trimmedAnswer = answer.trim();
+      
+      // 处理逗号分隔的答案 "A,B,C" 或 "1,2,3"
+      if (trimmedAnswer.includes(',')) {
+        const parts = trimmedAnswer.split(',').map(part => part.trim());
+        const results: number[] = [];
+        parts.forEach(part => {
+          const converted = this.convertAnswerToNumber(part);
+          if (converted && !results.includes(converted)) {
+            results.push(converted);
+          }
+        });
+        return results.length > 0 ? results.sort() : [1];
+      }
+      
+      // 处理连续字母 "ABC" -> [1,2,3]
+      if (/^[A-Da-d]+$/.test(trimmedAnswer)) {
+        const results: number[] = [];
+        for (const char of trimmedAnswer.toUpperCase()) {
+          const converted = this.convertAnswerToNumber(char);
+          if (converted && !results.includes(converted)) {
+            results.push(converted);
+          }
+        }
+        return results.length > 0 ? results.sort() : [1];
+      }
+      
+      // 单个答案
+      const singleAnswer = this.convertAnswerToNumber(answer);
+      return [singleAnswer];
+    }
+    
+    // 其他类型 - 转换为单个答案
+    const singleAnswer = this.convertAnswerToNumber(answer);
+    return [singleAnswer];
+  }
+
+  /**
+   * 将各种可能的AI输出转换为单个数字索引
    * 处理以下情况：
    * - 数字: 1, 2, 3, 4
    * - 字符串数字: "1", "2", "3", "4"
@@ -473,10 +561,12 @@ export class GenAiService {
     const { question }: { question: MultiChoice | FreeText | TrueFalse | SingleAnswer } = parser.parse(llmResponse);    //CHANGELOG 2025-08-15 by 邱语堂：新增了单选/判断兼容
     
     // 修复多选题的correctAnswer类型问题
-    if ((assessmentTemplate.assessType === AssessType.multiChoiceAssessment || 
-         assessmentTemplate.assessType === AssessType.singleAnswerAssessment) && 
+    if (assessmentTemplate.assessType === AssessType.multiChoiceAssessment && 
         question && 'correctAnswer' in question) {
-      (question as MultiChoice | SingleAnswer).correctAnswer = this.convertAnswerToNumber((question as MultiChoice | SingleAnswer).correctAnswer);
+      (question as MultiChoice).correctAnswer = this.convertAnswerToNumberArray((question as MultiChoice).correctAnswer);
+    } else if (assessmentTemplate.assessType === AssessType.singleAnswerAssessment && 
+               question && 'correctAnswer' in question) {
+      (question as SingleAnswer).correctAnswer = this.convertAnswerToNumber((question as SingleAnswer).correctAnswer);
     }
     
     return question;

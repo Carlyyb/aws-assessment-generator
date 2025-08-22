@@ -167,7 +167,8 @@
       "multi_choice": "多选题",
       "free_text": "自由文本",
       "edit_answers": "编辑答案",
-      "choose_answer": "选择正确答案"
+      "choose_answer": "选择正确答案",
+      "choose_multiple_answers": "选择多个正确答案（至少选择2个）"
     }
   },
   "teachers": {
@@ -555,6 +556,7 @@
         "skip_to": "跳转到 {title}",
         "provide_answer": "请作答：",
         "choose_answer": "请选择：",
+        "choose_multiple_answers": "请选择多个答案（可选择多个选项）：",
         "grading": "评分中..."
       },
       "review": {
@@ -565,6 +567,7 @@
         "skip_to": "跳转到 {title}",
         "provide_answer": "请作答：",
         "choose_answer": "请选择：",
+        "choose_multiple_answers": "请选择多个答案（可选择多个选项）：",
         "grading": "评分中...",
         "explanation": "解答",
         "answer": "答案",
@@ -582,7 +585,7 @@
     "Evaluation": "测试"
   },
   "assessType": {
-    "multiChoiceAssessment": "选择题测试",
+    "multiChoiceAssessment": "多选题测试",
     "freeTextAssessment": "问答题测试",
     "singleAnswerAssessment": "单选题测试",
     "trueFalseAssessment": "判断题测试"

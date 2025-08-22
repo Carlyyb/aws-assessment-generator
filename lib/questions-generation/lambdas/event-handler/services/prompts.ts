@@ -50,13 +50,18 @@ The text below is a summarised transcript of the lecture that the teacher provid
 ${
   assessmentTemplate.assessType === AssessType.multiChoiceAssessment
     ? `
-  The questions are muliple choice questions.
+  The questions are MULTIPLE choice questions where students can select MULTIPLE correct answers.
   The answer choices must be around the topics covered in the lecture.
-  Ensure that only one answer is correct.
-  Indicate the correct answer labeled as 'answer'.
-  Articulate a reasoned and concise defense for your chosen answer without relying on direct references to the text labeled as "explanation".
+  Ensure that there are AT LEAST 2 correct answers per question (can be 2, 3, or 4 correct answers).
+  Indicate ALL correct answers by listing their option numbers (e.g., "1,2" for options A and B, or "2,3,4" for options B, C, and D).
+  The correctAnswer field should contain multiple numbers representing the correct options.
+  Articulate a reasoned and concise defense for your chosen answers without relying on direct references to the text labeled as "explanation".
   CRITICAL: The explanation must NOT contain any S3 URLs, file paths, document references, or technical metadata. Focus only on the educational concept being tested.
   ALL answer choices and explanations must be in the language: ${assessmentTemplate.docLang}.
+  
+  Example format for correctAnswer:
+  - If options A and C are correct: correctAnswer should be [1, 3]
+  - If options B, C, and D are correct: correctAnswer should be [2, 3, 4]
 `
     : ''
 }
@@ -120,7 +125,8 @@ Use this exact XML format for your response:
             <answerChoices>[Option 2 in ${assessmentTemplate.docLang}]</answerChoices>
             <answerChoices>[Option 3 in ${assessmentTemplate.docLang}]</answerChoices>
             <answerChoices>[Option 4 in ${assessmentTemplate.docLang}]</answerChoices>
-            <correctAnswer>[Correct Answer Number]</correctAnswer>
+            <correctAnswer>[Correct Answer Number 1]</correctAnswer>
+            <correctAnswer>[Correct Answer Number 2]</correctAnswer>
             <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
     `
         : ''
@@ -151,7 +157,8 @@ Use this exact XML format for your response:
             <answerChoices>[Option 2 in ${assessmentTemplate.docLang}]</answerChoices>
             <answerChoices>[Option 3 in ${assessmentTemplate.docLang}]</answerChoices>
             <answerChoices>[Option 4 in ${assessmentTemplate.docLang}]</answerChoices>
-            <correctAnswer>[Correct Answer Number]</correctAnswer>
+            <correctAnswer>[Correct Answer Number 1]</correctAnswer>
+            <correctAnswer>[Correct Answer Number 2]</correctAnswer>
             <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
     `
         : ''
@@ -355,7 +362,8 @@ Use this exact XML format:
             <answerChoices>[Option 2 in ${assessmentTemplate.docLang}]</answerChoices>
             <answerChoices>[Option 3 in ${assessmentTemplate.docLang}]</answerChoices>
             <answerChoices>[Option 4 in ${assessmentTemplate.docLang}]</answerChoices>
-            <correctAnswer>[Correct Answer Number]</correctAnswer>
+            <correctAnswer>[Correct Answer Number 1]</correctAnswer>
+            <correctAnswer>[Correct Answer Number 2]</correctAnswer>
         <!-- for multiple choice questions only -->
         <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
     `

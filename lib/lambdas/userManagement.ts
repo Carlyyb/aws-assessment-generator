@@ -79,8 +79,7 @@ async function checkUserExists(username: string, userPoolId: string): Promise<bo
  * 生成默认密码 - 简化格式，8位字符
  */
 function generateDefaultPassword(role: string, username: string): string {
-  const timestamp = Date.now().toString().slice(-4);
-  return `${username}${timestamp}`;
+  return '00000000';
 }
 
 /**
@@ -103,51 +102,134 @@ function validatePassword(password: string): boolean {
 }
 
 /**
+ * 检测是否为表头行
+ */
+function isHeaderRow(columns: string[]): boolean {
+  const headerKeywords = ['姓名', '用户名', '密码', '邮箱', 'name', 'username', 'password', 'email', '角色', 'role'];
+  
+  // 如果第一列或第二列包含常见的表头关键字，认为是表头行
+  const firstThreeColumns = columns.slice(0, 3).map(col => col.toLowerCase().trim());
+  return headerKeywords.some(keyword => 
+    firstThreeColumns.some(col => col.includes(keyword.toLowerCase()) || keyword.toLowerCase().includes(col))
+  );
+}
+
+/**
+ * 清理和规范化CSV行数据
+ */
+function cleanCsvRow(line: string): string[] {
+  // 移除BOM标记
+  line = line.replace(/^\uFEFF/, '');
+  
+  // 处理引号包围的内容
+  const columns: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  let i = 0;
+  
+  while (i < line.length) {
+    const char = line[i];
+    
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        // 双引号转义
+        current += '"';
+        i += 2;
+        continue;
+      } else {
+        inQuotes = !inQuotes;
+        i++;
+        continue;
+      }
+    }
+    
+    if (!inQuotes && (char === ',' || char === '\t' || char === ';')) {
+      columns.push(current.trim());
+      current = '';
+      i++;
+      continue;
+    }
+    
+    current += char;
+    i++;
+  }
+  
+  // 添加最后一列
+  columns.push(current.trim());
+  
+  // 如果解析结果太少，尝试其他分隔符
+  if (columns.length < 2) {
+    // 尝试制表符分隔
+    if (line.includes('\t')) {
+      return line.split('\t').map(col => col.trim().replace(/^"|"$/g, ''));
+    }
+    // 尝试分号分隔
+    if (line.includes(';')) {
+      return line.split(';').map(col => col.trim().replace(/^"|"$/g, ''));
+    }
+    // 尝试空格分隔（最后手段）
+    if (line.includes(' ')) {
+      return line.split(/\s+/).map(col => col.trim().replace(/^"|"$/g, ''));
+    }
+  }
+  
+  return columns.map(col => col.replace(/^"|"$/g, ''));
+}
+
+/**
  * 解析CSV格式的Excel内容
  */
 function parseCSVContent(csvContent: string): { rows: string[][], errors: string[] } {
   const errors: string[] = [];
-  const lines = csvContent.split('\n').filter(line => line.trim());
+  
+  // 处理不同的换行符
+  const normalizedContent = csvContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = normalizedContent.split('\n').filter(line => line.trim());
   
   if (lines.length === 0) {
     errors.push('文件内容为空');
     return { rows: [], errors };
   }
   
+  console.log(`开始解析CSV，共 ${lines.length} 行`);
+  console.log('前3行内容示例:', lines.slice(0, 3));
+  
   const rows: string[][] = [];
+  let headerDetected = false;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
     
-    // 支持多种分隔符：制表符、逗号、分号
-    let columns: string[] = [];
+    const columns = cleanCsvRow(line);
     
-    // 首先尝试制表符分隔（Excel复制粘贴常用）
-    if (line.includes('\t')) {
-      columns = line.split('\t').map(col => col.trim().replace(/"/g, ''));
-    }
-    // 然后尝试逗号分隔
-    else if (line.includes(',')) {
-      columns = line.split(',').map(col => col.trim().replace(/"/g, ''));
-    }
-    // 最后尝试分号分隔
-    else if (line.includes(';')) {
-      columns = line.split(';').map(col => col.trim().replace(/"/g, ''));
-    }
-    // 如果没有分隔符，尝试空格分隔
-    else {
-      columns = line.split(/\s+/).map(col => col.trim().replace(/"/g, ''));
+    // 检查第一行是否为表头
+    if (i === 0 && isHeaderRow(columns)) {
+      console.log('检测到表头行，跳过:', columns);
+      headerDetected = true;
+      continue;
     }
     
+    // 验证列数
     if (columns.length < 2) {
-      errors.push(`第 ${i + 1} 行格式错误：至少需要姓名和用户名两列`);
+      const lineNum = headerDetected ? i : i + 1;
+      errors.push(`第 ${lineNum} 行格式错误：至少需要姓名和用户名两列，当前只有 ${columns.length} 列`);
+      console.log(`第 ${lineNum} 行数据不足:`, columns);
+      continue;
+    }
+    
+    // 验证必填字段不为空
+    if (!columns[0] || !columns[1]) {
+      const lineNum = headerDetected ? i : i + 1;
+      errors.push(`第 ${lineNum} 行数据错误：姓名和用户名不能为空`);
+      console.log(`第 ${lineNum} 行必填字段为空:`, columns);
       continue;
     }
     
     rows.push(columns);
   }
   
+  console.log(`CSV解析完成，有效行数: ${rows.length}，错误数: ${errors.length}`);
   return { rows, errors };
 }
 
@@ -179,11 +261,21 @@ function validateEmail(email: string): boolean {
  * 将行数据转换为用户输入
  */
 function convertRowToUserInput(row: string[], defaultRole: string, rowIndex: number): { user?: any, error?: string } {
-  const [name, username, password, email] = row;
+  const [name, username, password, email] = row.map(col => col ? col.trim() : '');
+  
+  console.log(`处理第 ${rowIndex + 1} 行数据:`, { name, username, password: password ? '***' : '', email });
   
   // 验证必填字段
+  if (!name) {
+    return { error: `第 ${rowIndex + 1} 行：姓名不能为空` };
+  }
+  
   if (!validateName(name)) {
-    return { error: `第 ${rowIndex + 1} 行：姓名格式错误` };
+    return { error: `第 ${rowIndex + 1} 行：姓名格式错误（长度应为1-100个字符）` };
+  }
+  
+  if (!username) {
+    return { error: `第 ${rowIndex + 1} 行：用户名不能为空` };
   }
   
   if (!validateUsername(username)) {
@@ -191,18 +283,24 @@ function convertRowToUserInput(row: string[], defaultRole: string, rowIndex: num
   }
   
   // 验证可选字段
-  if (email && !validateEmail(email)) {
+  if (email && email.trim() && !validateEmail(email)) {
     return { error: `第 ${rowIndex + 1} 行：邮箱格式错误` };
+  }
+  
+  // 验证密码（如果提供了密码）
+  if (password && password.trim() && !validatePassword(password)) {
+    return { error: `第 ${rowIndex + 1} 行：密码格式错误（至少8位字符，包含字母和数字）` };
   }
   
   const user: any = {
     name: name.trim(),
     username: username.trim(),
     role: defaultRole,
-    ...(password && { password: password.trim() }),
-    ...(email && { email: email.trim() })
+    ...(password && password.trim() && { password: password.trim() }),
+    ...(email && email.trim() && { email: email.trim() })
   };
   
+  console.log(`第 ${rowIndex + 1} 行转换成功:`, { ...user, password: user.password ? '***' : undefined });
   return { user };
 }
 

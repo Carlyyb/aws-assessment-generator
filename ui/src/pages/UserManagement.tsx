@@ -367,7 +367,7 @@ const UserManagement: React.FC = () => {
         
         dispatchAlert({
           type: AlertType.SUCCESS,
-          content: `用户 "${selectedUser.username}" 的密码已重置${result.isDefaultPassword ? '为默认密码' : ''}`
+          content: `用户 "${selectedUser.username}" 的密码已重置${result.isDefaultPassword ? '为默认密码：8个0' : ''}`
         });
       } else {
         throw new Error('重置密码失败');
@@ -638,34 +638,83 @@ const UserManagement: React.FC = () => {
     setExcelFile([file]);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const content = e.target?.result as string;
-        
-        try {
-          const response = await client.graphql({
-            query: previewExcelImport,
-            variables: {
-              fileContent: content
-            }
-          });
-
-          const previewData = (response as any).data.previewExcelImport;
-          setExcelPreview(previewData);
-        } catch (error) {
-          console.error('Excel预览失败:', error);
-          dispatchAlert({
-            type: AlertType.ERROR,
-            content: 'Excel文件解析失败'
-          });
-        }
-      };
-      reader.readAsText(file);
+      let content = '';
+      
+      if (file.name.endsWith('.csv')) {
+        // CSV文件直接读取为文本
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          content = e.target?.result as string;
+          await processFileContent(content);
+        };
+        reader.readAsText(file, 'UTF-8');
+      } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        // Excel文件需要转换为CSV
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            // 动态导入xlsx库
+            const XLSX = await import('xlsx');
+            const arrayBuffer = e.target?.result as ArrayBuffer;
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            
+            // 获取第一个工作表
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            // 转换为CSV格式
+            content = XLSX.utils.sheet_to_csv(worksheet);
+            await processFileContent(content);
+          } catch (xlsxError) {
+            console.error('Excel解析失败:', xlsxError);
+            dispatchAlert({
+              type: AlertType.ERROR,
+              content: 'Excel文件解析失败，请确保文件格式正确'
+            });
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        // 其他文件类型尝试文本读取
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          content = e.target?.result as string;
+          await processFileContent(content);
+        };
+        reader.readAsText(file, 'UTF-8');
+      }
     } catch (error) {
       console.error('文件读取失败:', error);
       dispatchAlert({
         type: AlertType.ERROR,
         content: '文件读取失败'
+      });
+    }
+  };
+
+  // 处理文件内容
+  const processFileContent = async (content: string) => {
+    try {
+      console.log('文件内容预览（前200字符）:', content.substring(0, 200));
+      
+      const response = await client.graphql({
+        query: previewExcelImport,
+        variables: {
+          fileContent: content
+        }
+      });
+
+      const previewData = (response as any).data.previewExcelImport;
+      setExcelPreview(previewData);
+      
+      if (previewData.errors && previewData.errors.length > 0) {
+        console.warn('文件解析警告:', previewData.errors);
+      }
+    } catch (error) {
+      console.error('文件内容预览失败:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '文件内容解析失败，请检查文件格式'
       });
     }
   };
@@ -761,7 +810,7 @@ const UserManagement: React.FC = () => {
             />
           </FormField>
           
-          <FormField label="密码" description="留空将生成默认密码，自定义密码需至少8位字符">
+          <FormField label="密码" description="留空将生成默认密码8个0，自定义密码需至少8位字符">
             <Input
               value={singleUserForm.password || ''}
               onChange={({ detail }) => setSingleUserForm({ ...singleUserForm, password: detail.value })}
@@ -1300,8 +1349,8 @@ const UserManagement: React.FC = () => {
           <SpaceBetween direction="vertical" size="m">
             <Alert type="info" header="请记录以下登录信息">
               {passwordModalType === 'create' 
-                ? '系统已为您生成默认密码，请将此信息安全地传达给用户。'
-                : '用户密码已重置为默认密码，请将新密码安全地传达给用户。'
+                ? '系统已为您生成默认密码8个0，请将此信息安全地传达给用户。'
+                : '用户密码已重置为默认密码8个0，请将新密码安全地传达给用户。'
               }
             </Alert>
             
