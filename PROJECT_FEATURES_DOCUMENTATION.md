@@ -8,6 +8,81 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ## 最新更新记录
 
+### 2025-08-22: Assessment时间字段精确化改进
+
+- **功能描述**：将Assessment的时间字段从AWSDate改为AWSDateTime，支持精确到小时分钟的时间选择，提升时间管理精度
+
+- **修改位置**：
+  - `lib/schema.graphql` - Assessment和GenerateAssessmentInput类型中lectureDate和deadline字段
+  - `ui/src/pages/FindAssessments.tsx` - 日期显示格式更新为toLocaleString
+  - `ui/src/pages/StudentAssessments.tsx` - deadline显示格式优化
+  - `ui/src/pages/GenerateAssessments.tsx` - 添加时间选择器，更新提交逻辑
+  - `migrate-assessment-datetime.js` - 数据迁移脚本
+
+- **技术实现**：
+  - **Schema更新**：lectureDate和deadline字段类型从AWSDate改为AWSDateTime
+  - **UI改进**：在GenerateAssessments页面添加TimeInput组件，支持时分选择
+  - **数据格式化**：日期时间组合为ISO格式（YYYY-MM-DDTHH:mm:00.000Z）
+  - **显示优化**：使用toLocaleString('zh-CN')显示本地化时间格式
+  - **数据迁移**：提供脚本将现有日期数据转换为datetime格式
+
+- **解决的问题**：
+  - ✅ Assessment时间字段只能精确到日期，无法设置具体时间
+  - ✅ 前端显示时间信息不够详细，影响时间管理
+  - ✅ 用户无法设置精确的上课时间和截止时间
+
+- **用户体验改进**：
+  - 🕐 支持设置精确的上课时间（默认09:00）
+  - ⏰ 支持设置精确的截止时间（默认23:59）
+  - 📅 日期和时间分离输入，操作更直观
+  - 🇨🇳 本地化时间显示，符合中文用户习惯
+
+- **数据迁移说明**：
+  - 📋 现有数据会自动添加默认时间（上课时间09:00，截止时间23:59）
+  - 🔄 迁移脚本确保数据向后兼容
+  - ⚠️ 部署前需要运行数据迁移脚本
+
+- **依赖关系**：CloudScape TimeInput组件, GraphQL Assessment类型, 时间处理工具
+- **版本控制**：v1.8.1 - Assessment时间字段精确化版本
+
+### 2025-08-22: 用户管理界面优化和数据库字段修改流程规范
+
+- **功能描述**：解决用户管理页面的搜索筛选、角色过滤功能缺失，修复学生分组功能的require错误，优化加载体验，并规范数据库字段修改流程
+
+- **修改位置**：
+  - `ui/src/pages/UserManagement.tsx` - 添加搜索筛选框和角色过滤器，优化加载状态
+  - `ui/src/pages/StudentList.tsx` - 修复require语法错误，优化加载体验
+  - `.github/instructions/copilot-instructions.instructions.md` - 添加数据库字段修改完整流程规范
+
+- **技术实现**：
+  - **搜索功能增强**：添加用户名、姓名、邮箱的全文搜索功能
+  - **角色过滤器**：支持按学生、教师、管理员、超级管理员角色筛选
+  - **加载优化**：初始状态设为loading=true，后续操作使用showLoadingState参数控制，避免界面跳动
+  - **ES6模块修复**：将`require('../graphql/mutations').updateStudentGroup`改为正确的import语法
+  - **权限控制保持**：角色过滤选项根据当前用户权限动态显示
+
+- **解决的问题**：
+  - ✅ 用户管理页面缺少搜索和筛选功能
+  - ✅ 学生分组功能报错：`ReferenceError: require is not defined`
+  - ✅ 页面加载时的跳动问题，影响用户体验
+  - ✅ 缺少数据库字段修改的标准化流程指导
+
+- **用户体验改进**：
+  - 🔍 支持按姓名、用户名、邮箱搜索用户
+  - 🏷️ 支持按角色快速筛选用户列表
+  - 📊 实时显示筛选结果统计（x/总数）
+  - 🚀 减少界面跳动，提供流畅的加载体验
+  - 🔄 支持一键清除筛选条件
+
+- **开发流程规范**：
+  - 📋 新增8步骤数据库字段修改标准流程
+  - 🛠️ 包含GraphQL Schema、Resolver、Lambda、前端等全链路更新指导
+  - 📚 提供常见字段修改场景示例
+  - ✅ 强调测试验证和文档同步的重要性
+
+- **依赖关系**：updateStudentGroup mutation, 用户权限系统, CloudScape Design组件
+- **版本控制**：v1.8.0 - 用户界面优化和开发流程规范版本
+
 ### 2025-08-21: 学生系统核心功能修复
 
 - **功能描述**：修复学生管理和评估系统的核心问题，确保学生能够正常创建、显示并参与评估
@@ -982,6 +1057,108 @@ npm run cdk deploy
   - 日志管理系统
   - 多语言支持
   - AWS Bedrock 集成
+
+---
+
+## DynamoDB 表结构信息
+
+### 表列表概览
+
+项目使用以下DynamoDB表来存储各类数据，所有表都配置为按需计费模式：
+
+#### 核心业务表
+
+1. **AssessmentsTable** - 评估数据表
+   - **表名**: `GenAssessStack-DataStackNestedStackDataStackNestedStackResource8D986F6F-WZN8STT9JLUJ-AssessmentsTable6996196E-1JTSUQZSJTVXK`
+   - **主键**: `userId (S)` + `id (S)` (复合主键)
+   - **GSI**: `id-only` (以id为分区键的全局二级索引)
+   - **大小**: 40.8KB
+   - **用途**: 存储教师创建的评估信息，包括名称、课程ID、上课时间、截止时间等
+
+2. **StudentAssessmentsTable** - 学生评估关联表
+   - **表名**: `GenAssessStack-DataStackNestedStackDataStackNestedStackResource8D986F6F-WZN8STT9JLUJ-StudentAssessmentsTable660FD085-1V5I0AC5JOLYG`
+   - **主键**: `userId (S)` + `parentAssessId (S)` (复合主键)
+   - **大小**: 1.9KB
+   - **用途**: 存储学生参与评估的记录，包括答案、分数、提交状态等
+
+3. **UsersTable** - 用户基础信息表
+   - **表名**: `GenAssessStack-DataStackNestedStackDataStackNestedStackResource8D986F6F-WZN8STT9JLUJ-UsersTable9725E9C8-FMTN6J8BOV51`
+   - **主键**: `id (S)` (单主键)
+   - **大小**: 6.7KB
+   - **用途**: 存储用户基础信息，如姓名、邮箱、角色等
+
+4. **CoursesTable** - 课程信息表
+   - **表名**: `GenAssessStack-DataStackNestedStackDataStackNestedStackResource8D986F6F-WZN8STT9JLUJ-CoursesTable3F79D98E-EE7ZIUBKYN6Z`
+   - **主键**: `id (S)` (单主键)
+   - **大小**: 541 字节
+   - **用途**: 存储课程信息，包括课程名称、描述等
+
+#### 模板和分组表
+
+5. **AssessTemplatesTable** - 评估模板表
+   - **表名**: `GenAssessStack-DataStackNestedStackDataStackNestedStackResource8D986F6F-WZN8STT9JLUJ-AssessTemplatesTableA1C1DEB9-5THS1TWF00HX`
+   - **主键**: `userId (S)` + `id (S)` (复合主键)
+   - **大小**: 510 字节
+   - **用途**: 存储评估模板配置，包括题目类型分布、难度设置等
+
+6. **StudentGroupsTable** - 学生分组表
+   - **表名**: `GenAssessStack-DataStackNestedStackDataStackNestedStackResource8D986F6F-WZN8STT9JLUJ-StudentGroupsTable6E685D02-RZJZNDKZ5ZGS`
+   - **主键**: `id (S)` (单主键)
+   - **大小**: 142 字节
+   - **用途**: 存储学生分组信息，用于批量管理学生
+
+7. **StudentsTable** - 学生详细信息表
+   - **表名**: `GenAssessStack-DataStackNestedStackDataStackNestedStackResource8D986F6F-WZN8STT9JLUJ-StudentsTableDAB56938-UCCNGIGN4KAU`
+   - **主键**: `id (S)` (单主键)
+   - **大小**: 0 字节 (当前为空)
+   - **用途**: 存储学生特定信息和扩展属性
+
+#### 系统配置和知识库表
+
+8. **SettingsTable** - 系统设置表
+   - **表名**: `GenAssessStack-DataStackNestedStackDataStackNestedStackResource8D986F6F-WZN8STT9JLUJ-SettingsTable4DB0CCD0-1DEL1UGBAVD31`
+   - **主键**: `userId (S)` (单主键)
+   - **大小**: 102.9KB
+   - **用途**: 存储用户个性化设置和系统配置信息
+
+9. **KBTable** - 知识库表
+   - **表名**: `GenAssessStack-RagStackNestedStackRagStackNestedStackResourceE632B76F-1XR4FTEXQQVSG-KBTable3C212AC0-W6SXBVRR4MSM`
+   - **主键**: `userId (S)` + `courseId (S)` (复合主键)
+   - **大小**: 2KB
+   - **用途**: 存储知识库元数据，关联RAG检索系统
+
+#### 日志和监控表
+
+10. **LogAnalyticsTable** - 日志分析表
+    - **表名**: `GenAssessStack-LoggingStackNestedStackLoggingStackNestedStackResourceA0D8489D-1W2TYG83CSNAI-LogAnalyticsTable7C30A423-VNSBFMMHPC0B`
+    - **主键**: `logId (S)` + `timestamp (S)` (复合主键)
+    - **大小**: 0 字节
+    - **用途**: 存储系统操作日志，用于审计和分析
+
+11. **SystemMetricsTable** - 系统指标表
+    - **表名**: `GenAssessStack-LoggingStackNestedStackLoggingStackNestedStackResourceA0D8489D-1W2TYG83CSNAI-SystemMetricsTable572C1AA7-1N6ENVCZSQ8PH`
+    - **主键**: `metricKey (S)` + `timestamp (S)` (复合主键)
+    - **大小**: 0 字节
+    - **用途**: 存储系统性能指标和监控数据
+
+### 表架构设计说明
+
+#### 主键设计模式
+- **复合主键**: 大部分表使用 `userId + 其他键` 的模式，确保数据按用户隔离
+- **单主键**: 公共数据表（如课程、设置）使用单一的 `id` 作为主键
+- **时间序列**: 日志类表使用 `键 + timestamp` 模式，便于时间范围查询
+
+#### 数据访问模式
+- **用户数据隔离**: 通过 `userId` 作为分区键，确保用户数据安全隔离
+- **高效查询**: 设计GSI支持按ID直接查询，避免全表扫描
+- **按需扩展**: 所有表均配置按需计费，根据实际使用量自动扩缩容
+
+### 使用注意事项
+
+1. **表名获取**: 实际表名由CDK自动生成，包含堆栈信息，需要从AWS控制台或CDK输出获取
+2. **主键构造**: 进行CRUD操作时必须提供完整的主键信息
+3. **权限控制**: 确保Lambda函数有相应表的读写权限
+4. **迁移操作**: 修改表结构时需要考虑现有数据的兼容性
 
 ---
 
