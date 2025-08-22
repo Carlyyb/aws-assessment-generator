@@ -45,7 +45,7 @@ const DYNAMODB_TABLES = {
     description: '存储课程信息，包括课程名称、描述等'
   },
   
-  // 模板和分组表
+  // 测试模板和分组表
   ASSESS_TEMPLATES: {
     fullName: 'GenAssessStack-DataStackNestedStackDataStackNestedStackResource8D986F6F-WZN8STT9JLUJ-AssessTemplatesTableA1C1DEB9-5THS1TWF00HX',
     logicalName: 'AssessTemplatesTable',
@@ -53,7 +53,7 @@ const DYNAMODB_TABLES = {
     sortKey: 'id',
     gsi: [],
     size: '510 字节',
-    description: '存储评估模板配置，包括题目类型分布、难度设置等'
+    description: '存储评估测试模板配置，包括题目类型分布、难度设置等'
   },
   
   STUDENT_GROUPS: {

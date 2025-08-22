@@ -130,6 +130,51 @@ export class DataStack extends NestedStack {
       }
     });
 
+    // 创建数据转换 Lambda 函数
+    const transformAssessmentDataFunction = new NodejsFunction(this, 'TransformAssessmentDataFunction', {
+      entry: path.join(__dirname, 'lambdas', 'transformAssessmentData.ts'),
+      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      timeout: Duration.seconds(30),
+      memorySize: 256,
+      bundling: {
+        minify: true,
+      }
+    });
+
+    // 创建密码修改 Lambda 函数
+    const changePasswordFunction = new NodejsFunction(this, 'ChangePasswordFunction', {
+      entry: path.join(__dirname, 'resolvers', 'changePassword.ts'),
+      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      timeout: Duration.seconds(30),
+      memorySize: 256,
+      environment: {
+        REGION: Stack.of(this).region
+      },
+      bundling: {
+        minify: true,
+        externalModules: ['@aws-sdk/client-cognito-identity-provider', '@aws-sdk/client-ssm', '@aws-sdk/client-dynamodb', '@aws-sdk/lib-dynamodb'],
+      }
+    });
+
+    // 给密码修改函数权限
+    usersTable.grantReadWriteData(changePasswordFunction);
+    changePasswordFunction.addToRolePolicy(new aws_iam.PolicyStatement({
+      effect: aws_iam.Effect.ALLOW,
+      actions: [
+        'cognito-idp:AdminSetUserPassword',
+        'cognito-idp:AdminInitiateAuth'
+      ],
+      resources: [userPool.userPoolArn]
+    }));
+    changePasswordFunction.addToRolePolicy(new aws_iam.PolicyStatement({
+      effect: aws_iam.Effect.ALLOW,
+      actions: [
+        'ssm:GetParameter',
+        'ssm:GetParameters'
+      ],
+      resources: [`arn:aws:ssm:${Stack.of(this).region}:${Stack.of(this).account}:parameter/gen-assess/*`]
+    }));
+
     // 给 Lambda 函数权限访问 DynamoDB、Cognito 和 SSM
     usersTable.grantReadWriteData(userManagementFunction);
     studentsTable.grantReadWriteData(userManagementFunction);
@@ -156,6 +201,8 @@ export class DataStack extends NestedStack {
 
     // 创建 Lambda 数据源
     const userManagementDs = api.addLambdaDataSource('UserManagementDataSource', userManagementFunction);
+    const transformDataDs = api.addLambdaDataSource('TransformDataDataSource', transformAssessmentDataFunction);
+    const changePasswordDs = api.addLambdaDataSource('ChangePasswordDataSource', changePasswordFunction);
 
     // 创建用户管理相关的 resolver
     userManagementDs.createResolver('QueryListUsersResolver', {
@@ -204,6 +251,14 @@ export class DataStack extends NestedStack {
       typeName: 'Mutation',
       fieldName: 'resetUserPassword',
       code: aws_appsync.Code.fromAsset('lib/resolvers/resetUserPassword.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 密码修改解析器
+    changePasswordDs.createResolver('MutationChangePasswordResolver', {
+      typeName: 'Mutation',
+      fieldName: 'changePassword',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/lambdaResolver.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
@@ -352,10 +407,37 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
-    assessmentsDs.createResolver('QueryListAssessmentsResolver', {
+    // 创建管道函数
+    const listAssessmentsFunction = new aws_appsync.AppsyncFunction(this, 'ListAssessmentsFunction', {
+      api,
+      dataSource: assessmentsDs,
+      name: 'listAssessmentsFunction',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/listAssessments.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    const transformAssessmentListDataFunction = new aws_appsync.AppsyncFunction(this, 'TransformAssessmentListDataFunction', {
+      api,
+      dataSource: transformDataDs,
+      name: 'transformAssessmentListDataFunction',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/transformAssessmentListData.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 创建管道解析器
+    new aws_appsync.Resolver(this, 'QueryListAssessmentsPipelineResolver', {
+      api,
       typeName: 'Query',
       fieldName: 'listAssessments',
-      code: aws_appsync.Code.fromAsset('lib/resolvers/listAssessments.ts'),
+      pipelineConfig: [listAssessmentsFunction, transformAssessmentListDataFunction],
+      code: aws_appsync.Code.fromInline(`
+        export function request(ctx) {
+          return {};
+        }
+        export function response(ctx) {
+          return ctx.prev.result;
+        }
+      `),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
@@ -367,10 +449,37 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
-    assessmentsDs.createResolver('QueryAssessmentResolver', {
+    // 创建 getAssessment 管道函数
+    const getAssessmentFunction = new aws_appsync.AppsyncFunction(this, 'GetAssessmentFunction', {
+      api,
+      dataSource: assessmentsDs,
+      name: 'getAssessmentFunction',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/getAssessment.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    const transformAssessmentAppsyncFunction = new aws_appsync.AppsyncFunction(this, 'TransformAssessmentAppsyncFunction', {
+      api,
+      dataSource: transformDataDs,
+      name: 'transformAssessmentDataFunction',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/transformAssessmentData.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 创建 getAssessment 管道解析器
+    new aws_appsync.Resolver(this, 'QueryAssessmentPipelineResolver', {
+      api,
       typeName: 'Query',
       fieldName: 'getAssessment',
-      code: aws_appsync.Code.fromAsset('lib/resolvers/getAssessment.ts'),
+      pipelineConfig: [getAssessmentFunction, transformAssessmentAppsyncFunction],
+      code: aws_appsync.Code.fromInline(`
+        export function request(ctx) {
+          return {};
+        }
+        export function response(ctx) {
+          return ctx.prev.result;
+        }
+      `),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
@@ -411,10 +520,37 @@ export class DataStack extends NestedStack {
       responseMappingTemplate: aws_appsync.MappingTemplate.dynamoDbResultList(),
     });
 
-    studentAssessmentsDs.createResolver('QueryStudentAssessmentResolver', {
+    // 创建 getStudentAssessment 管道函数
+    const getStudentAssessmentFunction = new aws_appsync.AppsyncFunction(this, 'GetStudentAssessmentFunction', {
+      api,
+      dataSource: studentAssessmentsDs,
+      name: 'getStudentAssessmentFunction',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/getStudentAssessment.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    const transformStudentAssessmentAppsyncFunction = new aws_appsync.AppsyncFunction(this, 'TransformStudentAssessmentAppsyncFunction', {
+      api,
+      dataSource: transformDataDs,
+      name: 'transformStudentAssessmentDataFunction',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/transformStudentAssessmentData.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 创建 getStudentAssessment 管道解析器
+    new aws_appsync.Resolver(this, 'QueryStudentAssessmentPipelineResolver', {
+      api,
       typeName: 'Query',
       fieldName: 'getStudentAssessment',
-      code: aws_appsync.Code.fromAsset('lib/resolvers/getStudentAssessment.ts'),
+      pipelineConfig: [getStudentAssessmentFunction, transformStudentAssessmentAppsyncFunction],
+      code: aws_appsync.Code.fromInline(`
+        export function request(ctx) {
+          return {};
+        }
+        export function response(ctx) {
+          return ctx.prev.result;
+        }
+      `),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
@@ -583,23 +719,6 @@ export class DataStack extends NestedStack {
     // 给 Lambda 函数权限访问 DynamoDB 表
     assessmentsTable.grantReadWriteData(deleteAssessmentLambda);
     studentAssessmentsTable.grantReadWriteData(deleteAssessmentLambda);
-
-    /////////// Transform DynamoDB Data Lambda Function
-
-    // 创建数据转换的 Lambda 函数
-    const transformDataLambda = new NodejsFunction(this, 'TransformDataLambda', {
-      entry: path.join(__dirname, 'lambdas', 'transformDynamoData.ts'),
-      handler: 'handler',
-      runtime: Runtime.NODEJS_20_X,
-      architecture: Architecture.ARM_64,
-      timeout: Duration.minutes(1),
-      tracing: Tracing.ACTIVE,
-      logGroup: new LogGroup(this, 'TransformDataLambdaLogGroup', {
-        logGroupName: `/aws/lambda/transform-dynamodb-data`,
-        retention: RetentionDays.ONE_WEEK,
-        removalPolicy: RemovalPolicy.DESTROY,
-      }),
-    });
 
     // 创建 Lambda 数据源
     const deleteAssessmentDs = api.addLambdaDataSource('DeleteAssessmentDs', deleteAssessmentLambda);

@@ -5,15 +5,15 @@ import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
   return {
-    operation: 'Scan',
-    filter: {
-      expression: 'userId = :userId',
-      expressionValues: util.dynamodb.toMapValues({ ':userId': ctx.identity.sub }),
-    },
+    operation: 'transformStudentAssessmentData',
+    data: ctx.prev.result,
+    identity: ctx.identity
   };
 }
 
 export function response(ctx) {
-  // 直接返回 DynamoDB 的原始结果，让后续的 Lambda 函数进行转换
+  if (ctx.error) {
+    util.error(ctx.error.message, ctx.error.type);
+  }
   return ctx.result;
 }

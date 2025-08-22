@@ -1,7 +1,6 @@
 import UserSettings from './pages/UserSettings';
 import Section from './pages/Section';
 import HomePage from './pages/HomePage';
-import ManageKnowledgeBases from './pages/ManageKnowledgeBases';
 import Templates from './pages/Templates';
 import FindAssessments from './pages/FindAssessments';
 import StudentAssessments from './pages/StudentAssessments';
@@ -26,10 +25,6 @@ export const routes = {
           path: 'management',
           element: <Section id={0} />,
           children: [
-            {
-              path: 'manage-knowledge-bases',
-              element: <ManageKnowledgeBases />,
-            },
             {
               path: 'templates',
               element: <Templates />,
@@ -105,10 +100,6 @@ export const routes = {
           element: <Section id={0} />,
           children: [
             {
-              path: 'manage-knowledge-bases',
-              element: <ManageKnowledgeBases />,
-            },
-            {
               path: 'templates',
               element: <Templates />,
             },
@@ -160,10 +151,6 @@ export const routes = {
           path: 'management',
           element: <Section id={0} />,
           children: [
-            {
-              path: 'manage-knowledge-bases',
-              element: <ManageKnowledgeBases />,
-            },
             {
               path: 'templates',
               element: <Templates />,

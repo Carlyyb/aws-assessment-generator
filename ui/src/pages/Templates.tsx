@@ -23,7 +23,7 @@ export default () => {
   const [deleteTarget, setDeleteTarget] = useState<'single' | 'multiple'>('single');
   const [templateToDelete, setTemplateToDelete] = useState<AssessTemplate | null>(null);
   
-  // 加载模板列表
+  // 加载测试模板列表
   const loadTemplates = () => {
     client
       .graphql<any>({ query: listAssessTemplates })
@@ -49,14 +49,14 @@ export default () => {
       });
   };
 
-  // 删除单个模板
+  // 删除单个测试模板
   const handleDeleteSingle = async (template: AssessTemplate) => {
     setTemplateToDelete(template);
     setDeleteTarget('single');
     setShowDeleteModal(true);
   };
 
-  // 删除多个模板
+  // 删除多个测试模板
   const handleDeleteMultiple = () => {
     if (selectedItems.length === 0) {
       dispatchAlert({
@@ -83,7 +83,7 @@ export default () => {
     
     try {
       if (deleteTarget === 'single' && templateToDelete) {
-        // 删除单个模板 - 使用当前用户的userId
+        // 删除单个测试模板 - 使用当前用户的userId
         await client.graphql({
           query: deleteAssessTemplate,
           variables: { 
@@ -98,7 +98,7 @@ export default () => {
         });
         
       } else if (deleteTarget === 'multiple') {
-        // 批量删除模板 - 逐个删除，使用当前用户的userId
+        // 批量删除测试模板 - 逐个删除，使用当前用户的userId
         const deletePromises = selectedItems.map(item => 
           client.graphql({
             query: deleteAssessTemplate,

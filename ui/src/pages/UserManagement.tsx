@@ -805,7 +805,7 @@ const UserManagement: React.FC = () => {
           <Button
             iconName="download"
             onClick={() => {
-              // 创建模板下载功能 - 生成CSV格式的模板
+              // 创建测试模板下载功能 - 生成CSV格式的测试模板
               const templateData = [
                 ['姓名', '用户名', '密码（可选）', '邮箱（可选）'],
                 ['张三', 'zhangsan', 'Password123!', 'zhangsan@example.com'],
@@ -813,7 +813,7 @@ const UserManagement: React.FC = () => {
                 ['王五', 'wangwu', 'MyPass456!', '']
               ];
               
-              // 创建CSV格式的模板并下载
+              // 创建CSV格式的测试模板并下载
               const csvContent = templateData.map(row => row.join(',')).join('\n');
               const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
               const link = document.createElement('a');
@@ -826,7 +826,7 @@ const UserManagement: React.FC = () => {
               document.body.removeChild(link);
             }}
           >
-            下载Excel模板
+            下载Excel测试模板
           </Button>
           
           <FormField label="用户角色 *">

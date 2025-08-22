@@ -178,7 +178,7 @@ export default () => {
     }
   }, [course]);
 
-  // 加载模板列表 - 模仿Templates.tsx的实现
+  // 加载测试模板列表 - 模仿Templates.tsx的实现
   const loadTemplates = () => {
     client
       .graphql<any>({ query: listAssessTemplates })
@@ -193,7 +193,7 @@ export default () => {
           if (validTemplates.length === 0) {
             dispatchAlert({ 
               type: 'warning', 
-              content: '没有找到有效的模板数据，请先创建模板'
+              content: '没有找到有效的测试模板数据，请先创建测试模板'
             });
           }
           console.log('Valid templates:', validTemplates);
@@ -204,7 +204,7 @@ export default () => {
           setAssessTemplates(options);
         } else {
           const list = data?.listAssessTemplates || [];
-          // 过滤掉无效的模板记录
+          // 过滤掉无效的测试模板记录
           console.log('All templates before filter:', list);
           const validList = list.filter((assessTemplate: AssessTemplate) => {
             const validDocLang = assessTemplate.docLang === 'zh' || assessTemplate.docLang === 'en';
@@ -222,7 +222,7 @@ export default () => {
         console.error('Error fetching templates:', error);
         dispatchAlert({ 
           type: AlertType.ERROR, 
-          content: '加载模板列表失败，请刷新页面重试'
+          content: '加载测试模板列表失败，请刷新页面重试'
         });
       });
   };
@@ -301,13 +301,13 @@ export default () => {
               '   • Bedrock服务暂时不可用\n' +
               '   • 模型调用限制或配额超出\n' +
               '   • 网络连接问题\n\n' +
-              '4. ⚙️ 模板配置问题：\n' +
-              '   • 选择的模板参数不合理\n' +
+              '4. ⚙️ 测试模板配置问题：\n' +
+              '   • 选择的测试模板参数不合理\n' +
               '   • 题目数量设置过高\n\n' +
               '💡 建议解决方案：\n' +
               '• 检查上传的文件是否为有效的课程材料\n' +
               '• 确保知识库中有足够的文档内容\n' +
-              '• 尝试使用更简单的模板设置\n' +
+              '• 尝试使用更简单的测试模板设置\n' +
               '• 稍后重试，可能是服务暂时繁忙\n' +
               '• 联系管理员查看详细日志信息\n\n' +
               `📋 诊断信息：\n` +
@@ -315,7 +315,7 @@ export default () => {
               `• 课程ID: ${course?.value}\n` +
               `• 文件数量: ${files.length}\n` +
               `• 自定义学习目标: ${customPrompt.trim() ? '是' : '否'}\n` +
-              `• 模板: ${useDefault ? '默认模板' : assessTemplate?.label || '未选择'}\n` +
+              `• 测试模板: ${useDefault ? '默认测试模板' : assessTemplate?.label || '未选择'}\n` +
               `• 时间戳: ${new Date().toISOString()}`;
             
             dispatchAlert({ 
@@ -431,15 +431,15 @@ export default () => {
                       addLog(`验证完成，准备处理 ${files.length} 个有效文件`);
                     } else {
                       addLog(`使用自定义学习目标模式，不上传文件`);
-                    }                    // 验证模板选择
+                    }                    // 验证测试模板选择
                     if (!useDefault && !assessTemplate?.value) {
-                      throw new Error('请选择测试模板或使用默认模板');
+                      throw new Error('请选择测试测试模板或使用默认测试模板');
                     }
 
                     if (!useDefault && assessTemplate?.value) {
-                      addLog(`使用自定义模板：${assessTemplate.label}`);
+                      addLog(`使用自定义测试模板：${assessTemplate.label}`);
                     } else {
-                      addLog('使用默认模板设置');
+                      addLog('使用默认测试模板设置');
                     }
                     
                     updateStep('📁 准备上传文件...', 10);

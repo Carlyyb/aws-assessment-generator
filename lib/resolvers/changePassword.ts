@@ -47,20 +47,12 @@ function validatePassword(password: string): { valid: boolean; message?: string 
     return { valid: false, message: '密码长度至少8个字符' };
   }
   
-  if (!/[A-Z]/.test(password)) {
-    return { valid: false, message: '密码必须包含至少一个大写字母' };
-  }
-  
-  if (!/[a-z]/.test(password)) {
-    return { valid: false, message: '密码必须包含至少一个小写字母' };
+  if (!/[a-zA-Z]/.test(password)) {
+    return { valid: false, message: '密码必须包含字母' };
   }
   
   if (!/\d/.test(password)) {
-    return { valid: false, message: '密码必须包含至少一个数字' };
-  }
-  
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-    return { valid: false, message: '密码必须包含至少一个特殊字符' };
+    return { valid: false, message: '密码必须包含数字' };
   }
   
   return { valid: true };

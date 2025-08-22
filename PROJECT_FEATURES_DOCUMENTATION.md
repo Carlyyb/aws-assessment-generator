@@ -8,6 +8,90 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ## 最新更新记录
 
+### 2025-08-22: OpenSearch Serverless权限问题修复
+
+- **功能描述**：修复了知识库创建失败的OpenSearch Serverless 403权限错误
+- **问题分析**：CloudWatch日志显示Lambda函数尝试访问OpenSearch Serverless集合时遇到403权限错误，而不是初始报告的"响应为空"
+- **修改位置**：
+  - `lib/rag-pipeline/rag-pipeline-stack.ts` - 更新OpenSearch数据访问策略权限
+- **修复内容**：
+  - 从OpenSearch Serverless数据访问策略的collection级别移除了无效的`aoss:APIAccessAll`权限
+  - 保持IAM策略中的`aoss:APIAccessAll`和`aoss:DashboardAccessAll`权限不变
+  - 确保数据访问策略只包含collection级别支持的权限：CreateCollectionItems、DeleteCollectionItems、UpdateCollectionItems、DescribeCollectionItems
+- **技术细节**：
+  - 根据AWS文档，`aoss:APIAccessAll`权限只能在IAM策略中使用，不能在OpenSearch Serverless数据访问策略中使用
+  - Lambda角色已在IAM策略中正确配置了`aoss:APIAccessAll`和`aoss:DashboardAccessAll`权限
+  - 数据访问策略现在符合AWS OpenSearch Serverless的权限规范
+- **部署状态**：✅ 已成功部署，CDK堆栈更新完成
+- **已知问题与限制**：需要测试知识库创建功能以确认修复生效
+- **未来扩展**：考虑实施更细粒度的权限控制以提高安全性
+
+### 2025-08-22: 知识库管理路由删除
+- **功能描述**：删除了知识库管理的独立路由，知识库功能现在整合到课程管理中
+- **修改位置**：
+  - `ui/src/routes.tsx` - 删除了所有用户角色的 `manage-knowledge-bases` 路由
+- **修复内容**：
+  - 移除了teachers、admin、super_admin角色的独立知识库管理页面路由
+  - 知识库管理现在通过课程页面的"管理知识库"按钮访问
+- **技术细节**：
+  - 从`managementRoutes`数组中移除了knowledge-bases相关路由配置
+  - 保持了原有的课程管理和其他管理功能的路由结构
+- **已知问题与限制**：无
+- **未来扩展**：无
+
+### 2025-08-22: 知识库创建问题修复
+- **功能描述**：删除了知识库管理的独立路由，知识库功能现在整合到课程管理中；修复了创建知识库时"响应为空"的错误
+- **修改位置**：
+  - `ui/src/routes.tsx` - 删除了所有用户角色的 `manage-knowledge-bases` 路由
+  - `lib/rag-pipeline/lambdas/event-handler/index.ts` - 修复了Lambda返回值格式，确保符合GraphQL schema
+- **修复内容**：
+  - 移除了独立的知识库管理页面路由，知识库管理现在通过课程页面的"管理知识库"按钮访问
+  - 修复了Lambda函数返回格式，确保返回的对象包含GraphQL schema要求的所有字段
+  - 添加了详细的日志记录和错误验证
+- **技术细节**：
+  - Lambda函数现在返回标准化的IngestionJob对象：`{ingestionJobId, knowledgeBaseId, dataSourceId, status}`
+  - 文件路径处理保持一致：前端使用`KnowledgeBases/shared/${courseId}/`，后端正确转换为`shared/${courseId}/`
+- **已知问题与限制**：无
+- **未来扩展**：考虑添加批量知识库操作功能
+
+---
+
+### 2025-08-22: DynamoDB数据格式转换修复
+
+- **问题描述**：学生测试页面报错"TypeError: Cannot read properties of undefined (reading 'answerChoices')"，原因是DynamoDB返回的原始数据格式未被正确转换
+
+- **修改位置**：
+  - `lib/resolvers/getAssessment.ts` - 添加DynamoDB数据格式转换和清理逻辑
+  - `lib/resolvers/getStudentAssessment.ts` - 添加数据转换，特别处理assessment属性
+  - `lib/resolvers/listAssessments.ts` - 更新数据转换逻辑
+  - `ui/src/pages/StudentAssessment.tsx` - 移除前端数据转换逻辑，修复类型导入
+
+- **技术实现**：
+  - **数据转换**：在AppSync解析器中处理DynamoDB格式（S、N、L、M等）
+  - **数据清理**：处理异常数组格式的correctAnswer、title等字段
+  - **错误处理**：确保answerChoices正确从{L: [{S: "..."}]}转换为string[]
+  - **类型安全**：修复StudentAssessment类型导入冲突
+
+- **解决的问题**：
+  - ✅ 学生测试页面answerChoices undefined错误
+  - ✅ 教师编辑评估页面可能遇到的同样数据格式问题
+  - ✅ DynamoDB原始格式数据在前端显示异常
+
+- **数据处理逻辑**：
+  - 🔄 DynamoDB格式转换：{S: "value"} → "value"，{N: "1"} → 1
+  - 🧹 数组字段清理：将错误的数组格式字段合并或重置
+  - 📋 answerChoices处理：{L: [{S: "选项1"}, {S: "选项2"}]} → ["选项1", "选项2"]
+  - 🎯 correctAnswer处理：{N: "1"} → 1 或 {S: "正确"} → "正确"
+
+- **修复范围**：
+  - 🎓 学生测试页面（StudentAssessment.tsx）
+  - ✏️ 教师编辑评估页面（EditAssessments.tsx）
+  - 📊 评估列表页面（FindAssessments.tsx）
+  - 🔍 所有使用GraphQL查询评估数据的组件
+
+- **依赖关系**：AppSync解析器、DynamoDB数据存储、GraphQL API
+- **版本控制**：v1.8.2 - DynamoDB数据格式转换修复版本
+
 ### 2025-08-22: Assessment时间字段精确化改进
 
 - **功能描述**：将Assessment的时间字段从AWSDate改为AWSDateTime，支持精确到小时分钟的时间选择，提升时间管理精度

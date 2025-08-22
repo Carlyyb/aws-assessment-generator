@@ -35,7 +35,7 @@ export const SUPER_ADMIN_CONFIG = {
   // 默认邮箱，用于登录和密码找回
   email: process.env.SUPER_ADMIN_EMAIL || 'yibo.yan24@student.xjtlu.edu.cn',
   // 默认密码，首次登录后会强制修改
-  defaultPassword: process.env.SUPER_ADMIN_DEFAULT_PASSWORD || 'SuperAdmin@2024!',
+  defaultPassword: process.env.SUPER_ADMIN_DEFAULT_PASSWORD || 'Admin2024',
   // 姓名
   name: process.env.SUPER_ADMIN_NAME || '系统管理员'
 };
@@ -121,8 +121,8 @@ export const DEFAULT_USER_PASSWORD = {
   requirements: {
     minLength: 8,
     requireUppercase: false,
-    requireLowercase: false,
-    requireNumbers: false,
+    requireLowercase: true,
+    requireNumbers: true,
     requireSpecialChars: false
   }
 };

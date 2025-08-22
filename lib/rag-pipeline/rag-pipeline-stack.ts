@@ -141,12 +141,24 @@ export class RagPipelineStack extends NestedStack {
         Rules: [
           {
             Resource: [`collection/${opssSearchCollection}`],
-            Permission: ['aoss:CreateCollectionItems', 'aoss:DeleteCollectionItems', 'aoss:UpdateCollectionItems', 'aoss:DescribeCollectionItems'],
+            Permission: [
+              'aoss:CreateCollectionItems', 
+              'aoss:DeleteCollectionItems', 
+              'aoss:UpdateCollectionItems', 
+              'aoss:DescribeCollectionItems'
+            ],
             ResourceType: 'collection',
           },
           {
             Resource: [`index/${opssSearchCollection}/*`],
-            Permission: ['aoss:CreateIndex', 'aoss:DeleteIndex', 'aoss:UpdateIndex', 'aoss:DescribeIndex', 'aoss:ReadDocument', 'aoss:WriteDocument'],
+            Permission: [
+              'aoss:CreateIndex', 
+              'aoss:DeleteIndex', 
+              'aoss:UpdateIndex', 
+              'aoss:DescribeIndex', 
+              'aoss:ReadDocument', 
+              'aoss:WriteDocument'
+            ],
             ResourceType: 'index',
           },
         ],

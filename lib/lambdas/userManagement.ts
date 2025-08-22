@@ -84,10 +84,22 @@ function generateDefaultPassword(role: string, username: string): string {
 }
 
 /**
- * 验证密码复杂度 - 只需要8位长度
+ * 验证密码复杂度 - 8位长度，包含字母和数字
  */
 function validatePassword(password: string): boolean {
-  return password.length >= 8;
+  if (password.length < 8) {
+    return false;
+  }
+  
+  if (!/[a-zA-Z]/.test(password)) {
+    return false;
+  }
+  
+  if (!/\d/.test(password)) {
+    return false;
+  }
+  
+  return true;
 }
 
 /**

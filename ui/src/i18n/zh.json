@@ -59,7 +59,7 @@
       "settings": "用户设置",
       "management": "管理",
       "courses": "课程",
-      "templates": "模板",
+      "templates": "测试模板",
       "find-assessments": "查找测试",
       "manage-knowledge-bases": "知识库管理",
       "generate-assessments": "生成测试",
@@ -153,8 +153,8 @@
       "success": "课程创建成功"
     },
     "create_template": {
-      "title": "创建新模板",
-      "success": "模板创建成功"
+      "title": "创建新测试模板",
+      "success": "测试模板创建成功"
     },
     "assessment": {
       "answer": "答案",
@@ -180,7 +180,7 @@
       }
     },
     "management": {
-      "template_settings": "模板设置",
+      "template_settings": "测试模板设置",
       "settings_update_success": "设置更新成功"
     },
     "find_student": {
@@ -210,9 +210,9 @@
         "creating": "创建中..."
       },
       "templates": {
-        "title": "模板",
-        "create_new": "创建新模板",
-        "create_success": "模板创建成功",
+        "title": "测试模板",
+        "create_new": "创建新测试模板",
+        "create_success": "测试模板创建成功",
         "validation_error": "请填写所有必需字段",
         "validation_questions_sum_error": "总问题数应该等于三种难度问题数之和",
         "id": "编号",
@@ -220,15 +220,15 @@
         "type": "类型",
         "taxonomy": "分类法",
         "data_warning": "无有效数据",
-        "delete_template": "删除模板",
+        "delete_template": "删除测试模板",
         "delete_selected": "删除选中项",
         "delete_confirm": "确认删除",
-        "delete_confirm_single": "确定要删除这个模板吗？",
-        "delete_confirm_multiple": "确定要删除选中的 {count} 个模板吗？",
-        "delete_success": "模板删除成功",
-        "delete_error": "删除模板失败",
-        "delete_partial_success": "部分模板删除成功：{deletedCount} 个成功，{failedCount} 个失败",
-        "no_templates_selected": "请选择要删除的模板",
+        "delete_confirm_single": "确定要删除这个测试模板吗？",
+        "delete_confirm_multiple": "确定要删除选中的 {count} 个测试模板吗？",
+        "delete_success": "测试模板删除成功",
+        "delete_error": "删除测试模板失败",
+        "delete_partial_success": "部分测试模板删除成功：{deletedCount} 个成功，{failedCount} 个失败",
+        "no_templates_selected": "请选择要删除的测试模板",
         "actions": "操作",
         "difficulty": {
           "easy": "简单",
@@ -243,7 +243,7 @@
           "total": "题目总数"
         },
         "created_at": "创建时间",
-        "name": "模板名称",
+        "name": "测试模板名称",
         "doc_lang": "文档语言",
         "assess_type": "测试类型"
       },
@@ -465,8 +465,8 @@
         "title": "生成测试",
         "generate_success": "测试生成成功",
         "failed_to_generate": "生成测试失败",
-        "select_template": "选择测试模板",
-        "use_default": "使用默认模板",
+        "select_template": "选择测试测试模板",
+        "use_default": "使用默认测试模板",
         "select_course": "选择课程",
         "add_lecture_notes": "添加讲义",
         "remove_file": "移除文件 {index}",
@@ -488,7 +488,7 @@
         "manage-knowledge-bases": "知识库管理",
         "find-assessments": "查找测试",
         "default-settings": "默认设置",
-        "templates": "模板管理",
+        "templates": "测试模板管理",
         "generate-assessments": "生成测试",
         "courses": "课程管理",
         "log-management": "日志管理",

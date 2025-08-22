@@ -153,7 +153,7 @@ export class DataService {
     
     let assessTemplate = ddbResponse.Item as AssessmentTemplate;
     
-    // 如果用当前用户ID找不到模板，尝试扫描表找到该模板
+    // 如果用当前用户ID找不到测试模板，尝试扫描表找到该测试模板
     if (!assessTemplate) {
       logger.info('Template not found for current user, scanning all templates', { assessTemplateId });
       
@@ -181,7 +181,7 @@ export class DataService {
       throw new Error(`Assessment template ${assessTemplateId} not found`);
     }
     
-    // 注意：这里移除了用户权限检查，因为现在所有用户都能使用所有模板
+    // 注意：这里移除了用户权限检查，因为现在所有用户都能使用所有测试模板
     // 如果需要恢复权限检查，可以取消注释下面的代码：
     // if (assessTemplate.userId !== userId) {
     //   throw new Error(`User ${userId} does not have permission to access template ${assessTemplateId}`);

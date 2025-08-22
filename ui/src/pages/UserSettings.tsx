@@ -94,8 +94,8 @@ export default () => {
       errors.newPassword = '请输入新密码';
     } else if (passwordForm.newPassword.length < 8) {
       errors.newPassword = '密码长度至少8个字符';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(passwordForm.newPassword)) {
-      errors.newPassword = '密码必须包含大小写字母、数字和特殊字符';
+    } else if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(passwordForm.newPassword)) {
+      errors.newPassword = '密码必须包含字母和数字';
     }
 
     if (!passwordForm.confirmPassword) {
@@ -250,7 +250,7 @@ export default () => {
                   <Container>
                     <SpaceBetween direction="vertical" size="l">
                       <Alert type="info">
-                        为了账户安全，建议您定期更换密码。新密码应包含大小写字母、数字和特殊字符。
+                        为了账户安全，建议您定期更换密码。新密码应至少8位，包含字母和数字。
                       </Alert>
                       
                       <FormField 
@@ -272,7 +272,7 @@ export default () => {
 
                       <FormField 
                         label="新密码"
-                        description="至少8个字符，包含大小写字母、数字和特殊字符"
+                        description="至少8个字符，包含字母和数字"
                         errorText={passwordErrors.newPassword}
                       >
                         <Input

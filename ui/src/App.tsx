@@ -52,10 +52,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
   // Debug logging for admin permissions
   useEffect(() => {
     if (adminError) {
-      console.error('管理员权限检查错误:', adminError);
-    }
-    if (adminInfo) {
-      console.log('管理员权限信息:', adminInfo);
+      console.error('管理员权限检查错误');
     }
   }, [adminInfo, adminError]);
 
@@ -252,8 +249,6 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
         const userGroup = Array.isArray(cognitoGroups) && cognitoGroups.length > 0 
           ? cognitoGroups[0] 
           : 'students'; // 默认为学生组
-          
-        console.log('用户组信息:', cognitoGroups, '选择的组:', userGroup);
         
         setUserProfile({
           ...user,
