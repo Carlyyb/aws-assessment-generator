@@ -11,7 +11,6 @@ import {
   FormField,
   Input,
   Select,
-  TextContent,
   Alert,
   FileUpload,
   Tabs,
@@ -69,7 +68,7 @@ const UserManagement: React.FC = () => {
   };
 
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // 初始状态设为 true
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBatchCreateModal, setShowBatchCreateModal] = useState(false);
@@ -213,9 +212,26 @@ const UserManagement: React.FC = () => {
     }
   ];
 
-  // 表格集合钩子
+  // 搜索过滤相关状态
+  const [filterText, setFilterText] = useState('');
+
+  // 创建过滤后的用户列表
+  const filteredUsers = users.filter((user: User) => {
+    // 角色过滤
+    const roleMatch = !selectedRole || user.role === selectedRole;
+    
+    // 文本搜索过滤
+    const textMatch = !filterText || 
+      user.name.toLowerCase().includes(filterText.toLowerCase()) ||
+      user.username.toLowerCase().includes(filterText.toLowerCase()) ||
+      (user.email && user.email.toLowerCase().includes(filterText.toLowerCase()));
+    
+    return roleMatch && textMatch;
+  });
+
+  // 表格集合钩子，使用过滤后的用户列表
   const { items, filteredItemsCount, collectionProps, paginationProps } = useCollection(
-    users,
+    filteredUsers,
     {
       filtering: {
         empty: (
@@ -233,7 +249,7 @@ const UserManagement: React.FC = () => {
               没有找到与过滤条件匹配的用户
             </Box>
           </Box>
-        ),
+        )
       },
       pagination: { pageSize: 20 },
       sorting: {},
@@ -245,8 +261,10 @@ const UserManagement: React.FC = () => {
   );
 
   // 加载用户列表
-  const loadUsers = useCallback(async (role?: string) => {
-    setLoading(true);
+  const loadUsers = useCallback(async (role?: string, showLoadingState = true) => {
+    if (showLoadingState) {
+      setLoading(true);
+    }
     try {
       const response = await client.graphql({
         query: listUsers,
@@ -269,7 +287,9 @@ const UserManagement: React.FC = () => {
       });
       setUsers([]);
     } finally {
-      setLoading(false);
+      if (showLoadingState) {
+        setLoading(false);
+      }
     }
   }, [dispatchAlert]);
 
@@ -333,7 +353,7 @@ const UserManagement: React.FC = () => {
       
       if (result.success) {
         // 重新加载用户列表
-        await loadUsers();
+        await loadUsers(undefined, false);
         
         // 如果是默认密码，显示密码弹窗
         if (result.isDefaultPassword && result.newPassword) {
@@ -445,7 +465,7 @@ const UserManagement: React.FC = () => {
       setSelectedUser(null);
       
       // 重新加载用户列表
-      await loadUsers(selectedRole || undefined);
+      await loadUsers(selectedRole || undefined, false);
       
     } catch (error: unknown) {
       console.error('更新用户设置失败:', error);
@@ -506,7 +526,7 @@ const UserManagement: React.FC = () => {
       setDeleteConfirmText('');
       
       // 重新加载用户列表
-      await loadUsers(selectedRole || undefined);
+      await loadUsers(selectedRole || undefined, false);
       
     } catch (error: unknown) {
       console.error('删除用户失败:', error);
@@ -588,7 +608,7 @@ const UserManagement: React.FC = () => {
       setShowCreateModal(false);
       
       // 重新加载用户列表
-      await loadUsers(selectedRole || undefined);
+      await loadUsers(selectedRole || undefined, false);
       
     } catch (error: any) {
       console.error('创建用户失败:', error);
@@ -698,7 +718,7 @@ const UserManagement: React.FC = () => {
       setShowBatchCreateModal(false);
       
       // 重新加载用户列表
-      loadUsers(selectedRole || undefined);
+      loadUsers(selectedRole || undefined, false);
     } catch (error: any) {
       console.error('批量创建用户失败:', error);
       dispatchAlert({
@@ -881,6 +901,17 @@ const UserManagement: React.FC = () => {
     }
   ];
 
+  // 获取角色过滤选项
+  const getRoleFilterOptions = () => {
+    return [
+      { label: '全部角色', value: '' },
+      { label: '学生', value: 'students' },
+      { label: '教师', value: 'teachers' },
+      { label: '管理员', value: 'admin' },
+      { label: '超级管理员', value: 'super_admin' }
+    ];
+  };
+
   return (
     <Container>
       <SpaceBetween direction="vertical" size="l">
@@ -897,7 +928,7 @@ const UserManagement: React.FC = () => {
                 创建用户
               </Button>
               <Button 
-                variant="primary"
+                iconName="upload"
                 onClick={() => {
                   setActiveTabId('batch');
                   setShowBatchCreateModal(true);
@@ -905,41 +936,50 @@ const UserManagement: React.FC = () => {
               >
                 批量导入
               </Button>
+              {collectionProps.selectedItems && collectionProps.selectedItems.length > 0 && (
+                <Button 
+                  variant="normal"
+                  iconName="remove"
+                  onClick={handleDeleteUsers}
+                >
+                  删除选中 ({collectionProps.selectedItems.length})
+                </Button>
+              )}
             </SpaceBetween>
           }
         >
           用户管理
         </Header>
 
-        {/* 角色过滤器 */}
-        <Box>
-          <SpaceBetween direction="horizontal" size="xs">
-            <Button
-              variant={selectedRole === '' ? 'primary' : 'normal'}
-              onClick={() => handleRoleFilter('')}
-            >
-              全部用户
-            </Button>
-            <Button
-              variant={selectedRole === 'students' ? 'primary' : 'normal'}
-              onClick={() => handleRoleFilter('students')}
-            >
-              学生
-            </Button>
-            <Button
-              variant={selectedRole === 'teachers' ? 'primary' : 'normal'}
-              onClick={() => handleRoleFilter('teachers')}
-            >
-              教师
-            </Button>
-            <Button
-              variant={selectedRole === 'admin' ? 'primary' : 'normal'}
-              onClick={() => handleRoleFilter('admin')}
-            >
-              管理员
-            </Button>
-          </SpaceBetween>
-        </Box>
+        {/* 搜索和过滤器 */}
+        <SpaceBetween direction="horizontal" size="m">
+          <div style={{ width: '300px' }}>
+            <FormField label="搜索用户">
+              <Input
+                value={filterText}
+                onChange={({ detail }) => setFilterText(detail.value)}
+                placeholder="输入姓名、用户名或邮箱进行搜索"
+                clearAriaLabel="清空搜索"
+                type="search"
+              />
+            </FormField>
+          </div>
+          
+          <div style={{ width: '200px' }}>
+            <FormField label="角色筛选">
+              <Select
+                selectedOption={
+                  selectedRole 
+                    ? { label: roleDisplayMap[selectedRole] || selectedRole, value: selectedRole }
+                    : { label: '全部角色', value: '' }
+                }
+                onChange={({ detail }) => handleRoleFilter(detail.selectedOption.value || '')}
+                options={getRoleFilterOptions()}
+                placeholder="选择角色"
+              />
+            </FormField>
+          </div>
+        </SpaceBetween>
 
         {/* 用户列表表格 */}
         <Table
@@ -951,48 +991,33 @@ const UserManagement: React.FC = () => {
           trackBy="id"
           header={
             <Header 
-              counter={`(${users.length})`}
-              actions={
-                <SpaceBetween direction="horizontal" size="xs">
-                  <Button
-                    disabled={!collectionProps.selectedItems || collectionProps.selectedItems.length === 0}
-                    onClick={handleDeleteUsers}
-                  >
-                    删除选中
-                  </Button>
-                  <Button 
-                    variant="primary" 
-                    iconName="add-plus"
-                    onClick={() => setShowCreateModal(true)}
-                  >
-                    创建用户
-                  </Button>
-                  <Button 
-                    iconName="upload"
-                    onClick={() => setShowBatchCreateModal(true)}
-                  >
-                    批量导入
-                  </Button>
-                </SpaceBetween>
+              counter={`(${filteredItemsCount}/${users.length})`}
+              description={
+                selectedRole || filterText 
+                  ? `显示 ${filteredItemsCount} 个用户，共 ${users.length} 个用户` 
+                  : `共 ${users.length} 个用户`
               }
             >
-              用户管理
+              用户列表
             </Header>
           }
           empty={
             <Box textAlign="center" color="inherit">
               <b>没有用户</b>
               <Box padding={{ bottom: 's' }} variant="p" color="inherit">
-                没有找到用户记录
+                {selectedRole || filterText ? '没有找到与筛选条件匹配的用户' : '没有找到用户记录'}
               </Box>
+              {(selectedRole || filterText) && (
+                <Button 
+                  onClick={() => {
+                    setSelectedRole('');
+                    setFilterText('');
+                  }}
+                >
+                  清除筛选条件
+                </Button>
+              )}
             </Box>
-          }
-          filter={
-            <div style={{ padding: '8px 0' }}>
-              <TextContent>
-                <strong>用户总数: {filteredItemsCount}</strong>
-              </TextContent>
-            </div>
           }
           pagination={<Pagination {...paginationProps} />}
           preferences={

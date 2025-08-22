@@ -584,6 +584,23 @@ export class DataStack extends NestedStack {
     assessmentsTable.grantReadWriteData(deleteAssessmentLambda);
     studentAssessmentsTable.grantReadWriteData(deleteAssessmentLambda);
 
+    /////////// Transform DynamoDB Data Lambda Function
+
+    // 创建数据转换的 Lambda 函数
+    const transformDataLambda = new NodejsFunction(this, 'TransformDataLambda', {
+      entry: path.join(__dirname, 'lambdas', 'transformDynamoData.ts'),
+      handler: 'handler',
+      runtime: Runtime.NODEJS_20_X,
+      architecture: Architecture.ARM_64,
+      timeout: Duration.minutes(1),
+      tracing: Tracing.ACTIVE,
+      logGroup: new LogGroup(this, 'TransformDataLambdaLogGroup', {
+        logGroupName: `/aws/lambda/transform-dynamodb-data`,
+        retention: RetentionDays.ONE_WEEK,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
+    });
+
     // 创建 Lambda 数据源
     const deleteAssessmentDs = api.addLambdaDataSource('DeleteAssessmentDs', deleteAssessmentLambda);
 

@@ -31,6 +31,8 @@ export class AuthStack extends NestedStack {
   public identityPool: IdentityPool;
   // 注册后触发的 Lambda 函数
   public postConfirmationLambda: NodejsFunction;
+  // 登录后触发的 Lambda 函数
+  public postAuthenticationLambda: NodejsFunction;
 
   constructor(scope: Construct, id: string, props?: NestedStackProps) {
     super(scope, id, props);
@@ -42,6 +44,18 @@ export class AuthStack extends NestedStack {
       runtime: Runtime.NODEJS_20_X,
       environment: {
         'STUDENTS_TABLE_PARAM': '/gen-assess/student-table-name', // DynamoDB 学生表参数
+      },
+      timeout: Duration.seconds(30),
+    });
+
+    // 登录后触发的 Lambda，用于更新用户最后登录时间
+    const postAuthentication = new NodejsFunction(this, "PostAuthenticationLambdaFunction", {
+      entry: path.resolve(__dirname, 'lambdas', 'postAuthentication.ts'), // Lambda 入口文件
+      handler: 'postAuthentication', // Lambda 处理函数名
+      runtime: Runtime.NODEJS_20_X,
+      environment: {
+        'STUDENTS_TABLE_PARAM': '/gen-assess/student-table-name', // DynamoDB 学生表参数
+        'USERS_TABLE_PARAM': '/gen-assess/users-table-name', // DynamoDB 用户表参数
       },
       timeout: Duration.seconds(30),
     });
@@ -82,6 +96,7 @@ export class AuthStack extends NestedStack {
       removalPolicy: RemovalPolicy.DESTROY,
       lambdaTriggers: {
         postConfirmation: postConfirmation,
+        postAuthentication: postAuthentication,
       },
       // 简化密码策略，便于管理员创建账号
       passwordPolicy: {
@@ -129,11 +144,49 @@ export class AuthStack extends NestedStack {
       ],
     });
 
+    // 为postAuthentication Lambda创建单独的权限策略
+    const postAuthPolicy = new Policy(this, 'lambdaPolicyPostAuth', {
+      statements: [
+        new PolicyStatement({
+          actions: ['ssm:DescribeParameters'],
+          resources: ['*'],
+        }),
+        new PolicyStatement({
+          actions: ['ssm:GetParameter*'],
+          resources: [this.formatArn({
+            service: "ssm",
+            region: cdk.Aws.REGION,
+            account: cdk.Aws.ACCOUNT_ID,
+            resource: "parameter",
+            resourceName: "gen-assess/*",
+          })],
+        }),
+        new PolicyStatement({
+          actions: ['dynamodb:UpdateItem'],
+          resources: [
+            // 允许访问所有gen-assess相关的DynamoDB表
+            this.formatArn({
+              service: "dynamodb",
+              region: cdk.Aws.REGION,
+              account: cdk.Aws.ACCOUNT_ID,
+              resource: "table",
+              resourceName: "*GenAssess*",
+            })
+          ],
+        }),
+      ],
+    });
+
     // Lambda 必须有角色，否则抛出异常
     if (!postConfirmation.role) {
-      throw new Error("err");
+      throw new Error("postConfirmation lambda role is undefined");
     }
     policy.attachToRole(postConfirmation.role);
+
+    if (!postAuthentication.role) {
+      throw new Error("postAuthentication lambda role is undefined");
+    }
+    postAuthPolicy.attachToRole(postAuthentication.role);
 
     // 创建教师分组
     const teachersUserGroup = new aws_cognito.CfnUserPoolGroup(this, 'TeachersGroupV2', {
@@ -247,5 +300,6 @@ export class AuthStack extends NestedStack {
     this.client = client;
     this.identityPool = identityPool;
     this.postConfirmationLambda = postConfirmation;
+    this.postAuthenticationLambda = postAuthentication;
   }
 }

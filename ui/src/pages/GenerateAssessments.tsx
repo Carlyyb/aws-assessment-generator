@@ -13,6 +13,7 @@ import {
   FileUpload,
   Input,
   DatePicker,
+  TimeInput,
   Spinner,
   Modal,
   ProgressBar,
@@ -37,7 +38,9 @@ export default () => {
 
   const [name, setName] = useState('');
   const [lectureDate, setLectureDate] = useState('');
+  const [lectureTime, setLectureTime] = useState('09:00');
   const [deadline, setDeadline] = useState('');
+  const [deadlineTime, setDeadlineTime] = useState('23:59');
   const [useDefault, setUseDefault] = useState(true);
   const [courses, setCourses] = useState<SelectProps.Option[]>([]);
   const [course, setCourse] = useState<SelectProps.Option | null>(null);
@@ -526,8 +529,8 @@ export default () => {
                       variables: {
                         input: {
                           name,
-                          lectureDate,
-                          deadline,
+                          lectureDate: lectureDate && lectureTime ? `${lectureDate}T${lectureTime}:00.000Z` : lectureDate,
+                          deadline: deadline && deadlineTime ? `${deadline}T${deadlineTime}:00.000Z` : deadline,
                           courseId: course.value,
                           assessTemplateId: assessTemplate?.value,
                           locations: uploadedFileKeys,
@@ -605,10 +608,34 @@ export default () => {
                     </SpaceBetween>
                   </FormField>
                   <FormField label={getText('teachers.assessments.generate.lecture_date')}>
-                    <DatePicker onChange={({ detail }) => setLectureDate(detail.value)} value={lectureDate} placeholder={getText('date_format.yyyy_mm_dd')} />
+                    <SpaceBetween direction="horizontal" size="xs">
+                      <DatePicker 
+                        onChange={({ detail }) => setLectureDate(detail.value)} 
+                        value={lectureDate} 
+                        placeholder={getText('date_format.yyyy_mm_dd')} 
+                      />
+                      <TimeInput
+                        onChange={({ detail }) => setLectureTime(detail.value)}
+                        value={lectureTime}
+                        format="hh:mm"
+                        placeholder="时间"
+                      />
+                    </SpaceBetween>
                   </FormField>
                   <FormField label={getText('common.labels.deadline')}>
-                    <DatePicker onChange={({ detail }) => setDeadline(detail.value)} value={deadline} placeholder={getText('date_format.yyyy_mm_dd')} />
+                    <SpaceBetween direction="horizontal" size="xs">
+                      <DatePicker 
+                        onChange={({ detail }) => setDeadline(detail.value)} 
+                        value={deadline} 
+                        placeholder={getText('date_format.yyyy_mm_dd')} 
+                      />
+                      <TimeInput
+                        onChange={({ detail }) => setDeadlineTime(detail.value)}
+                        value={deadlineTime}
+                        format="hh:mm"
+                        placeholder="时间"
+                      />
+                    </SpaceBetween>
                   </FormField>
                   
                   {/* 自定义学习目标输入框 */}

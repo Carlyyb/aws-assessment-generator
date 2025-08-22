@@ -8,7 +8,6 @@ import { AssessType, MultiChoice, FreeText, TrueFalse , SingleChoice} from '../.
 import { ReferenceDocuments } from '../models/referenceDocuments';
 
 export function getInitialQuestionsPrompt(assessmentTemplate: AssessmentTemplate, topicsExtractionOutput: string, customPrompt?: string) {
-  // TODO add topic to response for each question
   const languageInstructions = assessmentTemplate.docLang === 'zh' 
     ? '请严格使用中文生成所有题目、答案选项和解释内容' 
     : 'Please generate all questions, answer options, and explanations strictly in English';
@@ -274,7 +273,7 @@ Please analyze the following educational documents and extract the academic topi
 
   // Nova Lite has ~128K token limit, roughly 4 chars per token
   // Reserve 1000 tokens for prompt and response, so limit document content to ~100K tokens (~400K chars)
-  const MAX_CONTENT_LENGTH = 400000;
+  const MAX_CONTENT_LENGTH = 4000000;
   let totalContentLength = 0;
 
   for (let i = 0; i < referenceDocuments.documentsContent.length; i++) {

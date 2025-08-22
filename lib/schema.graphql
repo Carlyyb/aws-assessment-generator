@@ -288,8 +288,8 @@ type Assessment {
   id: ID!
   name: String!
   courseId: String!
-  lectureDate: AWSDate!
-  deadline: AWSDate!
+  lectureDate: AWSDateTime!
+  deadline: AWSDateTime!
   updatedAt: AWSDateTime!
   assessType: AssessType!
   multiChoiceAssessment: [MultiChoice!]
@@ -314,8 +314,8 @@ input AssessmentInput {
   id: ID!
   name: String!
   courseId: String!
-  lectureDate: AWSDate!
-  deadline: AWSDate!
+  lectureDate: AWSDateTime!
+  deadline: AWSDateTime!
   assessType: AssessType!
   multiChoiceAssessment: [MultiChoiceInput]
   freeTextAssessment: [FreeTextInput]
@@ -358,8 +358,8 @@ input StudentAssessmentInput {
 input GenerateAssessmentInput {
   name: String!
   courseId: String!
-  lectureDate: AWSDate!
-  deadline: AWSDate!
+  lectureDate: AWSDateTime!
+  deadline: AWSDateTime!
   locations: [String]
   assessTemplateId: String
   customPrompt: String

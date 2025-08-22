@@ -19,6 +19,7 @@ import {
 } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
 import { listStudents, listStudentGroups } from '../graphql/queries';
+import { updateStudentGroup } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { GroupManagement } from '../components/GroupManagementClean';
 
@@ -62,8 +63,10 @@ const StudentList = () => {
   const [pageSize] = useState(10);
 
   // 加载学生和分组数据
-  const loadStudentsAndGroups = useCallback(async () => {
-    setLoading(true);
+  const loadStudentsAndGroups = useCallback(async (showLoadingState = true) => {
+    if (showLoadingState) {
+      setLoading(true);
+    }
     try {
       console.log('开始加载学生和分组数据...');
       
@@ -259,23 +262,33 @@ const StudentList = () => {
     }
 
     try {
-      // 这里应该调用真实的GraphQL变更
-      console.log('将学生添加到分组:', {
-        students: selectedStudents.map(s => s.id),
-        groups: selectedGroups.map(g => g.value)
-      });
-      
+      // 真实调用：遍历分组，依次更新分组的students字段
+      for (const group of selectedGroups) {
+        const groupId = group.value;
+        // 获取原分组对象
+        const targetGroup = groups.find(g => g.id === groupId);
+        if (!targetGroup) continue;
+        // 合并学生ID，去重
+        const newStudentIds = Array.from(new Set([...targetGroup.students, ...selectedStudents.map(s => s.id)]));
+        // 调用updateStudentGroup mutation
+        await client.graphql({
+          query: updateStudentGroup,
+          variables: {
+            id: groupId,
+            input: {
+              students: newStudentIds
+            }
+          }
+        });
+      }
       dispatchAlert({
         type: AlertType.SUCCESS,
         content: `成功将 ${selectedStudents.length} 名学生添加到 ${selectedGroups.length} 个分组`
       });
-      
       setShowGroupModal(false);
       setSelectedStudents([]);
       setSelectedGroups([]);
-      
-      // 重新加载数据
-      await loadStudentsAndGroups();
+      await loadStudentsAndGroups(false); // 不显示加载状态，避免跳动
     } catch (error) {
       console.error('添加到分组失败:', error);
       dispatchAlert({

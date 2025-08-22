@@ -18,7 +18,7 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
-import { MultiChoice, FreeText, TrueFalse, SingleChoice, AssessType, StudentAssessment } from '../graphql/API';
+import { MultiChoice, FreeText, TrueFalse, SingleChoice, AssessType, type StudentAssessment } from '../graphql/API';
 import { getStudentAssessment, getAssessment } from '../graphql/queries';
 import { gradeStudentAssessment } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
@@ -26,7 +26,7 @@ import { getText, getTextWithParams } from '../i18n/lang';
 
 const client = generateClient();
 
-export default () => {
+export default function StudentAssessment() {
   const params = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

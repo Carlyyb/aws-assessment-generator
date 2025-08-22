@@ -69,6 +69,8 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showStudentsModal, setShowStudentsModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState<StudentGroup | null>(null);
+  // 新增：学生选择状态提升到组件级
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   
   // 创建分组表单状态
   const [newGroupName, setNewGroupName] = useState('');
@@ -236,6 +238,7 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
     setNewGroupName(group.name);
     setNewGroupDescription(group.description);
     setNewGroupColor(group.color);
+    setSelectedStudentIds(group.students || []); // 初始化选中学生
     setShowEditModal(true);
   };
 
@@ -329,6 +332,7 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
                       variant="normal"
                       onClick={() => {
                         setEditingGroup(item);
+                        setSelectedStudentIds(item.students || []); // 初始化选中学生
                         setShowStudentsModal(true);
                       }}
                     >
@@ -480,7 +484,6 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
               rows={3}
             />
           </FormField>
-          
           <FormField label="标签颜色">
             <SpaceBetween size="s">
               <Box>
@@ -489,7 +492,6 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
                   <Box>当前颜色: {newGroupColor}</Box>
                 </SpaceBetween>
               </Box>
-              
               <Tiles
                 value={newGroupColor}
                 onChange={({ detail }) => setNewGroupColor(detail.value)}
@@ -500,6 +502,17 @@ export const GroupManagement = ({ groups, students, onGroupsChange }: GroupManag
                 columns={5}
               />
             </SpaceBetween>
+          </FormField>
+          <FormField label="分组学生" constraintText="可多选">
+            <Table
+              columnDefinitions={[{ id: 'name', header: '姓名', cell: (item) => item.name }]}
+              items={students}
+              trackBy="id"
+              selectedItems={students.filter(s => selectedStudentIds.includes(s.id))}
+              onSelectionChange={({ detail }) => setSelectedStudentIds(detail.selectedItems.map((s: Student) => s.id))}
+              selectionType="multi"
+              empty={<Box>暂无学生</Box>}
+            />
           </FormField>
         </SpaceBetween>
       </Modal>

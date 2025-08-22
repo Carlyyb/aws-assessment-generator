@@ -503,6 +503,7 @@ export const handler = async (event: any): Promise<any> => {
             }
 
             const userData = {
+              id: user.Username, // 保证id字段有值
               username: user.Username,
               name: getAttributeValue('preferred_username') || getAttributeValue('name') || user.Username,
               email: getAttributeValue('email'),

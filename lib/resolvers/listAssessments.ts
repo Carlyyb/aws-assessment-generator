@@ -72,10 +72,40 @@ function sanitizeAssessmentData(assessment) {
 export function response(ctx) {
   const items = ctx.result.items || [];
   
-  // 对每个assessment进行数据清理
-  const sanitizedItems = items.map(item => {
-    return sanitizeAssessmentData(item);
+  // 简单的内联数据转换，处理 DynamoDB 格式
+  const transform = (obj) => {
+    if (!obj || typeof obj !== 'object') return obj;
+    
+    // 处理 DynamoDB 数据类型
+    if (obj.S !== undefined) return obj.S;
+    if (obj.N !== undefined) return parseInt(obj.N);
+    if (obj.BOOL !== undefined) return obj.BOOL;
+    if (obj.L !== undefined) return obj.L.map(item => transform(item));
+    if (obj.M !== undefined) {
+      const transformed = {};
+      for (const [key, value] of Object.entries(obj.M)) {
+        transformed[key] = transform(value);
+      }
+      return transformed;
+    }
+    
+    // 处理普通对象
+    if (Array.isArray(obj)) {
+      return obj.map(item => transform(item));
+    }
+    
+    const transformed = {};
+    for (const [key, value] of Object.entries(obj)) {
+      transformed[key] = transform(value);
+    }
+    return transformed;
+  };
+  
+  // 对每个评估进行数据转换和清理
+  const transformedItems = items.map(item => {
+    const transformedItem = transform(item);
+    return sanitizeAssessmentData(transformedItem);
   });
   
-  return sanitizedItems;
+  return transformedItems;
 }

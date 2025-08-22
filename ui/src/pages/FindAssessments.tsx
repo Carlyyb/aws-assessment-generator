@@ -395,12 +395,24 @@ export default () => {
                 {
                   id: 'lectureDate',
                   header: getText('teachers.assessments.find.lecture_date'),
-                  cell: (item) => new Date(item.lectureDate).toDateString(),
+                  cell: (item) => new Date(item.lectureDate).toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }),
                 },
                 {
                   id: 'deadline',
                   header: getText('common.labels.deadline'),
-                  cell: (item) => new Date(item.deadline).toDateString(),
+                  cell: (item) => new Date(item.deadline).toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }),
                 },
                 {
                   id: 'updatedAt',

@@ -98,7 +98,13 @@ export default function StudentAssessments() {
                     {
                       id: 'deadline',
                       header: '截止时间',
-                      cell: (item: Assessment) => item.deadline ? new Date(item.deadline).toDateString() : '-',
+                      cell: (item: Assessment) => item.deadline ? new Date(item.deadline).toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : '-',
                       sortingField: 'deadline',
                     },
                     {
@@ -150,7 +156,13 @@ export default function StudentAssessments() {
                     {
                       id: 'deadline',
                       header: getText('students.assessments.list.table.deadline'),
-                      cell: (item: StudentAssessment) => item.assessment?.deadline ? new Date(item.assessment.deadline).toDateString() : '-',
+                      cell: (item: StudentAssessment) => item.assessment?.deadline ? new Date(item.assessment.deadline).toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : '-',
                       sortingField: 'course',
                     },
                     {
