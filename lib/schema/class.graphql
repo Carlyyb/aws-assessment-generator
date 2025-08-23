@@ -1,0 +1,46 @@
+type Class @model @auth(rules: [
+  { allow: groups, groups: ["teachers"], operations: [create, update, delete, read] }
+  { allow: groups, groups: ["students"], operations: [read] }
+]) {
+  id: ID!
+  name: String!
+  description: String
+  teacherId: String! @index
+  students: [Student] @hasMany
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+}
+
+type Student @model @auth(rules: [
+  { allow: groups, groups: ["teachers"], operations: [read] }
+  { allow: groups, groups: ["students"], operations: [read] }
+]) {
+  id: ID!
+  name: String!
+  email: String! @index
+  classes: [Class] @hasMany
+  assessments: [StudentAssessment] @hasMany
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+}
+
+input CreateClassInput {
+  name: String!
+  description: String
+}
+
+input AddStudentToClassInput {
+  classId: ID!
+  studentEmail: String!
+}
+
+type Query {
+  listClassesByTeacher: [Class]
+  getClassById(id: ID!): Class
+}
+
+type Mutation {
+  createClass(input: CreateClassInput!): Class
+  addStudentToClass(input: AddStudentToClassInput!): Class
+  removeStudentFromClass(classId: ID!, studentId: ID!): Class
+}

@@ -1,0 +1,20 @@
+{
+  "teachers": {
+    "class": {
+      "title": "班级管理",
+      "create": "创建班级",
+      "name": "班级名称",
+      "description": "班级描述",
+      "student_count": "学生数量",
+      "add_student": "添加学生",
+      "student_email": "学生邮箱",
+      "student_email_description": "请输入要添加到班级的学生邮箱",
+      "no_classes": "暂无班级",
+      "load_error": "加载班级列表失败",
+      "create_success": "创建班级成功",
+      "create_error": "创建班级失败",
+      "add_student_success": "添加学生成功",
+      "add_student_error": "添加学生失败"
+    }
+  }
+}

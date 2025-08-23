@@ -10,6 +10,7 @@ import MyDashboard from './pages/MyDashboard';
 import StudentAssessment from './pages/StudentAssessment';
 import ReviewAssessment from './pages/ReviewAssessment';
 import Courses from './pages/Courses';
+import ClassManagement from './pages/ClassManagement';
 import StudentList from './pages/StudentList';
 import AssessmentResults from './pages/AssessmentResults';
 import AssessmentSettings from './pages/AssessmentSettings';
@@ -37,6 +38,10 @@ export const routes = {
               path: 'student-list',
               element: <StudentList />,
             },
+            {
+              path: 'class-management',
+              element: <ClassManagement />,
+            },
           ],
         },
         {
@@ -62,6 +67,7 @@ export const routes = {
     { path: 'edit-assessment/:id', element: <EditAssessments />, children: [] },
     { path: 'assessment-results/:id', element: <AssessmentResults />, children: [] },
     { path: 'assessment-settings/:id', element: <AssessmentSettings />, children: [] },
+    { path: 'class-management/:id', element: <ClassDetails />, children: [] },
   ],
   students: [
     {
@@ -108,6 +114,14 @@ export const routes = {
               element: <StudentList />,
             },
             {
+              path: 'class-management',
+              element: <ClassManagement />,
+            },
+            {
+              path: 'class-management/:id',
+              element: <ClassDetails />,
+            },
+            {
               path: 'user-management',
               element: <UserManagement />,
             },
@@ -136,6 +150,7 @@ export const routes = {
     { path: 'edit-assessment/:id', element: <EditAssessments />, children: [] },
     { path: 'assessment-results/:id', element: <AssessmentResults />, children: [] },
     { path: 'assessment-settings/:id', element: <AssessmentSettings />, children: [] },
+    { path: 'class-management/:id', element: <ClassDetails />, children: [] },
   ],
   // 超级管理员路由配置（继承管理员所有功能，但不包括日志管理）
   super_admin: [
@@ -160,6 +175,14 @@ export const routes = {
               element: <StudentList />,
             },
             {
+              path: 'class-management',
+              element: <ClassManagement />,
+            },
+            {
+              path: 'class-management/:id',
+              element: <ClassDetails />,
+            },
+            {
               path: 'user-management',
               element: <UserManagement />,
             },
@@ -188,5 +211,6 @@ export const routes = {
     { path: 'edit-assessment/:id', element: <EditAssessments />, children: [] },
     { path: 'assessment-results/:id', element: <AssessmentResults />, children: [] },
     { path: 'assessment-settings/:id', element: <AssessmentSettings />, children: [] },
+    { path: 'class-management/:id', element: <ClassDetails />, children: [] },
   ],
 };
