@@ -10,8 +10,6 @@ import {
   TextContent,
   Modal,
   Form,
-  FormField,
-  Input,
 } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -52,7 +50,7 @@ export default function ClassDetails() {
   const loadClassDetails = async () => {
     try {
       const response = await client.graphql<any>({
-        query: \`query GetClass($id: ID!) {
+        query: `query GetClass($id: ID!) {
           getClassById(id: $id) {
             id
             name
@@ -65,7 +63,7 @@ export default function ClassDetails() {
             createdAt
             updatedAt
           }
-        }\`,
+        }`,
         variables: { id }
       });
       setClassDetails(response.data.getClassById);
@@ -84,7 +82,7 @@ export default function ClassDetails() {
 
     try {
       await client.graphql<any>({
-        query: \`mutation RemoveStudent($classId: ID!, $studentId: ID!) {
+        query: `mutation RemoveStudent($classId: ID!, $studentId: ID!) {
           removeStudentFromClass(classId: $classId, studentId: $studentId) {
             id
             students {
@@ -93,7 +91,7 @@ export default function ClassDetails() {
               email
             }
           }
-        }\`,
+        }`,
         variables: {
           classId: id,
           studentId: selectedStudent.id
@@ -224,9 +222,7 @@ export default function ClassDetails() {
         >
           <TextContent>
             <p>
-              {getText('teachers.class.remove_student_confirmation', {
-                name: selectedStudent?.name
-              })}
+              {getText('teachers.class.remove_student_confirmation')}
             </p>
           </TextContent>
         </Form>

@@ -11,6 +11,7 @@ import StudentAssessment from './pages/StudentAssessment';
 import ReviewAssessment from './pages/ReviewAssessment';
 import Courses from './pages/Courses';
 import ClassManagement from './pages/ClassManagement';
+import ClassDetails from './pages/ClassDetails';
 import StudentList from './pages/StudentList';
 import AssessmentResults from './pages/AssessmentResults';
 import AssessmentSettings from './pages/AssessmentSettings';

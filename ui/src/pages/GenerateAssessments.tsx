@@ -314,19 +314,8 @@ export default () => {
           <Header
             variant="h1"
             description="创建个性化的课程测试评估，支持多种文档格式和自定义学习目标"
-            actions={
-              <SpaceBetween direction="horizontal" size="xs">
-                <Button 
-                  variant="primary" 
-                  iconName="download"
-                  onClick={() => window.open('/docs/assessment-guide.pdf', '_blank')}
-                >
-                  使用指南
-                </Button>
-              </SpaceBetween>
-            }
           >
-            {getText('common.nav.generate_assessments')}
+            {getText('common.nav.generate-assessments')}
           </Header>
         }
         disableContentPaddings={false}

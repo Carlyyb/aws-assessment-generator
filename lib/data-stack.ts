@@ -95,6 +95,12 @@ export class DataStack extends NestedStack {
     const studentsTable = new aws_dynamodb.TableV2(this, 'StudentsTable', {
       partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
       removalPolicy: RemovalPolicy.DESTROY,
+      globalSecondaryIndexes: [
+        {
+          indexName: 'email-index',
+          partitionKey: { name: 'email', type: aws_dynamodb.AttributeType.STRING },
+        }
+      ]
     });
 
     /////////// Student Groups
@@ -102,6 +108,37 @@ export class DataStack extends NestedStack {
     const studentGroupsTable = new aws_dynamodb.TableV2(this, 'StudentGroupsTable', {
       partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
       removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    /////////// Classes
+
+    const classesTable = new aws_dynamodb.TableV2(this, 'ClassesTable', {
+      partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
+      globalSecondaryIndexes: [
+        {
+          indexName: 'teacherId-index',
+          partitionKey: { name: 'teacherId', type: aws_dynamodb.AttributeType.STRING },
+        }
+      ]
+    });
+
+    /////////// Class-Student Associations
+
+    const classStudentsTable = new aws_dynamodb.TableV2(this, 'ClassStudentsTable', {
+      partitionKey: { name: 'classId', type: aws_dynamodb.AttributeType.STRING },
+      sortKey: { name: 'studentId', type: aws_dynamodb.AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
+      globalSecondaryIndexes: [
+        {
+          indexName: 'classId-index',
+          partitionKey: { name: 'classId', type: aws_dynamodb.AttributeType.STRING },
+        },
+        {
+          indexName: 'studentId-index',
+          partitionKey: { name: 'studentId', type: aws_dynamodb.AttributeType.STRING },
+        }
+      ]
     });
 
     // 将用户表名保存到SSM参数
@@ -276,6 +313,91 @@ export class DataStack extends NestedStack {
       typeName: 'Mutation',
       fieldName: 'deleteStudentGroup',
       code: aws_appsync.Code.fromAsset('lib/resolvers/deleteStudentGroup.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    /////////// Class Management
+
+    // 创建班级管理 Lambda 函数
+    const classManagementFunction = new NodejsFunction(this, 'ClassManagementFunction', {
+      entry: path.join(__dirname, 'lambdas', 'classManagement.ts'),
+      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      timeout: Duration.seconds(30),
+      memorySize: 512,
+      environment: {
+        CLASSES_TABLE_NAME: classesTable.tableName,
+        STUDENTS_TABLE_NAME: studentsTable.tableName,
+        CLASS_STUDENTS_TABLE_NAME: classStudentsTable.tableName,
+        REGION: Stack.of(this).region
+      },
+      bundling: {
+        minify: true,
+        externalModules: ['@aws-sdk/client-dynamodb', '@aws-sdk/lib-dynamodb'],
+      }
+    });
+
+    // 给班级管理函数权限
+    classesTable.grantReadWriteData(classManagementFunction);
+    studentsTable.grantReadWriteData(classManagementFunction);
+    classStudentsTable.grantReadWriteData(classManagementFunction);
+
+    // 创建班级管理 Lambda 数据源
+    const classManagementDs = api.addLambdaDataSource('ClassManagementDataSource', classManagementFunction);
+
+    // 创建班级管理相关的 resolver
+    classManagementDs.createResolver('QueryListClassesResolver', {
+      typeName: 'Query',
+      fieldName: 'listClasses',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/class.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    classManagementDs.createResolver('QueryListClassesByTeacherResolver', {
+      typeName: 'Query',
+      fieldName: 'listClassesByTeacher',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/class.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    classManagementDs.createResolver('QueryGetClassByIdResolver', {
+      typeName: 'Query',
+      fieldName: 'getClassById',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/class.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    classManagementDs.createResolver('MutationCreateClassResolver', {
+      typeName: 'Mutation',
+      fieldName: 'createClass',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/class.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    classManagementDs.createResolver('MutationUpdateClassResolver', {
+      typeName: 'Mutation',
+      fieldName: 'updateClass',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/class.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    classManagementDs.createResolver('MutationDeleteClassResolver', {
+      typeName: 'Mutation',
+      fieldName: 'deleteClass',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/class.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    classManagementDs.createResolver('MutationAddStudentToClassResolver', {
+      typeName: 'Mutation',
+      fieldName: 'addStudentToClass',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/class.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    classManagementDs.createResolver('MutationRemoveStudentFromClassResolver', {
+      typeName: 'Mutation',
+      fieldName: 'removeStudentFromClass',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/class.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 

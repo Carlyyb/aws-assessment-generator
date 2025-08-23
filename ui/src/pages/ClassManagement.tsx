@@ -11,7 +11,6 @@ import {
   Input,
   TextContent,
   Box,
-  Pagination,
 } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
 import { getText } from '../i18n/lang';
@@ -49,24 +48,21 @@ export default function ClassManagement() {
 
   const loadClasses = async () => {
     try {
-      // TODO: 替换为实际的 GraphQL 查询
       const response = await client.graphql<any>({
-        query: \`query ListClasses {
-          listClasses {
-            items {
+        query: `query ListClassesByTeacher {
+          listClassesByTeacher {
+            id
+            name
+            description
+            students {
               id
               name
-              description
-              students {
-                id
-                name
-                email
-              }
+              email
             }
           }
-        }\`
+        }`
       });
-      setClasses(response.data.listClasses.items);
+      setClasses(response.data.listClassesByTeacher);
     } catch (error) {
       dispatchAlert({
         type: AlertType.ERROR,
@@ -77,15 +73,14 @@ export default function ClassManagement() {
 
   const handleCreateClass = async () => {
     try {
-      // TODO: 替换为实际的 GraphQL mutation
       await client.graphql<any>({
-        query: \`mutation CreateClass($input: CreateClassInput!) {
+        query: `mutation CreateClass($input: CreateClassInput!) {
           createClass(input: $input) {
             id
             name
             description
           }
-        }\`,
+        }`,
         variables: {
           input: {
             name: newClassName,
@@ -114,9 +109,8 @@ export default function ClassManagement() {
     if (!selectedClass) return;
 
     try {
-      // TODO: 替换为实际的 GraphQL mutation
       await client.graphql<any>({
-        query: \`mutation AddStudentToClass($input: AddStudentToClassInput!) {
+        query: `mutation AddStudentToClass($input: AddStudentToClassInput!) {
           addStudentToClass(input: $input) {
             id
             students {
@@ -125,7 +119,7 @@ export default function ClassManagement() {
               email
             }
           }
-        }\`,
+        }`,
         variables: {
           input: {
             classId: selectedClass.id,
