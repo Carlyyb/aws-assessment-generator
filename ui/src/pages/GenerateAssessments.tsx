@@ -309,15 +309,40 @@ export default () => {
 
   return (
     <>
-      <form onSubmit={(e) => e.preventDefault()}>
-        <Form
-          actions={
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button formAction="none" variant="link">
-                {getText('common.actions.cancel')}
-              </Button>
-              <Button
-                onClick={async () => {
+      <Container
+        header={
+          <Header
+            variant="h1"
+            description="创建个性化的课程测试评估，支持多种文档格式和自定义学习目标"
+            actions={
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button 
+                  variant="primary" 
+                  iconName="download"
+                  onClick={() => window.open('/docs/assessment-guide.pdf', '_blank')}
+                >
+                  使用指南
+                </Button>
+              </SpaceBetween>
+            }
+          >
+            {getText('common.nav.generate_assessments')}
+          </Header>
+        }
+        disableContentPaddings={false}
+      >
+        <SpaceBetween size="l">
+          <form onSubmit={(e) => e.preventDefault()}>
+            <Form
+              actions={
+                <SpaceBetween direction="horizontal" size="xs">
+                  <Button formAction="none" variant="link">
+                    {getText('common.actions.cancel')}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    loading={isGenerating}
+                    onClick={async () => {
                   try {
                     // 重置状态
                     setIsGenerating(true);
@@ -487,19 +512,16 @@ export default () => {
                     dispatchAlert({ type: AlertType.ERROR, content: `生成测试失败: ${errorMessage}` });
                   }
                 }}
-                variant="primary"
                 disabled={isGenerating || knowledgeBaseStatus === 'missing' || knowledgeBaseStatus === 'checking'}
               >
                 {isGenerating ? '生成中...' : getText('teachers.assessments.generate.title')}
               </Button>
             </SpaceBetween>
           }
-          header={<Header variant="h1">{getText('teachers.assessments.generate.title')}</Header>}
         >
-          <Container header={<Header variant="h1">{getText('teachers.assessments.generate.title')}</Header>}>
-            <SpaceBetween size="l" alignItems="center">
-              <Box padding="xxxl">
-                <SpaceBetween size="xxl" direction="horizontal">
+          <SpaceBetween size="l">
+            <Box padding="xxxl">
+              <SpaceBetween size="xxl" direction="horizontal">
                   <FormField label={getText('teachers.assessments.generate.select_template')}>
                     <SpaceBetween size="l" direction="horizontal" alignItems="center">
                       <Checkbox checked={useDefault} onChange={({ detail }) => setUseDefault(detail.checked)}>
@@ -613,9 +635,10 @@ export default () => {
                 </SpaceBetween>
               </Box>
             </SpaceBetween>
-          </Container>
-        </Form>
-      </form>
+          </Form>
+        </form>
+      </SpaceBetween>
+    </Container>
       <Modal 
         visible={isGenerating || !!assessId} 
         onDismiss={() => {
