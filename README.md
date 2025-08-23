@@ -1,6 +1,3 @@
-
----
-
 ### 从0开始使用 Git 和 VSCode 克隆并预览项目
 
 #### 第一步：安装 Git 和 VSCode
@@ -148,6 +145,39 @@ Next:
 - **Error Tracking**: Monitor and analyze system errors and exceptions
 - **Log Analytics**: Search and filter logs by timestamp, level, and service
 - **Cost Optimization**: Automatic log retention with TTL to control storage costs
+
+## Database Management Tools
+
+### 🗃️ DynamoDB 表管理工具
+
+项目提供了完整的DynamoDB表管理工具集，方便开发和维护：
+
+#### 1. 表信息查询工具
+```bash
+# 查看所有表的详细信息
+node dynamodb-tables-info.js
+```
+
+#### 2. 数据迁移工具
+```bash
+# 运行Assessment时间字段迁移
+node migrate-assessment-datetime.js
+```
+
+#### 3. 文档资源
+- **PROJECT_FEATURES_DOCUMENTATION.md**: 包含完整的表结构信息和设计说明
+- **DYNAMODB_TABLES_README.md**: 数据库工具使用指南
+- **dynamodb-tables-info.js**: 可编程的表信息查询接口
+
+#### 4. 表架构概览
+| 表类型 | 数量 | 主要用途 |
+|--------|------|----------|
+| 核心业务表 | 4个 | 评估、用户、课程、学生评估记录 |
+| 模板分组表 | 3个 | 评估模板、学生分组、学生信息 |
+| 系统配置表 | 2个 | 用户设置、知识库元数据 |
+| 日志监控表 | 2个 | 系统日志、性能指标 |
+
+更多详情请参考 `DYNAMODB_TABLES_README.md` 文件。
 
 ## Security
 

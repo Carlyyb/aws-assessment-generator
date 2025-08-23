@@ -69,13 +69,50 @@ async function gradeFreeText(freeTextAssessment: FreeText[], answers: any) {
 }
 
 function gradeMultiChoice(mulichoiceAssessment: MultiChoice[], answers: any) {
-  let score = 0;
+  let totalScore = 0;
   for (let i = 0; i < mulichoiceAssessment.length; i++) {
     const assessment = mulichoiceAssessment[i];
     const answer = answers[i];
-    if (assessment.correctAnswer == answer) score++;
+    
+    // 获取正确答案数组
+    const correctAnswers = Array.isArray(assessment.correctAnswer) 
+      ? assessment.correctAnswer 
+      : [assessment.correctAnswer];
+    
+    // 获取学生答案数组
+    const studentAnswers = Array.isArray(answer) 
+      ? answer 
+      : [answer];
+    
+    // 计算题目得分
+    let questionScore = 0;
+    
+    // 检查是否有错误答案（选择了不在正确答案中的选项）
+    const hasWrongAnswers = studentAnswers.some(studentAns => !correctAnswers.includes(studentAns));
+    
+    if (hasWrongAnswers) {
+      // 有错误答案，得0分
+      questionScore = 0;
+      logger.info(`Question ${i + 1}: Has wrong answers, score = 0`);
+    } else {
+      // 没有错误答案，按选对的正确答案百分比给分
+      const correctSelectedCount = studentAnswers.filter(studentAns => correctAnswers.includes(studentAns)).length;
+      const totalCorrectCount = correctAnswers.length;
+      questionScore = correctSelectedCount / totalCorrectCount;
+      
+      logger.info(`Question ${i + 1}: Selected ${correctSelectedCount}/${totalCorrectCount} correct answers, score = ${questionScore}`);
+    }
+    
+    totalScore += questionScore;
+    
+    logger.info(`Question ${i + 1}: Correct answers: ${JSON.stringify(correctAnswers)}, Student answers: ${JSON.stringify(studentAnswers)}, Question score: ${questionScore}`);
   }
-  return { score: Math.round((score / mulichoiceAssessment.length) * 100) };
+  
+  // 计算总分百分比
+  const finalScore = Math.round((totalScore / mulichoiceAssessment.length) * 100);
+  logger.info(`Total score: ${totalScore}/${mulichoiceAssessment.length} = ${finalScore}%`);
+  
+  return { score: finalScore };
 }
 
 async function freeTextMarking(assessment: FreeText, answer: any) {

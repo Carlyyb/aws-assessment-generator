@@ -32,6 +32,25 @@ export default (props: CreateTemplateProps) => {
   const [mediumQuestions, setMediumQuestions] = useState('');
   const [hardQuestions, setHardQuestions] = useState('');
 
+  // 验证总问题数是否等于三种难度问题数之和
+  const validateQuestionNumbers = () => {
+    if (totalQuestions && easyQuestions && mediumQuestions && hardQuestions) {
+      const total = +totalQuestions;
+      const easy = +easyQuestions;
+      const medium = +mediumQuestions;
+      const hard = +hardQuestions;
+      const sum = easy + medium + hard;
+      
+      if (total !== sum) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const isQuestionNumbersValid = validateQuestionNumbers();
+  const isFormValid = name && docLang && assessType && taxonomy && totalQuestions && easyQuestions && mediumQuestions && hardQuestions && isQuestionNumbersValid;
+
   return (
     <form
       onSubmit={(e) => {
@@ -42,6 +61,15 @@ export default (props: CreateTemplateProps) => {
           dispatchAlert({ 
             type: AlertType.ERROR, 
             content: getText('teachers.settings.templates.validation_error') 
+          });
+          return;
+        }
+        
+        // 验证问题数总和
+        if (!isQuestionNumbersValid) {
+          dispatchAlert({ 
+            type: AlertType.ERROR, 
+            content: getText('teachers.settings.templates.validation_questions_sum_error') || '总问题数应该等于三种难度问题数之和'
           });
           return;
         }
@@ -81,7 +109,7 @@ export default (props: CreateTemplateProps) => {
             </Button>
             <Button
               variant="primary"
-              disabled={!docLang || !assessType || !taxonomy || !totalQuestions || !easyQuestions || !mediumQuestions || !hardQuestions}
+              disabled={!isFormValid}
             >
               {getText('common.actions.submit')}
             </Button>
@@ -117,6 +145,11 @@ export default (props: CreateTemplateProps) => {
                   <Input value={hardQuestions} onChange={({ detail }) => setHardQuestions(detail.value)} />
                 </FormField>
               </SpaceBetween>
+              {totalQuestions && easyQuestions && mediumQuestions && hardQuestions && !isQuestionNumbersValid && (
+                <Box color="text-status-error" fontSize="body-s" textAlign="center">
+                  {getText('teachers.settings.templates.validation_questions_sum_error') || '总问题数应该等于三种难度问题数之和'}
+                </Box>
+              )}
             </Box>
           </SpaceBetween>
         </Container>

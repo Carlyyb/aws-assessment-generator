@@ -4,12 +4,10 @@
 import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
+  // 所有用户都能看到所有测试模板
   return {
-    operation: 'Query',
-    query: {
-      expression: 'userId = :userId',
-      expressionValues: util.dynamodb.toMapValues({ ':userId': ctx.identity.sub }),
-    },
+    operation: 'Scan',
+    // 可以添加过滤条件来限制返回的数据
   };
 }
 

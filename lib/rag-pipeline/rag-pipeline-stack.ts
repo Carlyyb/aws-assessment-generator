@@ -88,11 +88,12 @@ export class RagPipelineStack extends NestedStack {
     const cfnCollection = new opensearchserverless.CfnCollection(this, opssSearchCollection, {
       name: opssSearchCollection,
       type: 'VECTORSEARCH',
+      standbyReplicas: 'DISABLED', // 禁用Standby Replicas以节省成本
     });
     cfnCollection.addDependency(cfnNetworkSecurityPolicy);
     cfnCollection.addDependency(cfnEncryptionSecurityPolicy);
 
-    //TODO scope it down to what's required
+    // Bedrock执行角色 - 仅授予必要的权限
     const bedrockExecutionRole = new aws_iam.Role(this, 'AmazonBedrockExecutionRoleForKnowledgeBase_1', {
       assumedBy: new aws_iam.ServicePrincipal('bedrock.amazonaws.com').withConditions({
         StringEquals: {
@@ -125,7 +126,7 @@ export class RagPipelineStack extends NestedStack {
       })
     );
 
-    //TODO scope it down to what's required
+    // Lambda执行角色 - 授予必要的VPC、日志和SQS权限
     const lambdaRole = new aws_iam.Role(this, 'OpssAdminRole', {
       assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
@@ -140,12 +141,24 @@ export class RagPipelineStack extends NestedStack {
         Rules: [
           {
             Resource: [`collection/${opssSearchCollection}`],
-            Permission: ['aoss:CreateCollectionItems', 'aoss:DeleteCollectionItems', 'aoss:UpdateCollectionItems', 'aoss:DescribeCollectionItems'],
+            Permission: [
+              'aoss:CreateCollectionItems', 
+              'aoss:DeleteCollectionItems', 
+              'aoss:UpdateCollectionItems', 
+              'aoss:DescribeCollectionItems'
+            ],
             ResourceType: 'collection',
           },
           {
             Resource: [`index/${opssSearchCollection}/*`],
-            Permission: ['aoss:CreateIndex', 'aoss:DeleteIndex', 'aoss:UpdateIndex', 'aoss:DescribeIndex', 'aoss:ReadDocument', 'aoss:WriteDocument'],
+            Permission: [
+              'aoss:CreateIndex', 
+              'aoss:DeleteIndex', 
+              'aoss:UpdateIndex', 
+              'aoss:DescribeIndex', 
+              'aoss:ReadDocument', 
+              'aoss:WriteDocument'
+            ],
             ResourceType: 'index',
           },
         ],
@@ -181,16 +194,7 @@ export class RagPipelineStack extends NestedStack {
       new PolicyStatement({
         sid: 'OpenSearchServerlessDataPlaneAccess1',
         effect: aws_iam.Effect.ALLOW,
-        resources: [
-          this.formatArn({
-            service: 'aoss',
-            resource: 'collection',
-            region: cdk.Aws.REGION,
-            account: cdk.Aws.ACCOUNT_ID,
-            arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
-            resourceName: '*', //TODO restrict to specific resource
-          }),
-        ],
+        resources: [cfnCollection.attrArn], // 使用实际的集合ARN
         actions: ['aoss:APIAccessAll', 'aoss:DashboardAccessAll'],
       })
     );
@@ -231,7 +235,13 @@ export class RagPipelineStack extends NestedStack {
       enforceSSL: true,
       cors: [
         {
-          allowedMethods: [aws_s3.HttpMethods.HEAD, aws_s3.HttpMethods.GET, aws_s3.HttpMethods.POST, aws_s3.HttpMethods.PUT],
+          allowedMethods: [
+            aws_s3.HttpMethods.HEAD, 
+            aws_s3.HttpMethods.GET, 
+            aws_s3.HttpMethods.POST, 
+            aws_s3.HttpMethods.PUT,
+            aws_s3.HttpMethods.DELETE  // 添加DELETE方法支持
+          ],
           allowedOrigins: ['*'],
           allowedHeaders: ['*'],
           exposedHeaders: ['ETag'],

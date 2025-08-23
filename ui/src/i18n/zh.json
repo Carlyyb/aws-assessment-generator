@@ -12,7 +12,7 @@
       "edit": "编辑",
       "delete": "删除",
       "publish": "发布",
-      "choose_file": "Choose file"
+      "choose_file": "选择文件"
     },
     "status": {
       "success": "操作成功",
@@ -22,9 +22,10 @@
       "error": "错误",
       "published": "已发布",
       "show_fewer_files": "显示更少文件",
-      "show_more_files": "显示更多文件"
+      "show_more_files": "显示更多文件",
+      "optional": "可选"
     },
-        "brand": "测试生成器",
+    "brand": "测试生成器",
     "selected_values": "已选择的值",
     "assessment_type": "测试类型",
     "taxonomy": "分类法",
@@ -42,7 +43,15 @@
     },
     "role": {
       "teachers": "教师",
-      "students": "学生"
+      "students": "学生",
+      "admin": "管理员",
+      "super_admin": "超级管理员"
+    },
+    "admin": {
+      "super_admin": "超级管理员",
+      "system_admin": "系统管理员",
+      "log_admin": "日志管理员",
+      "permission_level": "管理员权限"
     },
     "nav": {
       "dashboard": "仪表盘",
@@ -50,12 +59,14 @@
       "settings": "用户设置",
       "management": "管理",
       "courses": "课程",
-      "templates": "模板",
+      "templates": "测试模板",
       "find-assessments": "查找测试",
       "manage-knowledge-bases": "知识库管理",
       "generate-assessments": "生成测试",
       "log-management": "日志管理",
-      "find-student": "查找学生"
+      "find-student": "查找学生",
+      "student-list": "学生列表",
+      "user-management": "用户管理"
     },
     "help": {
       "overview": "系统概览",
@@ -128,11 +139,12 @@
       "sign_out": "登出"
     },
     "settings": {
-        "title": "用户设置",
-        "ui_language": "界面语言",
-        "doc_language": "文档语言",
-        "default_assessment_type": "默认测试类型",
-        "default_taxonomy": "默认分类法"
+      "title": "用户设置",
+      "ui_language": "界面语言",
+      "doc_language": "文档语言",
+      "default_assessment_type": "默认测试类型",
+      "default_taxonomy": "默认分类法",
+      "language_required": "需要选择界面语言"
     }
   },
   "components": {
@@ -141,8 +153,8 @@
       "success": "课程创建成功"
     },
     "create_template": {
-      "title": "创建新模板",
-      "success": "模板创建成功"
+      "title": "创建新测试模板",
+      "success": "测试模板创建成功"
     },
     "assessment": {
       "answer": "答案",
@@ -155,7 +167,8 @@
       "multi_choice": "多选题",
       "free_text": "自由文本",
       "edit_answers": "编辑答案",
-      "choose_answer": "选择正确答案"
+      "choose_answer": "选择正确答案",
+      "choose_multiple_answers": "选择多个正确答案（至少选择2个）"
     }
   },
   "teachers": {
@@ -168,7 +181,7 @@
       }
     },
     "management": {
-      "template_settings": "模板设置",
+      "template_settings": "测试模板设置",
       "settings_update_success": "设置更新成功"
     },
     "find_student": {
@@ -198,14 +211,26 @@
         "creating": "创建中..."
       },
       "templates": {
-        "title": "模板",
-        "create_new": "创建新模板",
-        "create_success": "模板创建成功",
+        "title": "测试模板",
+        "create_new": "创建新测试模板",
+        "create_success": "测试模板创建成功",
         "validation_error": "请填写所有必需字段",
+        "validation_questions_sum_error": "总问题数应该等于三种难度问题数之和",
         "id": "编号",
         "lang": "语言",
         "type": "类型",
         "taxonomy": "分类法",
+        "data_warning": "无有效数据",
+        "delete_template": "删除测试模板",
+        "delete_selected": "删除选中项",
+        "delete_confirm": "确认删除",
+        "delete_confirm_single": "确定要删除这个测试模板吗？",
+        "delete_confirm_multiple": "确定要删除选中的 {count} 个测试模板吗？",
+        "delete_success": "测试模板删除成功",
+        "delete_error": "删除测试模板失败",
+        "delete_partial_success": "部分测试模板删除成功：{deletedCount} 个成功，{failedCount} 个失败",
+        "no_templates_selected": "请选择要删除的测试模板",
+        "actions": "操作",
         "difficulty": {
           "easy": "简单",
           "medium": "中等",
@@ -219,7 +244,7 @@
           "total": "题目总数"
         },
         "created_at": "创建时间",
-        "name": "模板名称",
+        "name": "测试模板名称",
         "doc_lang": "文档语言",
         "assess_type": "测试类型"
       },
@@ -333,6 +358,96 @@
         "errors": {
           "upload_failed": "文件上传失败",
           "delete_failed": "文件删除失败",
+          "create_failed": "知识库创建失败",
+          "load_failed": "加载失败"
+        },
+        "modal": {
+          "close": "关闭",
+          "cancel": "取消",
+          "confirm_delete": "确认删除",
+          "delete_file_warning": "确定要删除文件 \"{filename}\" 吗？此操作不可撤销。"
+        },
+        "alerts": {
+          "not_created": "知识库未创建",
+          "select_files_first": "请先选择要上传的文件",
+          "upload_new_docs_processing": "正在处理新上传的文档，这可能需要几分钟时间",
+          "create_kb_description": "该课程还没有关联的知识库。请选择课程材料文件，然后点击\"创建知识库\"按钮。"
+        },
+        "file_selection": {
+          "select_course_files": "选择课程文件",
+          "supported_formats_description": "支持PDF、DOC、DOCX、TXT、MD等格式的课程材料",
+          "select_files": "选择文件",
+          "select_multiple_files": "选择多个文件",
+          "drop_files_here": "拖拽文件到此处",
+          "drop_multiple_files": "拖拽多个文件到此处",
+          "remove_file": "删除文件",
+          "show_fewer": "显示更少",
+          "show_more": "显示更多",
+          "error_icon": "错误"
+        },
+        "creation_process": {
+          "starting": "🚀 开始创建知识库...",
+          "preparing_files": "📁 准备上传文件...",
+          "uploading_to_cloud": "📤 正在上传文件到云存储...",
+          "upload_complete": "✅ 文件上传完成",
+          "creating_kb": "🤖 正在创建知识库...",
+          "processing_kb": "⏳ 正在处理知识库...",
+          "kb_complete": "✅ 知识库创建完成！",
+          "kb_failed": "❌ 知识库创建失败",
+          "preparing_upload": "准备上传 {count} 个文件",
+          "uploading_file": "上传文件 {current}/{total}: {filename}",
+          "all_files_uploaded": "所有文件上传成功",
+          "calling_api": "调用知识库创建API...",
+          "request_submitted": "知识库创建请求已提交，任务ID: {jobId}",
+          "checking_status": "检查处理状态... (第 {attempt} 次)",
+          "current_status": "当前状态: {status}",
+          "processing_complete": "✅ 文档处理完成",
+          "processing_failed": "文档处理失败",
+          "processing_timeout": "处理超时，请稍后检查知识库状态",
+          "status_check_error": "状态检查出错: {error}",
+          "creation_failed_error": "❌ 创建失败: {error}",
+          "cancel_creation": "取消创建",
+          "confirm_cancel": "确定要取消创建吗？"
+        },
+        "progress": {
+          "waiting": "等待开始...",
+          "preparing": "准备中...",
+          "creating": "正在创建知识库",
+          "please_wait": "这可能需要几分钟时间，请耐心等待...",
+          "completed_percentage": "{progress}% 完成",
+          "creation_logs": "创建日志"
+        },
+        "kb_status": {
+          "kb_id": "知识库ID",
+          "status": "状态",
+          "file_count": "文件数量",
+          "files_count": "{count} 个文件",
+          "ready": "就绪",
+          "processing": "处理中",
+          "failed": "失败",
+          "unknown": "未知"
+        },
+        "upload_section": {
+          "upload_new_files": "上传新文件",
+          "upload_files": "上传文件",
+          "uploading": "上传中...",
+          "upload_progress": "{progress}% 完成",
+          "uploading_files": "正在上传文件..."
+        },
+        "files_table": {
+          "uploaded_files": "已上传文件",
+          "filename": "文件名",
+          "size": "大小",
+          "upload_time": "上传时间",
+          "actions": "操作",
+          "unknown_size": "Unknown",
+          "unknown_time": "未知",
+          "no_files": "暂无文件",
+          "upload_materials": "上传课程材料以开始使用知识库功能"
+        },
+        "ingestion_jobs": {
+          "document_processing_status": "文档处理状态",
+          "job_id": "任务ID",
           "status_check_failed": "状态检查失败",
           "creation_failed": "知识库创建失败",
           "network_error": "网络错误，请重试"
@@ -344,14 +459,15 @@
       "find": {
         "title": "查找测试",
         "updated_at": "更新时间",
-        "lecture_date": "起始日期"
+        "lecture_date": "起始日期",
+        "published_successfully": "发布成功"
       },
       "generate": {
         "title": "生成测试",
         "generate_success": "测试生成成功",
         "failed_to_generate": "生成测试失败",
-        "select_template": "选择测试模板",
-        "use_default": "使用默认模板",
+        "select_template": "选择测试测试模板",
+        "use_default": "使用默认测试模板",
         "select_course": "选择课程",
         "add_lecture_notes": "添加讲义",
         "remove_file": "移除文件 {index}",
@@ -365,23 +481,27 @@
         "question_number": "问题 {number}",
         "question_progress": "第 {current} 题，共 {total} 题",
         "skip_to": "跳转到 {title}",
-        "delete_question": "删除此问题"
+        "delete_question": "删除此问题",
+        "add_question": "添加题目"
       }
     },
     "section": {
-        "buttons": {
-          "manage-knowledge-bases": "知识库管理",
-          "find-assessments": "查找测试",
-          "default-settings": "默认设置",
-          "templates": "模板管理",
-          "generate-assessments": "生成测试",
-          "courses": "课程管理",
-          "log-management": "日志管理"
-        },
-        "assessments": "测试",
-        "settings": "设置",
-        "management": "管理"
-      }
+      "buttons": {
+        "manage-knowledge-bases": "知识库管理",
+        "find-assessments": "查找测试",
+        "default-settings": "默认设置",
+        "templates": "测试模板管理",
+        "generate-assessments": "生成测试",
+        "courses": "课程管理",
+        "log-management": "日志管理",
+        "find-student": "查找学生",
+        "student-list": "学生列表",
+        "user-management": "用户管理"
+      },
+      "assessments": "测试",
+      "settings": "设置",
+      "management": "管理"
+    }
   },
   "students": {
     "home": {
@@ -406,7 +526,40 @@
     },
     "assessment": {
       "title": "测试",
-      "current": "当前测试"
+      "current": "当前测试",
+      "preview": {
+        "mode": "预览模式",
+        "teacher_mode": "🎭 教师预览模式",
+        "timer_note": "（预览模式下，计时器正常工作但不保存数据）",
+        "description": "这是预览模式，所有操作都不会保存到数据库",
+        "back_to_management": "返回测试管理",
+        "no_data_saved": "注意：这只是预览，未保存任何数据",
+        "failed_to_load": "预览模式：无法加载测试数据",
+        "time_up": "预览模式 - 时间到！模拟得分: {score}分 (注意：这只是预览，未保存任何数据)",
+        "completed": "预览模式完成！模拟得分: {score}分 (注意：这只是预览，未保存任何数据)",
+        "start_assessment": "预览模式 - 开始评估",
+        "confirm_submit": "预览模式 - 确认提交",
+        "simulated_result": "预览模式 - 模拟结果"
+      },
+      "start": {
+        "title": "开始评估",
+        "waiting": "等待开始",
+        "confirm": "确认开始",
+        "time_limit_info": "本次测试限时 {timeLimit} 分钟",
+        "note": "开始后不能暂停，请确保有足够时间完成测试"
+      },
+      "submit": {
+        "title": "确认提交",
+        "completed": "已完成 {count}/{total} 题",
+        "unanswered": "未作答题目：{questions}",
+        "warning": "提交后将无法修改答案，确定要提交吗？"
+      },
+      "timer": {
+        "remaining": "剩余时间",
+        "elapsed": "已用时间",
+        "time_up": "时间到！",
+        "warning_5min": "您的答题时间还剩5分钟，请抓紧时间完成答题。"
+      }
     },
     "review": {
       "title": "测试回顾",
@@ -438,7 +591,23 @@
         "skip_to": "跳转到 {title}",
         "provide_answer": "请作答：",
         "choose_answer": "请选择：",
+        "choose_multiple_answers": "请选择多个答案（可选择多个选项）：",
         "grading": "评分中..."
+      },
+      "review": {
+        "your_score": "你的分数：",
+        "question_number": "第 {number} 题",
+        "question_progress": "第 {current} 题，共 {total} 题",
+        "question_title": "第 {number} 题",
+        "skip_to": "跳转到 {title}",
+        "provide_answer": "请作答：",
+        "choose_answer": "请选择：",
+        "choose_multiple_answers": "请选择多个答案（可选择多个选项）：",
+        "grading": "评分中...",
+        "explanation": "解答",
+        "answer": "答案",
+        "points_with_rate": "得分（{rate}）",
+        "rubric": "评分标准"
       }
     }
   },
@@ -451,8 +620,10 @@
     "Evaluation": "测试"
   },
   "assessType": {
-    "multiChoiceAssessment": "选择题测试",
-    "freeTextAssessment": "问答题测试"
+    "multiChoiceAssessment": "多选题测试",
+    "freeTextAssessment": "问答题测试",
+    "singleAnswerAssessment": "单选题测试",
+    "trueFalseAssessment": "判断题测试"
   },
   "formats": {
     "date": {
@@ -483,7 +654,7 @@
       "name": "主题名称",
       "namePlaceholder": "输入主题名称",
       "primaryColor": "主色调",
-      "secondaryColor": "辅助色调", 
+      "secondaryColor": "辅助色调",
       "backgroundColor": "背景颜色",
       "textColor": "文本颜色",
       "logo": "Logo",
@@ -505,6 +676,16 @@
     },
     "permission": {
       "required": "只有教师可以创建自定义主题"
+    }
+  },
+  "assessment": {
+    "choose_multiple_answers": "",
+    "explanation": "",
+    "edit_answers": ""
+  },
+  "pages": {
+    "edit_assessments": {
+      "question_number": ""
     }
   }
 }

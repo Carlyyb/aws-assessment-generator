@@ -7,6 +7,7 @@ import { FlashbarProps } from '@cloudscape-design/components';
 export enum AlertType {
   SUCCESS = 'success',
   ERROR = 'error',
+  WARNING = 'warning',
 }
 
 export const DispatchAlertContext = createContext<(newAlert: FlashbarProps.MessageDefinition) => void>(() => {});

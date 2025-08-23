@@ -22,7 +22,7 @@ import { logger, tracer } from '../../../rag-pipeline/lambdas/event-handler/util
 import { ReferenceDocuments } from './models/referenceDocuments';
 import { DataService } from './services/dataService';
 import { GenAiService } from './services/genAiService';
-import { GenerateAssessmentInput, GenerateAssessmentQueryVariables } from '../../../../ui/src/graphql/API';
+import { GenerateAssessmentInput, GenerateAssessmentQueryVariables, MultiChoice, FreeText, TrueFalse, SingleAnswer } from '../../../../ui/src/graphql/API';
 import { AppSyncIdentityCognito } from 'aws-lambda/trigger/appsync-resolver';
 
 class WrappedAppSyncEvent {
@@ -62,23 +62,75 @@ class Lambda implements LambdaInterface {
   }
 
   private async processEvent(generateAssessmentInput: GenerateAssessmentInput, userId: string, assessmentId: string) {
-    const referenceDocuments = await ReferenceDocuments.fromRequest(generateAssessmentInput, userId);
-    this.knowledgeBaseId = referenceDocuments.knowledgeBaseId;
-    const genAiService = new GenAiService(this.knowledgeBaseId);
+    try {
+      logger.info('Starting assessment generation process', { assessmentId, userId });
+      
+      const referenceDocuments = await ReferenceDocuments.fromRequest(generateAssessmentInput, userId);
+      this.knowledgeBaseId = referenceDocuments.knowledgeBaseId;
+      const genAiService = new GenAiService(this.knowledgeBaseId);
 
-    // Extract topics from the Transcript document
-    const topicsExtractionOutput = await genAiService.getTopics(referenceDocuments);
+      logger.info('Reference documents prepared', { 
+        knowledgeBaseId: this.knowledgeBaseId,
+        assessmentTemplate: referenceDocuments.assessmentTemplate
+      });
 
-    // Generate questions with given values
-    const generatedQuestions = await genAiService.generateInitialQuestions(topicsExtractionOutput, referenceDocuments.assessmentTemplate);
+      // Extract topics from the Transcript document or use custom prompt
+      logger.info('Extracting topics from documents or using custom prompt');
+      const topicsExtractionOutput = await genAiService.getTopics(referenceDocuments, generateAssessmentInput.customPrompt);
+      logger.info('Topics extraction completed', { 
+        topicsLength: topicsExtractionOutput?.length || 0,
+        hasCustomPrompt: !!generateAssessmentInput.customPrompt
+      });
 
-    // Query knowledge base for relevant documents
-    // Refine questions/answers and include relevant documents
-    const improvedQuestions = await genAiService.improveQuestions(generatedQuestions, referenceDocuments.assessmentTemplate);
+      // 验证提取的主题是否包含学术内容（不是技术文档内容）
+      if (topicsExtractionOutput && (
+        topicsExtractionOutput.toLowerCase().includes('xml') ||
+        topicsExtractionOutput.toLowerCase().includes('document.xml') ||
+        topicsExtractionOutput.toLowerCase().includes('theme.xml') ||
+        topicsExtractionOutput.toLowerCase().includes('.rels')
+      )) {
+        logger.warn('Detected technical document content instead of academic content');
+        logger.warn('Topics extracted contain XML/technical terms, this may indicate wrong document content');
+        // 继续处理，但记录警告
+      }
 
-    assessmentId = await this.dataService.updateAssessment(improvedQuestions, userId, assessmentId);
-    logger.info(`Assessment generated: ${assessmentId}`);
-    return assessmentId;
+      // Generate questions with given values
+      logger.info('Generating initial questions');
+      const generatedQuestions = await genAiService.generateInitialQuestions(topicsExtractionOutput, referenceDocuments.assessmentTemplate);
+      logger.info('Initial questions generated', { 
+        questionsLength: generatedQuestions?.length || 0 
+      });
+
+      // Query knowledge base for relevant documents
+      // Refine questions/answers and include relevant documents
+      logger.info('Improving questions with knowledge base');
+      const improvedQuestions = await genAiService.improveQuestions(generatedQuestions, referenceDocuments.assessmentTemplate);
+      logger.info('Questions improvement completed', { 
+        improvedQuestionsCount: improvedQuestions?.length || 0 
+      });
+
+      // 验证改进后的问题不为空
+      if (!improvedQuestions || improvedQuestions.length === 0) {
+        throw new Error('No questions were generated - improvedQuestions is empty');
+      }
+
+      logger.info('Updating assessment with generated questions');
+      assessmentId = await this.dataService.updateAssessment(
+        improvedQuestions as MultiChoice[] | FreeText[] | TrueFalse[] | SingleAnswer[], 
+        userId, 
+        assessmentId
+      );
+      logger.info(`Assessment generated successfully: ${assessmentId}`);
+      return assessmentId;
+    } catch (error) {
+      logger.error('Error in processEvent', { 
+        error: error.message, 
+        stack: error.stack,
+        assessmentId,
+        userId
+      });
+      throw error;
+    }
   }
 }
 

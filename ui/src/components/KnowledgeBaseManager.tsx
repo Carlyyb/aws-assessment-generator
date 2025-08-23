@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -13,14 +13,17 @@ import {
   FileUpload,
   Form,
   FormField,
-  ColumnLayout
+  ColumnLayout,
+  Spinner
 } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
 import { uploadData, list, remove } from 'aws-amplify/storage';
 import { getKnowledgeBase, getIngestionJob } from '../graphql/queries';
+import { createKnowledgeBase } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { getText } from '../i18n/lang';
 import { UserProfileContext } from '../contexts/userProfile';
+import { getBeijingTimeString } from '../utils/timeUtils';
 
 const client = generateClient();
 
@@ -29,6 +32,7 @@ interface KnowledgeBaseManagerProps {
   courseName: string;
   visible: boolean;
   onDismiss: () => void;
+  onKnowledgeBaseUpdate?: () => void;
 }
 
 interface FileItem {
@@ -48,10 +52,25 @@ export default function KnowledgeBaseManager({
   courseId, 
   courseName, 
   visible, 
-  onDismiss 
+  onDismiss,
+  onKnowledgeBaseUpdate
 }: KnowledgeBaseManagerProps) {
   const dispatchAlert = useContext(DispatchAlertContext);
   const userProfile = useContext(UserProfileContext);
+  
+  // 在组件可见时验证courseId
+  useEffect(() => {
+    if (visible) {
+      console.log('KnowledgeBaseManager mounted with courseId:', courseId);
+      if (!courseId) {
+        console.error('KnowledgeBaseManager: courseId is missing!');
+        dispatchAlert({
+          type: AlertType.ERROR,
+          content: '课程ID缺失，无法创建知识库'
+        });
+      }
+    }
+  }, [visible, courseId, dispatchAlert]);
   
   // 状态管理
   const [knowledgeBase, setKnowledgeBase] = useState<any>(null);
@@ -63,37 +82,309 @@ export default function KnowledgeBaseManager({
   const [ingestionJobs, setIngestionJobs] = useState<IngestionJob[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<string>('');
+  
+  // 创建知识库相关状态
+  const [isCreating, setIsCreating] = useState(false);
+  const [createProgress, setCreateProgress] = useState(0);
+  const [createLogs, setCreateLogs] = useState<string[]>([]);
+  const [currentCreateStep, setCurrentCreateStep] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // 加载知识库信息
-  const loadKnowledgeBase = async () => {
-    setLoading(true);
+  // 添加创建日志函数
+  const addCreateLog = (message: string) => {
+    const timestamp = getBeijingTimeString();
+    const logMessage = `[${timestamp}] ${message}`;
+    setCreateLogs(prev => [...prev, logMessage]);
+    console.log(logMessage);
+  };
+
+  // 更新创建步骤和进度
+  const updateCreateStep = (step: string, progressValue: number) => {
+    setCurrentCreateStep(step);
+    setCreateProgress(progressValue);
+    addCreateLog(step);
+  };
+
+  // 等待处理完成
+  const waitForIngestion = async (knowledgeBaseId: string, dataSourceId: string, ingestionJobId: string) => {
+    let jobStatus = '';
+    let attempts = 0;
+    const maxAttempts = 60; // 最多等待5分钟（60 * 5秒）
+
+    do {
+      try {
+        addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.checking_status').replace('{attempt}', (attempts + 1).toString()));
+        
+        const response = await client.graphql<any>({
+          query: getIngestionJob,
+          variables: { 
+            input: { 
+              knowledgeBaseId, 
+              dataSourceId, 
+              ingestionJobId 
+            } 
+          },
+        });
+        
+        // 检查响应是否有错误
+        if (response.errors) {
+          console.error('GraphQL errors:', response.errors);
+          throw new Error(response.errors[0]?.message || 'Unknown GraphQL error');
+        }
+        
+        const job = response.data?.getIngestionJob;
+        if (!job) {
+          throw new Error('无法获取知识库处理任务状态');
+        }
+        
+        jobStatus = job.status;
+        addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.current_status').replace('{status}', jobStatus));
+        
+        if (jobStatus === 'COMPLETE') {
+          addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.processing_complete'));
+          break;
+        }
+        
+        if (jobStatus === 'FAILED') {
+          throw new Error(getText('teachers.settings.knowledge_base_manager.creation_process.processing_failed'));
+        }
+        
+        // 更新进度
+        const progress = Math.min(70 + (attempts * 0.5), 95);
+        setCreateProgress(progress);
+        
+        attempts++;
+        if (attempts >= maxAttempts) {
+          throw new Error(getText('teachers.settings.knowledge_base_manager.creation_process.processing_timeout'));
+        }
+        
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // 等待5秒
+      } catch (error) {
+        addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.status_check_error').replace('{error}', String(error)));
+        throw error;
+      }
+    } while (jobStatus !== 'COMPLETE' && attempts < maxAttempts);
+  };
+
+  // 创建知识库
+  const handleCreateKnowledgeBase = async () => {
+    if (!files.length) {
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: getText('teachers.settings.knowledge_base_manager.alerts.select_files_first')
+      });
+      return;
+    }
+
+    // 验证courseId
+    if (!courseId) {
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '课程ID不能为空，请重新选择课程'
+      });
+      return;
+    }
+
+    setIsCreating(true);
+    setCreateProgress(0);
+    setCreateLogs([]);
+    setShowCreateModal(true);
+
     try {
+      updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.starting'), 10);
+      addCreateLog(`正在为课程 ${courseId} 创建知识库...`);
+
+      // 1. 准备文件上传
+      updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.preparing_files'), 20);
+      const fileData = files.map((file) => ({
+        key: `KnowledgeBases/shared/${courseId}/${file.name}`, // 使用共享路径
+        file,
+      }));
+
+      addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.preparing_upload').replace('{count}', files.length.toString()));
+
+      // 2. 上传文件到S3
+      updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.uploading_to_cloud'), 30);
+      await Promise.all(
+        fileData.map(({ key, file }, index) => {
+          addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.uploading_file')
+            .replace('{current}', (index + 1).toString())
+            .replace('{total}', files.length.toString())
+            .replace('{filename}', file.name));
+          return uploadData({
+            key,
+            data: file,
+          }).result;
+        })
+      );
+
+      updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.upload_complete'), 50);
+      addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.all_files_uploaded'));
+
+      // 3. 创建知识库
+      updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.creating_kb'), 60);
+      addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.calling_api'));
+      addCreateLog(`调用参数: courseId=${courseId}, locations=${fileData.map(({ key }) => key).join(', ')}`);
+
       const response = await client.graphql<any>({
-        query: getKnowledgeBase,
-        variables: { courseId }
+        query: createKnowledgeBase,
+        variables: {
+          courseId: courseId,
+          locations: fileData.map(({ key }) => key),
+        },
+      });
+
+      // 检查响应是否有错误
+      if ((response as any).errors) {
+        console.error('GraphQL errors:', (response as any).errors);
+        throw new Error((response as any).errors[0]?.message || 'Unknown GraphQL error');
+      }
+
+      const result = response.data?.createKnowledgeBase;
+      
+      // 检查结果是否为空或缺少必要字段
+      if (!result) {
+        throw new Error('创建知识库响应为空，请检查后端服务状态');
+      }
+      
+      if (!result.ingestionJobId) {
+        throw new Error('知识库创建响应中缺少 ingestionJobId');
+      }
+      
+      if (!result.knowledgeBaseId) {
+        throw new Error('知识库创建响应中缺少 knowledgeBaseId');
+      }
+      
+      if (!result.dataSourceId) {
+        throw new Error('知识库创建响应中缺少 dataSourceId');
+      }
+
+      addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.request_submitted').replace('{jobId}', result.ingestionJobId));
+
+      // 4. 等待知识库创建完成
+      updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.processing_kb'), 70);
+      await waitForIngestion(result.knowledgeBaseId, result.dataSourceId, result.ingestionJobId);
+
+      updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.kb_complete'), 100);
+      addCreateLog(getText('teachers.settings.knowledge_base_manager.create.success'));
+
+      dispatchAlert({
+        type: AlertType.SUCCESS,
+        content: getText('teachers.settings.knowledge_base_manager.create.success')
+      });
+
+      setFiles([]);
+      await loadKnowledgeBase();
+
+      // 通知父组件知识库状态已更新
+      if (onKnowledgeBaseUpdate) {
+        onKnowledgeBaseUpdate();
+      }
+
+      setTimeout(() => {
+        setShowCreateModal(false);
+        setIsCreating(false);
+      }, 2000);
+
+    } catch (error: any) {
+      const errorMessage = error.message || getText('common.status.error');
+      addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.creation_failed_error').replace('{error}', errorMessage));
+      updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.kb_failed'), 0);
+      
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: `${getText('teachers.settings.knowledge_base_manager.errors.create_failed')}: ${errorMessage}`
       });
       
-      const kb = (response as any).data?.getKnowledgeBase;
-      setKnowledgeBase(kb);
-      
-      if (kb?.knowledgeBaseId) {
-        await loadUploadedFiles();
-        await loadIngestionJobs();
-      }
-    } catch (error) {
-      console.error('Error loading knowledge base:', error);
-    } finally {
-      setLoading(false);
+      setIsCreating(false);
     }
   };
 
+  // 加载知识库信息
+  const loadKnowledgeBase = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await client.graphql<{ data?: { getKnowledgeBase?: { knowledgeBaseId?: string; status?: string; kbDataSourceId?: string; s3prefix?: string } }, errors?: Array<{ message: string }> }>({
+        query: getKnowledgeBase,
+        variables: { courseId }
+      });
+
+      // 检查是否有错误或数据为null
+      if ('errors' in response && response.errors) {
+        console.error('GraphQL errors:', response.errors);
+        setKnowledgeBase(null);
+        return;
+      }
+
+      const kb = ('data' in response) ? response.data?.getKnowledgeBase : null;
+
+      // 如果知识库存在但status为null，设置默认状态
+      if (kb && !kb.status) {
+        kb.status = 'UNKNOWN';
+      }
+
+      setKnowledgeBase(kb);
+
+      // 加载已上传的文件列表 - 内联实现
+      try {
+        const listResponse = await list({ prefix: `KnowledgeBases/shared/${courseId}/` });
+        if ('items' in listResponse && listResponse.items) {
+          setUploadedFiles(listResponse.items);
+        }
+      } catch (error) {
+        console.error('Error loading uploaded files:', error);
+        setUploadedFiles([]);
+      }
+
+      // 只有当知识库存在时才加载处理任务 - 内联实现
+      if (kb?.knowledgeBaseId) {
+        try {
+          const jobResponse = await client.graphql<{ data?: { getIngestionJob?: { status?: string; id?: string } } }>({
+            query: getIngestionJob,
+            variables: {
+              input: {
+                knowledgeBaseId: kb.knowledgeBaseId,
+                dataSourceId: kb.kbDataSourceId
+              }
+            }
+          });
+          
+          const job = ('data' in jobResponse) ? jobResponse.data?.getIngestionJob : null;
+          if (job) {
+            setIngestionJobs([job]);
+          }
+        } catch (error) {
+          console.error('Error loading ingestion jobs:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading knowledge base:', error);
+      setKnowledgeBase(null);
+      // 即使出错也尝试加载文件列表 - 内联实现
+      try {
+        const listResponse = await list({ prefix: `KnowledgeBases/shared/${courseId}/` });
+        if ('items' in listResponse && listResponse.items) {
+          setUploadedFiles(listResponse.items);
+        }
+      } catch (fileError) {
+        console.error('Error loading uploaded files:', fileError);
+        setUploadedFiles([]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId]);
+
   // 加载已上传的文件
   const loadUploadedFiles = async () => {
-    if (!userProfile?.userId || !knowledgeBase?.s3prefix) return;
+    if (!userProfile?.userId || !courseId) return;
     
     try {
+      // 构造文件前缀路径，即使知识库没有s3prefix字段
+      const filePrefix = knowledgeBase?.s3prefix || `KnowledgeBases/shared/${courseId}/`; // 使用共享路径
+      
       const result = await list({
-        prefix: knowledgeBase.s3prefix,
+        prefix: filePrefix,
       });
       
       const fileItems = result.items?.map(item => ({
@@ -105,28 +396,38 @@ export default function KnowledgeBaseManager({
       setUploadedFiles(fileItems);
     } catch (error) {
       console.error('Error loading files:', error);
+      // 即使出错也设置为空数组，避免显示加载状态
+      setUploadedFiles([]);
     }
   };
 
   // 加载处理任务
   const loadIngestionJobs = async () => {
-    if (!knowledgeBase?.knowledgeBaseId) return;
+    if (!knowledgeBase?.knowledgeBaseId || !knowledgeBase?.kbDataSourceId) return;
     
     try {
-      const response = await client.graphql<any>({
+      // 注意：getIngestionJob需要完整的三个参数，包括ingestionJobId
+      // 由于我们没有存储历史的ingestionJobId，这里先注释掉这个调用
+      // 实际场景中，应该在知识库记录中存储最近的ingestionJobId
+      console.log('Knowledge base loaded, skipping ingestion job query due to missing ingestionJobId');
+      
+      /* 
+      const response = await client.graphql<{ data?: { getIngestionJob?: { status?: string; id?: string } } }>({
         query: getIngestionJob,
         variables: {
           input: {
             knowledgeBaseId: knowledgeBase.knowledgeBaseId,
-            dataSourceId: knowledgeBase.kbDataSourceId
+            dataSourceId: knowledgeBase.kbDataSourceId,
+            ingestionJobId: 'REQUIRED_BUT_MISSING' // 这个参数是必需的
           }
         }
       });
+      */
       
-      const job = (response as any).data?.getIngestionJob;
-      if (job) {
-        setIngestionJobs([job]);
-      }
+      // const job = ('data' in response) ? response.data?.getIngestionJob : null;
+      // if (job) {
+      //   setIngestionJobs([job]);
+      // }
     } catch (error) {
       console.error('Error loading ingestion jobs:', error);
     }
@@ -134,7 +435,7 @@ export default function KnowledgeBaseManager({
 
   // 上传文件
   const handleFileUpload = async () => {
-    if (!files.length || !userProfile?.userId || !knowledgeBase?.s3prefix) return;
+    if (!files.length || !userProfile?.userId) return;
     
     setIsUploading(true);
     setUploadProgress(0);
@@ -142,7 +443,9 @@ export default function KnowledgeBaseManager({
     try {
       const totalFiles = files.length;
       const uploadPromises = files.map(async (file, index) => {
-        const key = `${knowledgeBase.s3prefix}${file.name}`;
+        // 使用标准的文件路径，如果知识库没有s3prefix就构造一个
+        const filePrefix = knowledgeBase?.s3prefix || `KnowledgeBases/shared/${courseId}/`; // 使用共享路径
+        const key = `${filePrefix}${file.name}`;
         
         const result = await uploadData({
           key,
@@ -170,6 +473,11 @@ export default function KnowledgeBaseManager({
       await loadUploadedFiles();
       await triggerIngestion();
       
+      // 通知父组件知识库状态可能已更新
+      if (onKnowledgeBaseUpdate) {
+        onKnowledgeBaseUpdate();
+      }
+      
     } catch (error) {
       console.error('Upload error:', error);
       dispatchAlert({
@@ -187,14 +495,11 @@ export default function KnowledgeBaseManager({
     if (!knowledgeBase?.knowledgeBaseId) return;
     
     try {
-      // 这里需要调用触发ingestion的API
-      // 可能需要在后端添加相应的resolver
       dispatchAlert({
         type: AlertType.SUCCESS,
-        content: '正在处理新上传的文档，这可能需要几分钟时间'
+        content: getText('teachers.settings.knowledge_base_manager.alerts.upload_new_docs_processing')
       });
       
-      // 定期检查处理状态
       setTimeout(() => {
         loadIngestionJobs();
       }, 5000);
@@ -218,11 +523,70 @@ export default function KnowledgeBaseManager({
       setShowDeleteModal(false);
       setFileToDelete('');
       
+      // 确认是否需要重新处理知识库
+      const shouldReprocess = window.confirm(
+        '文件已删除。是否重新处理知识库以更新内容？\n\n' +
+        '选择"确定"：知识库将重新索引所有剩余文件\n' +
+        '选择"取消"：保持当前知识库内容不变'
+      );
+      
+      if (shouldReprocess && knowledgeBase?.knowledgeBaseId) {
+        await triggerKnowledgeBaseReprocessing();
+      }
+      
     } catch (error) {
       console.error('Delete error:', error);
       dispatchAlert({
         type: AlertType.ERROR,
         content: getText('teachers.settings.knowledge_base_manager.errors.delete_failed')
+      });
+    }
+  };
+
+  // 触发知识库重新处理
+  const triggerKnowledgeBaseReprocessing = async () => {
+    if (!knowledgeBase?.knowledgeBaseId || !knowledgeBase?.kbDataSourceId) {
+      console.error('Knowledge base information missing');
+      return;
+    }
+
+    try {
+      dispatchAlert({
+        type: AlertType.WARNING,
+        content: '正在重新处理知识库，这可能需要几分钟时间...'
+      });
+
+      // 调用后端API重新开始文档处理
+      const response = await client.graphql<{ data?: { createKnowledgeBase?: { ingestionJobId?: string } }, errors?: Array<{ message: string }> }>({
+        query: createKnowledgeBase,
+        variables: {
+          courseId: courseId,
+          locations: [] // 空数组表示处理现有文件
+        },
+      });
+
+      if ('errors' in response && response.errors) {
+        throw new Error(response.errors[0]?.message || 'Failed to trigger reprocessing');
+      }
+
+      const result = ('data' in response) ? response.data?.createKnowledgeBase : null;
+      if (result?.ingestionJobId) {
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: '知识库重新处理已开始，请稍后查看处理状态'
+        });
+        
+        // 等待一段时间后重新加载状态
+        setTimeout(() => {
+          loadKnowledgeBase();
+        }, 10000);
+      }
+
+    } catch (error) {
+      console.error('Error triggering knowledge base reprocessing:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '重新处理知识库失败，请稍后重试'
       });
     }
   };
@@ -234,7 +598,7 @@ export default function KnowledgeBaseManager({
 
   // 格式化文件大小
   const formatFileSize = (bytes?: number) => {
-    if (!bytes) return 'Unknown';
+    if (!bytes) return getText('teachers.settings.knowledge_base_manager.files_table.unknown_size');
     const units = ['B', 'KB', 'MB', 'GB'];
     let size = bytes;
     let unitIndex = 0;
@@ -253,15 +617,15 @@ export default function KnowledgeBaseManager({
       case 'active':
       case 'complete':
       case 'completed':
-        return <StatusIndicator type="success">就绪</StatusIndicator>;
+        return <StatusIndicator type="success">{getText('teachers.settings.knowledge_base_manager.kb_status.ready')}</StatusIndicator>;
       case 'in_progress':
       case 'running':
-        return <StatusIndicator type="in-progress">处理中</StatusIndicator>;
+        return <StatusIndicator type="in-progress">{getText('teachers.settings.knowledge_base_manager.kb_status.processing')}</StatusIndicator>;
       case 'failed':
       case 'error':
-        return <StatusIndicator type="error">失败</StatusIndicator>;
+        return <StatusIndicator type="error">{getText('teachers.settings.knowledge_base_manager.kb_status.failed')}</StatusIndicator>;
       default:
-        return <StatusIndicator type="pending">未知</StatusIndicator>;
+        return <StatusIndicator type="pending">{getText('teachers.settings.knowledge_base_manager.kb_status.unknown')}</StatusIndicator>;
     }
   };
 
@@ -269,215 +633,357 @@ export default function KnowledgeBaseManager({
     if (visible) {
       loadKnowledgeBase();
     }
-  }, [visible, courseId]);
+  }, [visible, courseId, loadKnowledgeBase]);
 
   return (
-    <Modal
-      visible={visible}
-      onDismiss={onDismiss}
-      header={`${courseName} - 知识库管理`}
-      size="large"
-      footer={
-        <Box float="right">
-          <SpaceBetween direction="horizontal" size="xs">
-            <Button variant="link" onClick={onDismiss}>
-              关闭
-            </Button>
-          </SpaceBetween>
-        </Box>
-      }
-    >
-      <SpaceBetween size="l">
-        {loading ? (
-          <Box textAlign="center">
-            <StatusIndicator type="loading">加载中...</StatusIndicator>
-          </Box>
-        ) : !knowledgeBase ? (
-          <Alert
-            type="warning"
-            header="知识库未创建"
-            action={
-              <Button
-                onClick={() => {
-                  // 这里需要调用创建知识库的API
-                  dispatchAlert({
-                    type: AlertType.SUCCESS,
-                    content: '创建知识库功能需要后端支持'
-                  });
-                }}
-              >
-                创建知识库
-              </Button>
-            }
-          >
-            该课程还没有关联的知识库。创建知识库后，您可以上传课程材料用于生成测试。
-          </Alert>
-        ) : (
-          <>
-            {/* 知识库状态 */}
-            <Container header={<Header variant="h2">知识库状态</Header>}>
-              <ColumnLayout columns={3}>
-                <div>
-                  <Box variant="awsui-key-label">知识库ID</Box>
-                  <Box>{knowledgeBase.knowledgeBaseId}</Box>
-                </div>
-                <div>
-                  <Box variant="awsui-key-label">状态</Box>
-                  {getStatusIndicator(knowledgeBase.status)}
-                </div>
-                <div>
-                  <Box variant="awsui-key-label">文件数量</Box>
-                  <Box>{uploadedFiles.length} 个文件</Box>
-                </div>
-              </ColumnLayout>
-            </Container>
-
-            {/* 文件上传 */}
-            <Container header={<Header variant="h2">上传新文件</Header>}>
-              <Form>
-                <SpaceBetween size="m">
-                  <FormField
-                    label="选择文件"
-                    description="支持PDF、DOC、DOCX、TXT、MD等格式的课程材料"
-                  >
-                    <FileUpload
-                      multiple
-                      value={files}
-                      onChange={({ detail }) => setFiles(detail.value)}
-                      accept=".pdf,.doc,.docx,.txt,.md,.ppt,.pptx"
-                      i18nStrings={{
-                        uploadButtonText: (e) => (e ? '选择多个文件' : '选择文件'),
-                        dropzoneText: (e) => (e ? '拖拽多个文件到此处' : '拖拽文件到此处'),
-                        removeFileAriaLabel: (e) => `删除文件 ${e + 1}`,
-                        limitShowFewer: '显示更少',
-                        limitShowMore: '显示更多',
-                        errorIconAriaLabel: '错误',
-                      }}
-                      showFileLastModified
-                      showFileSize
-                      showFileThumbnail
-                    />
-                  </FormField>
-                  
-                  {isUploading && (
-                    <ProgressBar
-                      value={uploadProgress}
-                      additionalInfo={`${uploadProgress.toFixed(1)}% 完成`}
-                      description="正在上传文件..."
-                    />
-                  )}
-                  
-                  <Button
-                    variant="primary"
-                    onClick={handleFileUpload}
-                    disabled={!files.length || isUploading}
-                    loading={isUploading}
-                  >
-                    {isUploading ? '上传中...' : '上传文件'}
-                  </Button>
-                </SpaceBetween>
-              </Form>
-            </Container>
-
-            {/* 已上传文件列表 */}
-            <Container header={<Header variant="h2">已上传文件</Header>}>
-              <Table
-                columnDefinitions={[
-                  {
-                    id: 'name',
-                    header: '文件名',
-                    cell: (item) => getFileName(item.key),
-                    sortingField: 'name'
-                  },
-                  {
-                    id: 'size',
-                    header: '大小',
-                    cell: (item) => formatFileSize(item.size)
-                  },
-                  {
-                    id: 'lastModified',
-                    header: '上传时间',
-                    cell: (item) => item.lastModified?.toLocaleString() || '未知'
-                  },
-                  {
-                    id: 'actions',
-                    header: '操作',
-                    cell: (item) => (
-                      <Button
-                        variant="link"
-                        iconName="remove"
-                        onClick={() => {
-                          setFileToDelete(item.key);
-                          setShowDeleteModal(true);
-                        }}
-                      >
-                        删除
-                      </Button>
-                    )
-                  }
-                ]}
-                items={uploadedFiles}
-                loadingText="加载中..."
-                trackBy="key"
-                empty={
-                  <Box textAlign="center" color="inherit">
-                    <b>暂无文件</b>
-                    <Box variant="p" color="inherit">
-                      上传课程材料以开始使用知识库功能
-                    </Box>
-                  </Box>
-                }
-              />
-            </Container>
-
-            {/* 处理任务状态 */}
-            {ingestionJobs.length > 0 && (
-              <Container header={<Header variant="h2">文档处理状态</Header>}>
-                <Table
-                  columnDefinitions={[
-                    {
-                      id: 'jobId',
-                      header: '任务ID',
-                      cell: (item) => item.ingestionJobId
-                    },
-                    {
-                      id: 'status',
-                      header: '状态',
-                      cell: (item) => getStatusIndicator(item.status)
-                    }
-                  ]}
-                  items={ingestionJobs}
-                  trackBy="ingestionJobId"
-                />
-              </Container>
-            )}
-          </>
-        )}
-      </SpaceBetween>
-
-      {/* 删除确认对话框 */}
+    <>
       <Modal
-        visible={showDeleteModal}
-        onDismiss={() => setShowDeleteModal(false)}
-        header="确认删除"
+        visible={visible}
+        onDismiss={onDismiss}
+        header={`${courseName} - ${getText('teachers.settings.knowledge_base_manager.title')}`}
+        size="large"
         footer={
           <Box float="right">
             <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={() => setShowDeleteModal(false)}>
-                取消
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => handleDeleteFile(fileToDelete)}
-              >
-                删除
+              <Button variant="link" onClick={onDismiss}>
+                {getText('teachers.settings.knowledge_base_manager.modal.close')}
               </Button>
             </SpaceBetween>
           </Box>
         }
       >
-        <p>确定要删除文件 "{getFileName(fileToDelete)}" 吗？此操作不可撤销。</p>
+        <SpaceBetween size="l">
+          {loading ? (
+            <Box textAlign="center">
+              <StatusIndicator type="loading">{getText('common.status.loading')}</StatusIndicator>
+            </Box>
+          ) : !knowledgeBase ? (
+            <Alert
+              type="warning"
+              header={getText('teachers.settings.knowledge_base_manager.alerts.not_created')}
+              action={
+                <Button
+                  onClick={() => {
+                    if (files.length === 0) {
+                      dispatchAlert({
+                        type: AlertType.ERROR,
+                        content: getText('teachers.settings.knowledge_base_manager.alerts.select_files_first')
+                      });
+                      return;
+                    }
+                    handleCreateKnowledgeBase();
+                  }}
+                  disabled={isCreating}
+                  loading={isCreating}
+                >
+                  {isCreating ? getText('teachers.settings.knowledge_base_manager.status.creating') : getText('teachers.settings.knowledge_base_manager.create.confirm')}
+                </Button>
+              }
+            >
+              {getText('teachers.settings.knowledge_base_manager.alerts.create_kb_description')}
+              
+              {/* 文件选择区域 */}
+              <Box margin={{ top: 'm' }}>
+                <FormField
+                  label={getText('teachers.settings.knowledge_base_manager.file_selection.select_course_files')}
+                  description={getText('teachers.settings.knowledge_base_manager.file_selection.supported_formats_description')}
+                >
+                  <FileUpload
+                    multiple
+                    value={files}
+                    onChange={({ detail }) => setFiles(detail.value)}
+                    accept=".pdf,.doc,.docx,.txt,.md,.ppt,.pptx"
+                    i18nStrings={{
+                      uploadButtonText: (e) => (e ? getText('teachers.settings.knowledge_base_manager.file_selection.select_multiple_files') : getText('teachers.settings.knowledge_base_manager.file_selection.select_files')),
+                      dropzoneText: (e) => (e ? getText('teachers.settings.knowledge_base_manager.file_selection.drop_multiple_files') : getText('teachers.settings.knowledge_base_manager.file_selection.drop_files_here')),
+                      removeFileAriaLabel: (e) => `${getText('teachers.settings.knowledge_base_manager.file_selection.remove_file')} ${e + 1}`,
+                      limitShowFewer: getText('teachers.settings.knowledge_base_manager.file_selection.show_fewer'),
+                      limitShowMore: getText('teachers.settings.knowledge_base_manager.file_selection.show_more'),
+                      errorIconAriaLabel: getText('teachers.settings.knowledge_base_manager.file_selection.error_icon'),
+                    }}
+                    showFileLastModified
+                    showFileSize
+                    showFileThumbnail
+                  />
+                </FormField>
+              </Box>
+            </Alert>
+          ) : (
+            <>
+              {/* 知识库状态 */}
+              <Container header={<Header variant="h2">{getText('teachers.settings.knowledge_base_manager.kb_status.status')}</Header>}>
+                <ColumnLayout columns={3}>
+                  <div>
+                    <Box variant="awsui-key-label">{getText('teachers.settings.knowledge_base_manager.kb_status.kb_id')}</Box>
+                    <Box>{knowledgeBase.knowledgeBaseId}</Box>
+                  </div>
+                  <div>
+                    <Box variant="awsui-key-label">{getText('teachers.settings.knowledge_base_manager.kb_status.status')}</Box>
+                    {getStatusIndicator(knowledgeBase.status)}
+                  </div>
+                  <div>
+                    <Box variant="awsui-key-label">{getText('teachers.settings.knowledge_base_manager.kb_status.file_count')}</Box>
+                    <Box>{getText('teachers.settings.knowledge_base_manager.kb_status.files_count').replace('{count}', uploadedFiles.length.toString())}</Box>
+                  </div>
+                </ColumnLayout>
+              </Container>
+
+              {/* 文件上传 */}
+              <Container header={<Header variant="h2">{getText('teachers.settings.knowledge_base_manager.upload_section.upload_new_files')}</Header>}>
+                <Form>
+                  <SpaceBetween size="m">
+                    <FormField
+                      label={getText('teachers.settings.knowledge_base_manager.file_selection.select_files')}
+                      description={getText('teachers.settings.knowledge_base_manager.file_selection.supported_formats_description')}
+                    >
+                      <FileUpload
+                        multiple
+                        value={files}
+                        onChange={({ detail }) => setFiles(detail.value)}
+                        accept=".pdf,.doc,.docx,.txt,.md,.ppt,.pptx"
+                        i18nStrings={{
+                          uploadButtonText: (e) => (e ? getText('teachers.settings.knowledge_base_manager.file_selection.select_multiple_files') : getText('teachers.settings.knowledge_base_manager.file_selection.select_files')),
+                          dropzoneText: (e) => (e ? getText('teachers.settings.knowledge_base_manager.file_selection.drop_multiple_files') : getText('teachers.settings.knowledge_base_manager.file_selection.drop_files_here')),
+                          removeFileAriaLabel: (e) => `${getText('teachers.settings.knowledge_base_manager.file_selection.remove_file')} ${e + 1}`,
+                          limitShowFewer: getText('teachers.settings.knowledge_base_manager.file_selection.show_fewer'),
+                          limitShowMore: getText('teachers.settings.knowledge_base_manager.file_selection.show_more'),
+                          errorIconAriaLabel: getText('teachers.settings.knowledge_base_manager.file_selection.error_icon'),
+                        }}
+                        showFileLastModified
+                        showFileSize
+                        showFileThumbnail
+                      />
+                    </FormField>
+                    
+                    {isUploading && (
+                      <ProgressBar
+                        value={uploadProgress}
+                        additionalInfo={getText('teachers.settings.knowledge_base_manager.upload_section.upload_progress').replace('{progress}', uploadProgress.toFixed(1))}
+                        description={getText('teachers.settings.knowledge_base_manager.upload_section.uploading_files')}
+                      />
+                    )}
+                    
+                    <Button
+                      variant="primary"
+                      onClick={handleFileUpload}
+                      disabled={!files.length || isUploading}
+                      loading={isUploading}
+                    >
+                      {isUploading ? getText('teachers.settings.knowledge_base_manager.upload_section.uploading') : getText('teachers.settings.knowledge_base_manager.upload_section.upload_files')}
+                    </Button>
+                  </SpaceBetween>
+                </Form>
+              </Container>
+
+              {/* 已上传文件列表 */}
+              <Container header={<Header variant="h2">{getText('teachers.settings.knowledge_base_manager.files_table.uploaded_files')}</Header>}>
+                <Table
+                  columnDefinitions={[
+                    {
+                      id: 'name',
+                      header: getText('teachers.settings.knowledge_base_manager.files_table.filename'),
+                      cell: (item) => getFileName(item.key),
+                      sortingField: 'name'
+                    },
+                    {
+                      id: 'size',
+                      header: getText('teachers.settings.knowledge_base_manager.files_table.size'),
+                      cell: (item) => formatFileSize(item.size)
+                    },
+                    {
+                      id: 'lastModified',
+                      header: getText('teachers.settings.knowledge_base_manager.files_table.upload_time'),
+                      cell: (item) => item.lastModified?.toLocaleString() || getText('teachers.settings.knowledge_base_manager.files_table.unknown_time')
+                    },
+                    {
+                      id: 'actions',
+                      header: getText('teachers.settings.knowledge_base_manager.files_table.actions'),
+                      cell: (item) => (
+                        <Button
+                          variant="link"
+                          iconName="remove"
+                          onClick={() => {
+                            setFileToDelete(item.key);
+                            setShowDeleteModal(true);
+                          }}
+                        >
+                          {getText('common.actions.delete')}
+                        </Button>
+                      )
+                    }
+                  ]}
+                  items={uploadedFiles}
+                  loadingText={getText('common.status.loading')}
+                  trackBy="key"
+                  empty={
+                    <Box textAlign="center" color="inherit">
+                      <b>{getText('teachers.settings.knowledge_base_manager.files_table.no_files')}</b>
+                      <Box variant="p" color="inherit">
+                        {getText('teachers.settings.knowledge_base_manager.files_table.upload_materials')}
+                      </Box>
+                    </Box>
+                  }
+                />
+              </Container>
+
+              {/* 处理任务状态 */}
+              {ingestionJobs.length > 0 && (
+                <Container header={<Header variant="h2">{getText('teachers.settings.knowledge_base_manager.ingestion_jobs.document_processing_status')}</Header>}>
+                  <Table
+                    columnDefinitions={[
+                      {
+                        id: 'jobId',
+                        header: getText('teachers.settings.knowledge_base_manager.ingestion_jobs.job_id'),
+                        cell: (item) => item.ingestionJobId
+                      },
+                      {
+                        id: 'status',
+                        header: getText('teachers.settings.knowledge_base_manager.kb_status.status'),
+                        cell: (item) => getStatusIndicator(item.status)
+                      }
+                    ]}
+                    items={ingestionJobs}
+                    trackBy="ingestionJobId"
+                  />
+                </Container>
+              )}
+            </>
+          )}
+        </SpaceBetween>
       </Modal>
-    </Modal>
+
+      {/* 创建知识库进度对话框 */}
+      <Modal 
+        visible={showCreateModal} 
+        onDismiss={() => {
+          if (!isCreating) {
+            setShowCreateModal(false);
+            setCreateLogs([]);
+            setCreateProgress(0);
+            setCurrentCreateStep('');
+          }
+        }}
+        header={<Header>{getText('teachers.settings.knowledge_base_manager.create.title')}</Header>}
+        size="large"
+      >
+        <SpaceBetween size="l">
+          {/* 进度条 */}
+          <Box>
+            <ProgressBar
+              value={createProgress}
+              additionalInfo={getText('teachers.settings.knowledge_base_manager.progress.completed_percentage').replace('{progress}', createProgress.toString())}
+              description={currentCreateStep || getText('teachers.settings.knowledge_base_manager.progress.preparing')}
+            />
+          </Box>
+          
+          {/* 当前步骤显示 */}
+          {currentCreateStep && (
+            <Alert statusIconAriaLabel="Info" header={getText('teachers.settings.knowledge_base_manager.progress.preparing')}>
+              {currentCreateStep}
+            </Alert>
+          )}
+          
+          {/* 实时日志 */}
+          <Box>
+            <Header variant="h3">{getText('teachers.settings.knowledge_base_manager.progress.creation_logs')}</Header>
+            <div
+              style={{
+                backgroundColor: '#f8f9fa',
+                border: '1px solid #dee2e6',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                maxHeight: '300px',
+                overflowY: 'auto',
+                padding: '16px',
+              }}
+            >
+              {createLogs.length > 0 ? (
+                <div>
+                  {createLogs.map((log, index) => (
+                    <div key={index} style={{ marginBottom: '4px' }}>
+                      {log}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ color: '#6c757d' }}>{getText('teachers.settings.knowledge_base_manager.progress.waiting')}</div>
+              )}
+            </div>
+          </Box>
+          
+          {/* 加载指示器 */}
+          {isCreating && (
+            <SpaceBetween direction="horizontal" size="s" alignItems="center">
+              <Spinner size="big" />
+              <Box textAlign="center">
+                <strong>{getText('teachers.settings.knowledge_base_manager.progress.creating')}</strong>
+                <br />
+                <small>{getText('teachers.settings.knowledge_base_manager.progress.please_wait')}</small>
+              </Box>
+            </SpaceBetween>
+          )}
+          
+          {/* 按钮 */}
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              {isCreating ? (
+                <Button 
+                  variant="link" 
+                  onClick={() => {
+                    if (window.confirm(getText('teachers.settings.knowledge_base_manager.creation_process.confirm_cancel'))) {
+                      setIsCreating(false);
+                      setShowCreateModal(false);
+                      setCreateLogs([]);
+                      setCreateProgress(0);
+                      setCurrentCreateStep('');
+                    }
+                  }}
+                  disabled={createProgress === 100}
+                >
+                  {getText('teachers.settings.knowledge_base_manager.creation_process.cancel_creation')}
+                </Button>
+              ) : (
+                <Button 
+                  variant="link" 
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setCreateLogs([]);
+                    setCreateProgress(0);
+                    setCurrentCreateStep('');
+                  }}
+                >
+                  {getText('teachers.settings.knowledge_base_manager.modal.close')}
+                </Button>
+              )}
+            </SpaceBetween>
+          </Box>
+        </SpaceBetween>
+      </Modal>
+
+      {/* 删除确认对话框 */}
+      <Modal
+        visible={showDeleteModal}
+        onDismiss={() => setShowDeleteModal(false)}
+        header={getText('teachers.settings.knowledge_base_manager.modal.confirm_delete')}
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button variant="link" onClick={() => setShowDeleteModal(false)}>
+                {getText('teachers.settings.knowledge_base_manager.modal.cancel')}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => handleDeleteFile(fileToDelete)}
+              >
+                {getText('common.actions.delete')}
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <p>{getText('teachers.settings.knowledge_base_manager.modal.delete_file_warning').replace('{filename}', getFileName(fileToDelete))}</p>
+      </Modal>
+    </>
   );
 }

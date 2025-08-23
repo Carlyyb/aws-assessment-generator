@@ -1,24 +1,282 @@
-/* 主题CSS变量 */
+/* Cloudscape Design System 现代化主题变量 */
 :root {
-  --primary-color: #232f3e;
+  /* 主要颜色 - 使用Cloudscape推荐的色彩体系 */
+  --primary-color: #0972d3;
+  --primary-hover: #0258a6;
+  --primary-active: #1d8102;
   --secondary-color: #ff9900;
+  --secondary-hover: #e88500;
+  
+  /* 背景和表面颜色 */
   --background-color: #ffffff;
-  --text-color: #000000;
+  --surface-color: #fafafa;
+  --elevated-surface: #ffffff;
+  
+  /* 文字颜色 */
+  --text-primary: #000716;
+  --text-secondary: #5f6b7a;
+  --text-disabled: #9ba7b6;
+  
+  /* 边框和分割线 */
+  --border-color: #e9ebed;
+  --border-focused: #0972d3;
+  --border-error: #d91515;
+  
+  /* 状态颜色 */
+  --success-color: #037f0c;
+  --warning-color: #b7651b;
+  --error-color: #d91515;
+  --info-color: #0972d3;
+  
+  /* 阴影 */
+  --shadow-small: 0 1px 4px rgba(0, 7, 22, 0.12), 0 1px 2px rgba(0, 7, 22, 0.24);
+  --shadow-medium: 0 4px 8px rgba(0, 7, 22, 0.12), 0 2px 4px rgba(0, 7, 22, 0.24);
+  --shadow-large: 0 8px 16px rgba(0, 7, 22, 0.12), 0 4px 8px rgba(0, 7, 22, 0.24);
+  
+  /* 圆角 */
+  --border-radius-small: 4px;
+  --border-radius-medium: 8px;
+  --border-radius-large: 12px;
+  
+  /* 间距 */
+  --space-xs: 4px;
+  --space-s: 8px;
+  --space-m: 16px;
+  --space-l: 24px;
+  --space-xl: 32px;
+  --space-xxl: 40px;
 }
 
-/* 应用主题变量到现有组件 */
+/* 暗色主题变量 */
+:root[data-theme="dark"] {
+  --background-color: #161616;
+  --surface-color: #1e1e1e;
+  --elevated-surface: #2a2a2a;
+  --text-primary: #ffffff;
+  --text-secondary: #e9ebed;
+  --text-disabled: #9ba7b6;
+  --border-color: #414d5c;
+  --shadow-small: 0 1px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+  --shadow-large: 0 8px 16px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* 现代化Cloudscape主题应用器 */
+.cloudscape-modern-theme {
+  font-family: 'Amazon Ember', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 动态主题应用器 - 支持从App.tsx传递的内联样式 */
+[style*="--theme-primary-color"] {
+  --primary-color: var(--theme-primary-color);
+  --secondary-color: var(--theme-secondary-color);
+  --background-color: var(--theme-background-color);
+  --text-color: var(--theme-text-color);
+}
+
+/* 为特定主题添加额外的视觉增强 */
+[data-theme="dark"] .cloudscape-modern-theme {
+  --primary-color: #0972d3;
+  --primary-hover: #1d8102;
+  --surface-color: #1e1e1e;
+  --elevated-surface: #2a2a2a;
+  --text-primary: #ffffff;
+  --text-secondary: #e9ebed;
+  --border-color: #414d5c;
+}
+
+[data-theme="light"] .cloudscape-modern-theme {
+  --primary-color: #0972d3;
+  --primary-hover: #0258a6;
+  --surface-color: #fafafa;
+  --elevated-surface: #ffffff;
+  --text-primary: #000716;
+  --text-secondary: #5f6b7a;
+  --border-color: #e9ebed;
+}
+
+/* 现代化组件样式 - 使用Cloudscape设计令牌 */
 .awsui-app-layout {
   background-color: var(--background-color);
-  color: var(--text-color);
+  color: var(--text-primary);
+  font-family: 'Amazon Ember', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
 }
 
 .awsui-top-navigation {
-  border-bottom-color: var(--primary-color);
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--elevated-surface);
+  box-shadow: var(--shadow-small);
 }
 
 .awsui-side-navigation {
-  background-color: var(--background-color);
-  border-right-color: var(--primary-color);
+  background-color: var(--surface-color);
+  border-right: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+/* 按钮样式增强 */
+.awsui-button {
+  border-radius: var(--border-radius-small);
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
+}
+
+.awsui-button-variant-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-small);
+}
+
+.awsui-button-variant-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.awsui-button-variant-primary:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-small);
+}
+
+/* 输入框样式增强 */
+.awsui-input {
+  border-radius: var(--border-radius-small);
+  border-color: var(--border-color);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.awsui-input:focus {
+  border-color: var(--border-focused);
+  box-shadow: 0 0 0 2px rgba(9, 114, 211, 0.2);
+}
+
+/* 卡片和容器样式增强 */
+.awsui-container {
+  background-color: var(--elevated-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-medium);
+  box-shadow: var(--shadow-small);
+}
+
+.awsui-header {
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--space-l);
+}
+
+/* 表格样式增强 */
+.awsui-table {
+  border-radius: var(--border-radius-medium);
+  overflow: hidden;
+  box-shadow: var(--shadow-small);
+}
+
+.awsui-table-header {
+  background-color: var(--surface-color);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.awsui-table-row:hover {
+  background-color: var(--surface-color);
+}
+
+/* 模态框样式增强 */
+.awsui-modal {
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--shadow-large);
+  background-color: var(--elevated-surface);
+}
+
+/* 通知和警告样式 */
+.awsui-flashbar-item {
+  border-radius: var(--border-radius-medium);
+  box-shadow: var(--shadow-medium);
+}
+
+.awsui-flashbar-item-type-success {
+  border-left: 4px solid var(--success-color);
+}
+
+.awsui-flashbar-item-type-error {
+  border-left: 4px solid var(--error-color);
+}
+
+.awsui-flashbar-item-type-warning {
+  border-left: 4px solid var(--warning-color);
+}
+
+.awsui-flashbar-item-type-info {
+  border-left: 4px solid var(--info-color);
+}
+
+/* 进度条样式增强 */
+.awsui-progress-bar {
+  border-radius: var(--border-radius-small);
+  background-color: var(--surface-color);
+}
+
+.awsui-progress-bar-fill {
+  background-color: var(--primary-color);
+  border-radius: var(--border-radius-small);
+}
+
+/* 选择器样式增强 */
+.awsui-select {
+  border-radius: var(--border-radius-small);
+  border-color: var(--border-color);
+}
+
+.awsui-select:focus {
+  border-color: var(--border-focused);
+  box-shadow: 0 0 0 2px rgba(9, 114, 211, 0.2);
+}
+
+/* 标签页样式增强 */
+.awsui-tabs-tab {
+  border-radius: var(--border-radius-small) var(--border-radius-small) 0 0;
+  margin-right: var(--space-xs);
+}
+
+.awsui-tabs-tab-active {
+  border-bottom-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* 响应式设计增强 */
+@media (max-width: 768px) {
+  .awsui-container {
+    margin: var(--space-s);
+    border-radius: var(--border-radius-small);
+  }
+  
+  .awsui-header {
+    padding: var(--space-m);
+  }
+}
+
+/* 可访问性增强 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: #000000;
+    --text-secondary: #000000;
+  }
+  
+  :root[data-theme="dark"] {
+    --border-color: #ffffff;
+    --text-secondary: #ffffff;
+  }
 }
 
 .awsui-side-navigation .awsui-side-navigation-link {
@@ -84,6 +342,35 @@
   object-fit: contain;
 }
 
+/* 删除标题文字后的Logo布局适配 */
+.awsui-top-navigation .awsui-top-navigation-identity {
+  min-width: auto;
+}
+
+.awsui-top-navigation .awsui-top-navigation-identity .awsui-top-navigation-identity-title {
+  display: none; /* 隐藏默认标题 */
+}
+
+/* 自定义Logo容器样式 */
+.custom-logo-container {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1000;
+}
+
+.custom-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* 为Logo预留空间 */
+[data-has-logo="true"] .awsui-top-navigation .awsui-top-navigation-identity {
+  margin-left: 60px;
+}
+
 /* 卡片主题适配 */
 .awsui-cards .awsui-cards-card {
   border-color: var(--primary-color);
@@ -129,4 +416,52 @@
 /* 防止过度动画 */
 .no-transition * {
   transition: none !important;
+}
+
+/* 容器背景适配 */
+.awsui-container {
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+/* Header样式适配 */
+.awsui-header {
+  color: var(--primary-color);
+}
+
+/* SpaceBetween组件适配 */
+.awsui-space-between {
+  color: var(--text-color);
+}
+
+/* 固定定位样式 - 使TopNavigation和SideNavigation在滚动时保持固定 */
+#h {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1300 !important; /* 提高z-index确保顶部导航栏在最上层 */
+  background-color: var(--background-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.awsui-app-layout {
+  padding-top: 48px; /* TopNavigation的高度，防止内容被遮挡 */
+}
+
+/* 确保SideNavigation也固定 */
+.awsui-app-layout .awsui-app-layout-navigation {
+  position: fixed !important;
+  top: 48px; /* TopNavigation高度之下 */
+  left: 0;
+  height: calc(100vh - 48px);
+  z-index: 1000 !important; /* 降低z-index确保不会覆盖顶部导航栏 */
+  background-color: var(--background-color);
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 调整主内容区域，为固定的SideNavigation让出空间 */
+.awsui-app-layout .awsui-app-layout-main {
+  margin-left: 280px; /* SideNavigation的默认宽度 */
+  min-height: calc(100vh - 48px);
 }

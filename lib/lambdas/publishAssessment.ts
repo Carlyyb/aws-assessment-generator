@@ -4,6 +4,7 @@
 import { DynamoDBClient, BatchWriteItemCommand, UpdateItemCommand, ScanCommand } from '@aws-sdk/client-dynamodb';
 import { Handler } from 'aws-lambda';
 import { AssessStatus } from '../../ui/src/graphql/API';
+import { createTimestamp } from '../utils/timeUtils';
 
 const region = process.env.region!;
 const studentsTable = process.env.studentsTable!;
@@ -36,7 +37,7 @@ export const handler: Handler = async (event) => {
                 L: [],
               },
               updatedAt: {
-                S: new Date().toISOString(),
+                S: createTimestamp(),
               },
             },
           },

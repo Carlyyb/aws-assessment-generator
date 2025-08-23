@@ -2,6 +2,8 @@
 /* eslint-disable */
 //  This file was automatically generated and should not be edited.
 
+//CHANGELOG 2025-08-15 by 邱语堂:直接新增了单选/判断题型的定义，兼容新题型。具体改动：第22-23，108-125行
+
 export type UpsertSettingsInput = {
   uiLang: Lang,
   docLang: Lang,
@@ -17,6 +19,8 @@ export enum Lang {
 export enum AssessType {
   multiChoiceAssessment = "multiChoiceAssessment",
   freeTextAssessment = "freeTextAssessment",
+  trueFalseAssessment = "trueFalseAssessment",
+  singleAnswerAssessment = "singleAnswerAssessment",
 }
 
 
@@ -84,6 +88,8 @@ export type AssessmentInput = {
   assessType: AssessType,
   multiChoiceAssessment?: Array< MultiChoiceInput | null > | null,
   freeTextAssessment?: Array< FreeTextInput | null > | null,
+  trueFalseAssessment?: Array< TrueFalseInput | null > | null,
+  singleAnswerAssessment?: Array< SingleAnswerInput | null > | null,
   published?: boolean | null,
   status: AssessStatus,
 };
@@ -92,7 +98,7 @@ export type MultiChoiceInput = {
   title: string,
   question: string,
   answerChoices?: Array< string | null > | null,
-  correctAnswer?: number | null,
+  correctAnswer?: Array< number | null > | null,
   explanation: string,
 };
 
@@ -100,6 +106,40 @@ export type FreeTextInput = {
   title: string,
   question: string,
   rubric: Array< RubricInput >,
+};
+
+export type TrueFalseInput = {
+  title: string,
+  question: string,
+  answerChoices?: Array< string | null > | null,
+  correctAnswer?: string | null,
+  explanation: string,
+};
+
+export type SingleAnswerInput = {
+  title: string,
+  question: string,
+  answerChoices?: Array< string | null > | null,
+  correctAnswer?: number | null,
+  explanation: string,
+};
+
+export type TrueFalse = {
+  __typename: "TrueFalse",
+  title: string,
+  question: string,
+  answerChoices: Array<string>, // ["True", "False"]
+  correctAnswer: string,        // "True" 或 "False"
+  explanation: string,
+};
+
+export type SingleAnswer = {
+  __typename: "SingleAnswer",
+  title: string,
+  question: string,
+  answerChoices: Array<string>, // 选项数组
+  correctAnswer: number,        // 正确选项的序号
+  explanation: string,
 };
 
 export type RubricInput = {
@@ -126,6 +166,8 @@ export type Assessment = {
   assessType: AssessType,
   multiChoiceAssessment?:  Array<MultiChoice > | null,
   freeTextAssessment?:  Array<FreeText > | null,
+  trueFalseAssessment?:  Array<TrueFalse > | null,
+  singleAnswerAssessment?:  Array<SingleAnswer > | null,
   published: boolean,
   status: AssessStatus,
   course?: Course | null,
@@ -136,7 +178,7 @@ export type MultiChoice = {
   title: string,
   question: string,
   answerChoices: Array< string >,
-  correctAnswer: number,
+  correctAnswer: Array< number >,
   explanation: string,
 };
 
@@ -182,8 +224,7 @@ export type IngestionJob = {
 export type Student = {
   __typename: "Student",
   id: string,
-  firstName: string,
-  lastName: string,
+  name: string,
 };
 
 export type GenerateAssessmentInput = {
@@ -191,8 +232,9 @@ export type GenerateAssessmentInput = {
   courseId: string,
   lectureDate: string,
   deadline: string,
-  locations: Array< string | null >,
+  locations?: Array< string | null > | null,
   assessTemplateId?: string | null,
+  customPrompt?: string | null,
 };
 
 export type KnowledgeBase = {
@@ -219,9 +261,7 @@ export type UpsertSettingsMutationVariables = {
 export type UpsertSettingsMutation = {
   upsertSettings?:  {
     __typename: "Settings",
-    uiLang?: Lang | null,
-    docLang?: Lang | null,
-    assessType?: AssessType | null,
+    uiLang?: Lang,
   } | null,
 };
 
@@ -290,6 +330,22 @@ export type UpsertAssessmentMutation = {
         point: string,
       } >,
     } > | null,
+    trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+    } > | null,
+    singleAnswerAssessment?:  Array< {
+      __typename: "SingleAnswer",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: number,
+      explanation: string,
+    } > | null,
     published: boolean,
     status: AssessStatus,
     course?:  {
@@ -335,6 +391,22 @@ export type UpsertStudentAssessmentMutation = {
           weight: number,
           point: string,
         } >,
+      } > | null,
+      trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+      } > | null,
+      singleAnswerAssessment?:  Array< {
+        __typename: "SingleAnswer",
+        title: string,
+        question: string,
+        answerChoices: Array< string >,
+        correctAnswer: number,
+        explanation: string,
       } > | null,
       published: boolean,
       status: AssessStatus,
@@ -388,6 +460,22 @@ export type GradeStudentAssessmentMutation = {
           point: string,
         } >,
       } > | null,
+      trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+      } > | null,
+      singleAnswerAssessment?:  Array< {
+        __typename: "SingleAnswer",
+        title: string,
+        question: string,
+        answerChoices: Array< string >,
+        correctAnswer: number,
+        explanation: string,
+      } > | null,
       published: boolean,
       status: AssessStatus,
       course?:  {
@@ -420,12 +508,18 @@ export type CreateKnowledgeBaseMutation = {
   } | null,
 };
 
+export type DeleteCourseMutationVariables = {
+  id: string,
+};
+
+export type DeleteCourseMutation = {
+  deleteCourse?: boolean | null,
+};
+
 export type GetSettingsQuery = {
   getSettings?:  {
     __typename: "Settings",
     uiLang?: Lang | null,
-    docLang?: Lang | null,
-    assessType?: AssessType | null,
   } | null,
 };
 
@@ -442,8 +536,7 @@ export type ListStudentsQuery = {
   listStudents?:  Array< {
     __typename: "Student",
     id: string,
-    firstName: string,
-    lastName: string,
+    name: string,
   } | null > | null,
 };
 
@@ -478,6 +571,22 @@ export type GetAssessmentQuery = {
         weight: number,
         point: string,
       } >,
+    } > | null,
+    trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+      } > | null,
+    singleAnswerAssessment?:  Array< {
+      __typename: "SingleAnswer",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: number,
+      explanation: string,
     } > | null,
     published: boolean,
     status: AssessStatus,
@@ -517,6 +626,22 @@ export type ListAssessmentsQuery = {
         weight: number,
         point: string,
       } >,
+    } > | null,
+    trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+    } > | null,
+    singleAnswerAssessment?:  Array< {
+      __typename: "SingleAnswer",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: number,
+      explanation: string,
     } > | null,
     published: boolean,
     status: AssessStatus,
@@ -580,6 +705,22 @@ export type GetStudentAssessmentQuery = {
           point: string,
         } >,
       } > | null,
+      trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+    } > | null,
+    singleAnswerAssessment?:  Array< {
+      __typename: "SingleAnswer",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: number,
+      explanation: string,
+    } > | null,
       published: boolean,
       status: AssessStatus,
       course?:  {
@@ -628,6 +769,22 @@ export type ListStudentAssessmentsQuery = {
           point: string,
         } >,
       } > | null,
+      trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+    } > | null,
+    singleAnswerAssessment?:  Array< {
+      __typename: "SingleAnswer",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: number,
+      explanation: string,
+    } > | null,
       published: boolean,
       status: AssessStatus,
       course?:  {
@@ -680,6 +837,22 @@ export type ListMyStudentAssessmentsQuery = {
           point: string,
         } >,
       } > | null,
+      trueFalseAssessment?:  Array< {
+      __typename: "TrueFalse",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: string,
+      explanation: string,
+    } > | null,
+    singleAnswerAssessment?:  Array< {
+      __typename: "SingleAnswer",
+      title: string,
+      question: string,
+      answerChoices: Array< string >,
+      correctAnswer: number,
+      explanation: string,
+    } > | null,
       published: boolean,
       status: AssessStatus,
       course?:  {
@@ -742,4 +915,20 @@ export type GetIngestionJobQuery = {
     dataSourceId: string,
     status: string,
   } | null,
+};
+
+export type DeleteAssessmentMutationVariables = {
+  id: string,
+};
+
+export type DeleteAssessmentMutation = {
+  deleteAssessment?: boolean | null,
+};
+
+export type UnpublishAssessmentMutationVariables = {
+  assessmentId: string,
+};
+
+export type UnpublishAssessmentMutation = {
+  unpublishAssessment?: boolean | null,
 };

@@ -20,10 +20,9 @@
 import mimeTypes from './mime-types.json';
 
 import { Readable } from 'stream';
-import { S3DocumentDescriptor } from '@project-lakechain/sdk/helpers';
 import { S3Bucket, S3Object } from './definitions/s3';
-import { Document, EventType } from '@project-lakechain/sdk/models';
-import { tracer } from '@project-lakechain/sdk/powertools';
+import { tracer } from './utils/pt';
+import { S3DocumentDescriptor, Document, EventType } from './types';
 
 import {
   S3Client,
@@ -72,7 +71,7 @@ export const isDirectory = (objectName: string, mimeType: string | undefined): b
  * @returns a URL associated with the given S3 bucket
  * and S3 object.
  */
-const createUrl = (bucket: S3Bucket, obj: S3Object): URL => {
+const createUrl = (bucket: S3Bucket, obj: S3Object): string => {
   return (new S3DocumentDescriptor({
     bucket: bucket.name,
     key: obj.key
@@ -87,7 +86,7 @@ const createUrl = (bucket: S3Bucket, obj: S3Object): URL => {
  */
 export const mimeTypeFromBuffer = async (bucket: S3Bucket, obj: S3Object): Promise<string | undefined> => {
   try {
-    const fileTypeFromStream = (await import('file-type')).fileTypeFromStream;
+    // Use a simpler approach without file-type package
     const res = await client.send(new GetObjectCommand({
       Bucket: bucket.name,
       Key: obj.key
@@ -98,12 +97,15 @@ export const mimeTypeFromBuffer = async (bucket: S3Bucket, obj: S3Object): Promi
       return (res.ContentType);
     }
 
-    // If not, we try to read from the stream to determine
-    // what the mime type is.
-    if (res.Body) {
-      const type = await fileTypeFromStream(res.Body as Readable);
-      return (type?.mime);
+    // Fallback to file extension based detection
+    const extension = obj.key.split('.').pop()?.toLowerCase();
+    if (extension) {
+      const mimeType = mimeTypes[extension as keyof typeof mimeTypes];
+      if (mimeType) {
+        return mimeType;
+      }
     }
+    
     return (undefined);
   } catch (err) {
     if (err instanceof NoSuchKey || err instanceof NotFound) {

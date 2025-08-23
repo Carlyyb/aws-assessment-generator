@@ -6,7 +6,7 @@ import { configureAuthI18n } from './auth-translations';
  * 
  * 1. 键名结构：
  *    - common.*: 通用文本，如按钮、标签等
- *      例如: common.submit, common.cancel, common.error
+ *      例如: common.actions.submit, common.actions.cancel, common.error
  * 
  *    - pages.$pageName.*: 特定页面的文本
  *      例如: pages.settings.title, pages.settings.ui_language
@@ -33,7 +33,7 @@ import { configureAuthI18n } from './auth-translations';
  *    - placeholder: 输入框占位符
  *    
  * 5. 示例：
- *    common.submit: "提交"
+ *    common.actions.submit: "提交"
  *    pages.settings.title: "设置"
  *    pages.settings.update_success: "设置更新成功"
  */

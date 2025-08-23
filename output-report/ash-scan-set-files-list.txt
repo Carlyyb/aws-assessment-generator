@@ -26,7 +26,6 @@
 /src/src/pages/DefaultSettings.tsx
 /src/src/pages/EditAssessments.tsx
 /src/src/pages/FindAssessments.tsx
-/src/src/pages/FindStudent.tsx
 /src/src/pages/GenerateAssessments.tsx
 /src/src/pages/HomePage.tsx
 /src/src/pages/ManageKnowledgeBases.tsx

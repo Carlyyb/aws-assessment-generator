@@ -4,7 +4,7 @@
 import { Context, PostConfirmationTriggerEvent } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { LambdaInterface } from "@aws-lambda-powertools/commons/lib/esm/types";
+import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import { logger, tracer } from "../rag-pipeline/lambdas/event-handler/utils/pt";
 import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 import { AdminAddUserToGroupCommand, CognitoIdentityProviderClient } from "@aws-sdk/client-cognito-identity-provider";
@@ -26,6 +26,7 @@ class Lambda implements LambdaInterface {
     this.userPoolId = event.userPoolId;
     const { userAttributes } = event.request;
     const userRole = userAttributes['custom:role'];
+    
     switch (userRole) {
       case "teachers":
         await this.registerTeacher(userAttributes);
@@ -33,8 +34,15 @@ class Lambda implements LambdaInterface {
       case "students":
         await this.registerStudent(userAttributes);
         break;
+      case "admin":
+        await this.registerAdmin(userAttributes);
+        break;
+      case "super_admin":
+        await this.registerSuperAdmin(userAttributes);
+        break;
       default:
-        throw new Error("Invalid role selected");
+        logger.warn(`Unknown user role: ${userRole}, assigning to students group`);
+        await this.registerStudent(userAttributes);
     }
 
     return event;
@@ -47,7 +55,8 @@ class Lambda implements LambdaInterface {
 
     const data = {
       id: userAttributes['sub'],
-      name: userAttributes['name'],
+      // 使用preferred_username作为显示名称
+      name: userAttributes['preferred_username'] || userAttributes['name'] || 'Unknown User',
       createdAt,
     };
 
@@ -63,13 +72,21 @@ class Lambda implements LambdaInterface {
     await this.assignToGroup(userAttributes["sub"], "teachers");
   }
 
+  async registerAdmin(userAttributes) {
+    await this.assignToGroup(userAttributes["sub"], "admin");
+  }
+
+  async registerSuperAdmin(userAttributes) {
+    await this.assignToGroup(userAttributes["sub"], "super_admin");
+  }
+
   async assignToGroup(sub, group) {
     let request = new AdminAddUserToGroupCommand({
       UserPoolId: this.userPoolId,
       Username: sub,
       GroupName: group,
     });
-    const response = await cognitoIdentityProviderClient.send<AdminAddUserToGroupCommand>(request);
+    const response = await cognitoIdentityProviderClient.send(request);
     logger.info(response as any);
     return response;
   }

@@ -7,18 +7,20 @@ import {
   aws_cognito,
   aws_dynamodb,
   aws_iam,
+  aws_lambda,
   aws_lambda_nodejs,
   aws_logs,
   Duration,
   NestedStack,
   NestedStackProps,
   RemovalPolicy,
+  Stack,
 } from 'aws-cdk-lib';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import path from 'path';
 import { Architecture, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
-import { ManagedPolicy, Policy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { ManagedPolicy, Policy, PolicyStatement, PolicyDocument } from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { TableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
@@ -81,6 +83,202 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    /////////// Users
+
+    const usersTable = new aws_dynamodb.TableV2(this, 'UsersTable', {
+      partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    /////////// Students
+
+    const studentsTable = new aws_dynamodb.TableV2(this, 'StudentsTable', {
+      partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    /////////// Student Groups
+
+    const studentGroupsTable = new aws_dynamodb.TableV2(this, 'StudentGroupsTable', {
+      partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    // 将用户表名保存到SSM参数
+    new StringParameter(this, 'UsersTableNameParameter', {
+      parameterName: '/gen-assess/users-table-name',
+      stringValue: usersTable.tableName,
+      description: 'Users table name for GenAssess application'
+    });
+
+    // 创建用户管理 Lambda 函数
+    const userManagementFunction = new NodejsFunction(this, 'UserManagementFunction', {
+      entry: path.join(__dirname, 'lambdas', 'userManagement.ts'),
+      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      timeout: Duration.seconds(30),
+      memorySize: 512,
+      environment: {
+        USER_POOL_ID: userPool.userPoolId,
+        USERS_TABLE_NAME: usersTable.tableName,
+        STUDENTS_TABLE_NAME: studentsTable.tableName,
+        STUDENT_GROUPS_TABLE_NAME: studentGroupsTable.tableName,
+        REGION: Stack.of(this).region
+      },
+      bundling: {
+        minify: true,
+        externalModules: ['@aws-sdk/client-dynamodb', '@aws-sdk/lib-dynamodb', '@aws-sdk/client-cognito-identity-provider', '@aws-sdk/client-ssm'],
+      }
+    });
+
+    // 创建密码修改 Lambda 函数
+    const changePasswordFunction = new NodejsFunction(this, 'ChangePasswordFunction', {
+      entry: path.join(__dirname, 'resolvers', 'changePassword.ts'),
+      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      timeout: Duration.seconds(30),
+      memorySize: 256,
+      environment: {
+        REGION: Stack.of(this).region
+      },
+      bundling: {
+        minify: true,
+        externalModules: ['@aws-sdk/client-cognito-identity-provider', '@aws-sdk/client-ssm', '@aws-sdk/client-dynamodb', '@aws-sdk/lib-dynamodb'],
+      }
+    });
+
+    // 给密码修改函数权限
+    usersTable.grantReadWriteData(changePasswordFunction);
+    changePasswordFunction.addToRolePolicy(new aws_iam.PolicyStatement({
+      effect: aws_iam.Effect.ALLOW,
+      actions: [
+        'cognito-idp:AdminSetUserPassword',
+        'cognito-idp:AdminInitiateAuth'
+      ],
+      resources: [userPool.userPoolArn]
+    }));
+    changePasswordFunction.addToRolePolicy(new aws_iam.PolicyStatement({
+      effect: aws_iam.Effect.ALLOW,
+      actions: [
+        'ssm:GetParameter',
+        'ssm:GetParameters'
+      ],
+      resources: [`arn:aws:ssm:${Stack.of(this).region}:${Stack.of(this).account}:parameter/gen-assess/*`]
+    }));
+
+    // 给 Lambda 函数权限访问 DynamoDB、Cognito 和 SSM
+    usersTable.grantReadWriteData(userManagementFunction);
+    studentsTable.grantReadWriteData(userManagementFunction);
+    studentGroupsTable.grantReadWriteData(userManagementFunction);
+    userManagementFunction.addToRolePolicy(new aws_iam.PolicyStatement({
+      effect: aws_iam.Effect.ALLOW,
+      actions: [
+        'cognito-idp:AdminCreateUser',
+        'cognito-idp:AdminSetUserPassword',
+        'cognito-idp:AdminAddUserToGroup',
+        'cognito-idp:AdminGetUser',
+        'cognito-idp:ListUsers'
+      ],
+      resources: [userPool.userPoolArn]
+    }));
+    userManagementFunction.addToRolePolicy(new aws_iam.PolicyStatement({
+      effect: aws_iam.Effect.ALLOW,
+      actions: [
+        'ssm:GetParameter',
+        'ssm:GetParameters'
+      ],
+      resources: [`arn:aws:ssm:${Stack.of(this).region}:${Stack.of(this).account}:parameter/gen-assess/*`]
+    }));
+
+    // 创建 Lambda 数据源
+    const userManagementDs = api.addLambdaDataSource('UserManagementDataSource', userManagementFunction);
+    const changePasswordDs = api.addLambdaDataSource('ChangePasswordDataSource', changePasswordFunction);
+
+    // 创建用户管理相关的 resolver
+    userManagementDs.createResolver('QueryListUsersResolver', {
+      typeName: 'Query',
+      fieldName: 'listUsers',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/listUsers.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationCreateSingleUserResolver', {
+      typeName: 'Mutation',
+      fieldName: 'createSingleUser',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/createSingleUser.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationBatchCreateUsersResolver', {
+      typeName: 'Mutation',
+      fieldName: 'batchCreateUsers',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/batchCreateUsers.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationUpdateUserResolver', {
+      typeName: 'Mutation',
+      fieldName: 'updateUser',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/updateUser.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationDeleteUserResolver', {
+      typeName: 'Mutation',
+      fieldName: 'deleteUser',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteUser.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('QueryPreviewExcelImportResolver', {
+      typeName: 'Query',
+      fieldName: 'previewExcelImport',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/previewExcelImport.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationResetUserPasswordResolver', {
+      typeName: 'Mutation',
+      fieldName: 'resetUserPassword',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/resetUserPassword.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 密码修改解析器
+    changePasswordDs.createResolver('MutationChangePasswordResolver', {
+      typeName: 'Mutation',
+      fieldName: 'changePassword',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/lambdaResolver.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 分组管理resolvers
+    userManagementDs.createResolver('QueryListStudentGroupsResolver', {
+      typeName: 'Query',
+      fieldName: 'listStudentGroups',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/listStudentGroups.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationCreateStudentGroupResolver', {
+      typeName: 'Mutation',
+      fieldName: 'createStudentGroup',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/createStudentGroup.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationUpdateStudentGroupResolver', {
+      typeName: 'Mutation',
+      fieldName: 'updateStudentGroup',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/updateStudentGroup.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    userManagementDs.createResolver('MutationDeleteStudentGroupResolver', {
+      typeName: 'Mutation',
+      fieldName: 'deleteStudentGroup',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteStudentGroup.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     /////////// Courses
 
     const coursesTable = new aws_dynamodb.TableV2(this, 'CoursesTable', {
@@ -111,12 +309,88 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
-    /////////// Students
-
-    const studentsTable = new aws_dynamodb.TableV2(this, 'StudentsTable', {
-      partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
-      removalPolicy: RemovalPolicy.DESTROY,
+    // 删除知识库Lambda函数
+    const deleteKnowledgeBaseFn = new NodejsFunction(this, 'DeleteKnowledgeBaseFn', {
+      entry: 'lib/lambdas/deleteKnowledgeBase.ts',
+      runtime: Runtime.NODEJS_20_X,
+      architecture: Architecture.ARM_64,
+      tracing: Tracing.ACTIVE,
+      bundling: {
+        minify: true,
+      },
+      environment: {
+        KB_TABLE: kbTable.tableName,
+        KB_STAGING_BUCKET: artifactsUploadBucket.bucketName,
+      },
     });
+
+    // 为删除知识库Lambda添加权限
+    deleteKnowledgeBaseFn.addToRolePolicy(
+      new PolicyStatement({
+        effect: aws_iam.Effect.ALLOW,
+        resources: ['*'],
+        actions: [
+          'bedrock:DeleteKnowledgeBase',
+          'bedrock:DeleteDataSource',
+          'bedrock:GetKnowledgeBase',
+          'bedrock:ListDataSources',
+        ],
+      })
+    );
+
+    // S3权限
+    deleteKnowledgeBaseFn.addToRolePolicy(
+      new PolicyStatement({
+        effect: aws_iam.Effect.ALLOW,
+        resources: [
+          artifactsUploadBucket.bucketArn,
+          `${artifactsUploadBucket.bucketArn}/*`,
+        ],
+        actions: [
+          's3:DeleteObject',
+          's3:ListBucket',
+        ],
+      })
+    );
+
+    // DynamoDB权限
+    kbTable.grantReadWriteData(deleteKnowledgeBaseFn);
+
+    const deleteKnowledgeBaseDs = api.addLambdaDataSource('DeleteKnowledgeBaseDs', deleteKnowledgeBaseFn);
+
+    deleteKnowledgeBaseDs.createResolver('DeleteKnowledgeBaseResolver', {
+      typeName: 'Mutation',
+      fieldName: 'deleteKnowledgeBase',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteKnowledgeBase.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 删除课程的Pipeline Resolver - 先删除课程，然后清理知识库
+    const deleteCourseFunction = new aws_appsync.AppsyncFunction(this, 'DeleteCourseFunction', {
+      api,
+      dataSource: coursesDs,
+      name: 'DeleteCourseFunction',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteCourse.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    const cleanupKnowledgeBaseFunction = new aws_appsync.AppsyncFunction(this, 'CleanupKnowledgeBaseFunction', {
+      api,
+      dataSource: deleteKnowledgeBaseDs,
+      name: 'CleanupKnowledgeBaseFunction',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/cleanupKnowledgeBase.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    new aws_appsync.Resolver(this, 'MutationDeleteCourseResolver', {
+      api,
+      typeName: 'Mutation',
+      fieldName: 'deleteCourse',
+      pipelineConfig: [deleteCourseFunction, cleanupKnowledgeBaseFunction],
+      requestMappingTemplate: aws_appsync.MappingTemplate.fromString('{}'),
+      responseMappingTemplate: aws_appsync.MappingTemplate.fromString('$util.toJson($ctx.result)'),
+    });
+
     const studentsTableParam = new StringParameter(this, 'StudentsTableParameter', {
       parameterName: '/gen-assess/student-table-name',
       stringValue: studentsTable.tableName,
@@ -134,13 +408,12 @@ export class DataStack extends NestedStack {
     }
     policy.attachToRole(props.postConfirmationLambda.role);
 
-    const studentsDs = api.addDynamoDbDataSource('StudentsDataSource', studentsTable);
-
-    studentsDs.createResolver('QueryListStudentsResolver', {
+    // 添加listStudents resolver到userManagement Lambda数据源
+    userManagementDs.createResolver('QueryListStudentsResolver', {
       typeName: 'Query',
       fieldName: 'listStudents',
-      requestMappingTemplate: aws_appsync.MappingTemplate.dynamoDbScanTable(),
-      responseMappingTemplate: aws_appsync.MappingTemplate.dynamoDbResultList(),
+      code: aws_appsync.Code.fromAsset('lib/resolvers/listStudents.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
     /////////// AssessTemplates
@@ -167,6 +440,13 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    assessTemplateDs.createResolver('MutationDeleteAssessTemplateResolver', {
+      typeName: 'Mutation',
+      fieldName: 'deleteAssessTemplate',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteAssessTemplate.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     /////////// Assessments
 
     const assessmentsTable = new aws_dynamodb.TableV2(this, 'AssessmentsTable', {
@@ -190,6 +470,7 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    // 创建 listAssessments 解析器 - 直接使用 DynamoDB 数据源
     assessmentsDs.createResolver('QueryListAssessmentsResolver', {
       typeName: 'Query',
       fieldName: 'listAssessments',
@@ -197,7 +478,15 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
-    assessmentsDs.createResolver('QueryAssessmentResolver', {
+    // 学生查看已发布测试的resolver
+    assessmentsDs.createResolver('QueryListPublishedAssessmentsResolver', {
+      typeName: 'Query',
+      fieldName: 'listPublishedAssessments',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/listPublishedAssessments.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    assessmentsDs.createResolver('QueryGetAssessmentResolver', {
       typeName: 'Query',
       fieldName: 'getAssessment',
       code: aws_appsync.Code.fromAsset('lib/resolvers/getAssessment.ts'),
@@ -209,6 +498,12 @@ export class DataStack extends NestedStack {
     const studentAssessmentsTable = new aws_dynamodb.TableV2(this, 'StudentAssessmentsTable', {
       partitionKey: { name: 'userId', type: aws_dynamodb.AttributeType.STRING },
       sortKey: { name: 'parentAssessId', type: aws_dynamodb.AttributeType.STRING },
+      globalSecondaryIndexes: [
+        {
+          indexName: 'ParentAssessIdIndex',
+          partitionKey: { name: 'parentAssessId', type: aws_dynamodb.AttributeType.STRING },
+        }
+      ],
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
@@ -231,11 +526,12 @@ export class DataStack extends NestedStack {
     studentAssessmentsDs.createResolver('QueryListMyStudentAssessmentsResolver', {
       typeName: 'Query',
       fieldName: 'listMyStudentAssessments',
-      requestMappingTemplate: aws_appsync.MappingTemplate.dynamoDbQuery(KeyCondition.eq('userId', 'studentId')),
+      requestMappingTemplate: aws_appsync.MappingTemplate.dynamoDbQuery(KeyCondition.eq('userId', '$ctx.args.studentId')),
       responseMappingTemplate: aws_appsync.MappingTemplate.dynamoDbResultList(),
     });
 
-    studentAssessmentsDs.createResolver('QueryStudentAssessmentResolver', {
+    // 创建 getStudentAssessment 解析器 - 直接使用 DynamoDB 数据源
+    studentAssessmentsDs.createResolver('QueryGetStudentAssessmentResolver', {
       typeName: 'Query',
       fieldName: 'getStudentAssessment',
       code: aws_appsync.Code.fromAsset('lib/resolvers/getStudentAssessment.ts'),
@@ -256,13 +552,41 @@ export class DataStack extends NestedStack {
       managedPolicies: [ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')],
     });
 
-    //Add Bedrock permissions on the Lambda function
-    //TODO scope it down to what's required
+    //Add Bedrock permissions on the Lambda function - comprehensive permissions for knowledge base operations
     assessmentLambdaRole.addToPolicy(
       new PolicyStatement({
         effect: aws_iam.Effect.ALLOW,
         resources: ['*'],
-        actions: ['bedrock:*'],
+        actions: [
+          // 知识库管理
+          'bedrock:GetKnowledgeBase',
+          'bedrock:CreateKnowledgeBase',
+          'bedrock:UpdateKnowledgeBase',
+          'bedrock:DeleteKnowledgeBase',
+          'bedrock:ListKnowledgeBases',
+          
+          // 数据摄取
+          'bedrock:StartIngestionJob',
+          'bedrock:GetIngestionJob',
+          'bedrock:ListIngestionJobs',
+          'bedrock:StopIngestionJob',
+          
+          // 模型调用
+          'bedrock:InvokeModel',
+          'bedrock:InvokeModelWithResponseStream',
+          'bedrock:GetFoundationModel',
+          'bedrock:ListFoundationModels',
+          
+          // 内容检索和生成
+          'bedrock:Retrieve',
+          'bedrock:RetrieveAndGenerate',
+          'bedrock:GenerateQuery',
+          
+          // Agent相关（如果需要）
+          'bedrock:InvokeAgent',
+          'bedrock:GetAgent',
+          'bedrock:ListAgents'
+        ],
       })
     );
 
@@ -353,6 +677,67 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    /////////// Unpublish Assessment
+
+    const unpublishFn = new aws_lambda_nodejs.NodejsFunction(this, 'UnpublishFn', {
+      entry: 'lib/lambdas/unpublishAssessment.ts',
+      runtime: Runtime.NODEJS_20_X,
+      environment: {
+        region: this.region,
+        assessmentsTable: assessmentsTable.tableName,
+        studentAssessmentsTable: studentAssessmentsTable.tableName,
+      },
+      bundling: {
+        minify: true,
+        externalModules: ['@aws-sdk/client-dynamodb'],
+      },
+    });
+    assessmentsTable.grantReadWriteData(unpublishFn);
+    studentAssessmentsTable.grantReadWriteData(unpublishFn);
+    const unpublishAssessmentDs = api.addLambdaDataSource('UnpublishAssessmentDataSource', unpublishFn);
+
+    unpublishAssessmentDs.createResolver('UnpublishAssessmentResolver', {
+      typeName: 'Mutation',
+      fieldName: 'unpublishAssessment',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/unpublishAssessment.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    /////////// Delete Assessment Lambda Function
+
+    // 创建删除评估的 Lambda 函数
+    const deleteAssessmentLambda = new NodejsFunction(this, 'DeleteAssessmentLambda', {
+      entry: path.join(__dirname, 'lambda', 'deleteAssessmentHandler.ts'),
+      handler: 'handler',
+      runtime: Runtime.NODEJS_20_X,
+      architecture: Architecture.ARM_64,
+      timeout: Duration.minutes(5),
+      tracing: Tracing.ACTIVE,
+      environment: {
+        ASSESSMENTS_TABLE: assessmentsTable.tableName,
+        STUDENT_ASSESSMENTS_TABLE: studentAssessmentsTable.tableName,
+      },
+      logGroup: new LogGroup(this, 'DeleteAssessmentLambdaLogGroup', {
+        logGroupName: `/aws/lambda/delete-assessment-handler`,
+        retention: RetentionDays.ONE_WEEK,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
+    });
+
+    // 给 Lambda 函数权限访问 DynamoDB 表
+    assessmentsTable.grantReadWriteData(deleteAssessmentLambda);
+    studentAssessmentsTable.grantReadWriteData(deleteAssessmentLambda);
+
+    // 创建 Lambda 数据源
+    const deleteAssessmentDs = api.addLambdaDataSource('DeleteAssessmentDs', deleteAssessmentLambda);
+
+    deleteAssessmentDs.createResolver('DeleteAssessmentResolver', {
+      typeName: 'Mutation',
+      fieldName: 'deleteAssessment',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteAssessment.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     /////////// Create KnowledgeBase
     const createKnowledgeBaseDs = api.addLambdaDataSource('CreateKnowledgeBaseDs', documentProcessorLambda);
 
@@ -360,6 +745,16 @@ export class DataStack extends NestedStack {
       typeName: 'Mutation',
       fieldName: 'createKnowledgeBase',
       code: aws_appsync.Code.fromAsset('lib/resolvers/invokeLambda.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    /////////// Get KnowledgeBase
+    const kbTableDs = api.addDynamoDbDataSource('KnowledgeBaseDataSource', kbTable);
+
+    kbTableDs.createResolver('GetKnowledgeBaseResolver', {
+      typeName: 'Query',
+      fieldName: 'getKnowledgeBase',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/getKnowledgeBase.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 

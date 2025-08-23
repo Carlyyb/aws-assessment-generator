@@ -1,7 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
  
-// import { Context } from '@aws-appsync/utils';
 import * as ddb from '@aws-appsync/utils/dynamodb';
 
 export function request(ctx) {
@@ -9,4 +8,7 @@ export function request(ctx) {
   return ddb.get({ key: { userId, parentAssessId: ctx.args.parentAssessId } });
 }
 
-export const response = (ctx) => ctx.result;
+export function response(ctx) {
+  // 直接返回 DynamoDB 的原始结果，让后续的 Lambda 函数进行转换
+  return ctx.result;
+}

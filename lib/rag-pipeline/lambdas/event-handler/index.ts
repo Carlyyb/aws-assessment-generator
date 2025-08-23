@@ -23,7 +23,6 @@ import { CopyObjectCommand, CopyObjectOutput, S3Client } from '@aws-sdk/client-s
 import { logger, tracer } from './utils/pt';
 import { BedrockKnowledgeBase } from './kb/bedrockKnowledgeBase';
 import { AppSyncIdentityCognito } from 'aws-lambda/trigger/appsync-resolver';
-import { CreateKnowledgeBaseQueryVariables } from '../../../../ui/src/graphql/API';
 
 const s3Client = new S3Client();
 
@@ -35,26 +34,67 @@ class Lambda implements LambdaInterface {
   @tracer.captureLambdaHandler()
   @logger.injectLambdaContext({ logEvent: true })
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async handler(event: AppSyncResolverEvent<CreateKnowledgeBaseQueryVariables>, lambdaContext: Context): Promise<string> {
-    let kbCreationRequest = event.arguments;
-    if (!(kbCreationRequest && kbCreationRequest.courseId && kbCreationRequest.locations && kbCreationRequest.locations.length > 0)) {
-      throw new Error('Invalid inputs');
+  async handler(event: AppSyncResolverEvent<any>, lambdaContext: Context): Promise<any> {
+    try {
+      logger.info('Handler started', { event: event.arguments });
+      
+      let kbCreationRequest = event.arguments;
+      if (!(kbCreationRequest && kbCreationRequest.courseId && kbCreationRequest.locations && kbCreationRequest.locations.length > 0)) {
+        logger.error('Invalid inputs', { kbCreationRequest });
+        throw new Error('Invalid inputs');
+      }
+
+      logger.info('Copying objects to KB bucket');
+      await this.copyObjects(kbCreationRequest.locations);
+      
+      const identity = event.identity as AppSyncIdentityCognito;
+      const userId = identity.sub;
+      const courseId = kbCreationRequest.courseId;
+      
+      logger.info('Getting knowledge base', { userId, courseId });
+      const knowledgeBase = await BedrockKnowledgeBase.getKnowledgeBase(userId, courseId);
+
+      logger.info('Starting ingestion');
+      const startIngestionJobCommandOutput = await knowledgeBase.ingestDocuments();
+      
+      // 更详细的验证
+      if (!startIngestionJobCommandOutput) {
+        logger.error('No response from ingestion service');
+        throw new Error('KB Ingestion failed: no response from ingestion service');
+      }
+      
+      if (!startIngestionJobCommandOutput.ingestionJob) {
+        logger.error('Missing ingestionJob in response', { response: startIngestionJobCommandOutput });
+        throw new Error('KB Ingestion failed: missing ingestionJob in response');
+      }
+      
+      if (!startIngestionJobCommandOutput.ingestionJob.ingestionJobId) {
+        logger.error('Missing ingestionJobId in response', { ingestionJob: startIngestionJobCommandOutput.ingestionJob });
+        throw new Error('KB Ingestion failed: missing ingestionJobId in response');
+      }
+      
+      logger.info('KB Ingestion Job Id: ' + startIngestionJobCommandOutput.ingestionJob.ingestionJobId);
+
+      // 确保返回的对象包含所有必要字段，并转换为GraphQL schema期望的格式
+      const ingestionJob = startIngestionJobCommandOutput.ingestionJob;
+      if (!ingestionJob.knowledgeBaseId || !ingestionJob.dataSourceId || !ingestionJob.status) {
+        logger.warn('Ingestion job missing some fields', ingestionJob as any);
+      }
+
+      // 返回符合GraphQL IngestionJob类型的对象
+      const result = {
+        ingestionJobId: ingestionJob.ingestionJobId,
+        knowledgeBaseId: ingestionJob.knowledgeBaseId,
+        dataSourceId: ingestionJob.dataSourceId,
+        status: ingestionJob.status || 'IN_PROGRESS'
+      };
+      
+      logger.info('Returning result:', result as any);
+      return result;
+    } catch (error) {
+      logger.error('Handler error', { error: error.message, stack: error.stack });
+      throw error;
     }
-
-    await this.copyObjects(kbCreationRequest.locations);
-    const identity = event.identity as AppSyncIdentityCognito;
-    const userId = identity.sub;
-    const courseId = kbCreationRequest.courseId;
-
-    const knowledgeBase = await BedrockKnowledgeBase.getKnowledgeBase(userId, courseId);
-
-    const startIngestionJobCommandOutput = await knowledgeBase.ingestDocuments();
-    if (!(startIngestionJobCommandOutput.ingestionJob && startIngestionJobCommandOutput.ingestionJob.ingestionJobId)) {
-      throw new Error('KB Ingestion failed');
-    }
-    logger.info('KB Ingestion Job Id: ' + startIngestionJobCommandOutput.ingestionJob.ingestionJobId);
-
-    return startIngestionJobCommandOutput.ingestionJob;
   }
 
   private async copyObjects(objectKeys: Array<string | null>) {
@@ -78,7 +118,7 @@ class Lambda implements LambdaInterface {
     };
     logger.info('Copy object to target bucket', copyObjectRequest as any);
     const copyObjectCommand = new CopyObjectCommand(copyObjectRequest);
-    const copyObjectOutput = await s3Client.send<CopyObjectOutput>(copyObjectCommand);
+    const copyObjectOutput = await s3Client.send(copyObjectCommand);
     logger.info('CopyObject result', { data: copyObjectOutput } as any);
   }
 }

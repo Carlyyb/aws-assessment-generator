@@ -180,6 +180,8 @@ export class FrontendStack extends NestedStack {
       exclude: ['config.json'],
       destinationBucket: this.bucket,
       distribution,
+      // 优化：减少不必要的CloudFront失效，只在必要时更新
+      distributionPaths: ['/index.html', '/config.json'],
     });
 
     if (hostedZone) {

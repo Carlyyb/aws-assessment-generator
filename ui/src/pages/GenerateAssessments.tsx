@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useContext, useEffect } from 'react';
 import {
   Container,
@@ -13,10 +14,12 @@ import {
   FileUpload,
   Input,
   DatePicker,
+  TimeInput,
   Spinner,
   Modal,
   ProgressBar,
   Alert,
+  Textarea,
 } from '@cloudscape-design/components';
 import { uploadData } from 'aws-amplify/storage';
 import { generateClient } from 'aws-amplify/api';
@@ -26,6 +29,7 @@ import { Course, AssessStatus, AssessTemplate } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { UserProfileContext } from '../contexts/userProfile';
 import { getText, getTextWithParams } from '../i18n/lang';
+import { getBeijingTimeString } from '../utils/timeUtils';
 
 const client = generateClient();
 
@@ -36,7 +40,9 @@ export default () => {
 
   const [name, setName] = useState('');
   const [lectureDate, setLectureDate] = useState('');
+  const [lectureTime, setLectureTime] = useState('09:00');
   const [deadline, setDeadline] = useState('');
+  const [deadlineTime, setDeadlineTime] = useState('23:59');
   const [useDefault, setUseDefault] = useState(true);
   const [courses, setCourses] = useState<SelectProps.Option[]>([]);
   const [course, setCourse] = useState<SelectProps.Option | null>(null);
@@ -45,6 +51,9 @@ export default () => {
   const [assessTemplates, setAssessTemplates] = useState<SelectProps.Option[]>([]);
   const [assessTemplate, setAssessTemplate] = useState<SelectProps.Option | null>(null);
   const [knowledgeBaseStatus, setKnowledgeBaseStatus] = useState<'checking' | 'available' | 'missing' | null>(null);
+  
+  // 自定义prompt状态
+  const [customPrompt, setCustomPrompt] = useState('');
   
   // 进度和日志状态
   const [isGenerating, setIsGenerating] = useState(false);
@@ -56,7 +65,7 @@ export default () => {
 
   // 添加日志函数
   const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
+    const timestamp = getBeijingTimeString();
     const logMessage = `[${timestamp}] ${message}`;
     setLogs(prev => [...prev, logMessage]);
     console.log(logMessage); // 同时输出到控制台
@@ -83,6 +92,13 @@ export default () => {
         variables: { courseId }
       });
       
+      // 检查GraphQL错误
+      if ((kbResponse as any).errors) {
+        console.error('GraphQL errors when checking knowledge base:', (kbResponse as any).errors);
+        setKnowledgeBaseStatus('missing');
+        return;
+      }
+      
       const knowledgeBase = kbResponse.data.getKnowledgeBase;
       if (knowledgeBase && knowledgeBase.knowledgeBaseId) {
         setKnowledgeBaseStatus('available');
@@ -90,6 +106,7 @@ export default () => {
         setKnowledgeBaseStatus('missing');
       }
     } catch (error) {
+      console.error('Error checking knowledge base status:', error);
       setKnowledgeBaseStatus('missing');
     }
   };
@@ -103,39 +120,83 @@ export default () => {
     }
   }, [course]);
 
-  useEffect(() => {
-    client.graphql<any>({ query: listAssessTemplates }).then(({ data, errors }) => {
-      if (errors && errors.length > 0) {
-        console.warn('GraphQL errors:', errors);
-      }
-      
-      const list = data?.listAssessTemplates;
-      if (!list) return;
-      
-      // 过滤掉无效的模板记录
-      const validList = list.filter((assessTemplate: AssessTemplate) => {
-        return assessTemplate && assessTemplate.id && assessTemplate.name;
+  // 加载测试模板列表 - 模仿Templates.tsx的实现
+  const loadTemplates = () => {
+    client
+      .graphql<any>({ query: listAssessTemplates })
+      .then(({ data, errors }) => {
+        if (errors && errors.length > 0) {
+          console.warn('GraphQL errors:', errors);
+          const validTemplates = (data?.listAssessTemplates || []).filter((template: AssessTemplate) => {
+            const validDocLang = template.docLang === 'zh' || template.docLang === 'en';
+            return template && template.id && template.name && validDocLang;
+          });
+
+          if (validTemplates.length === 0) {
+            dispatchAlert({ 
+              type: 'warning', 
+              content: '没有找到有效的测试模板数据，请先创建测试模板'
+            });
+          }
+          console.log('Valid templates:', validTemplates);
+          const options = validTemplates.map((assessTemplate: AssessTemplate) => ({ 
+            label: assessTemplate.name, 
+            value: assessTemplate.id 
+          }));
+          setAssessTemplates(options);
+        } else {
+          const list = data?.listAssessTemplates || [];
+          // 过滤掉无效的测试模板记录
+          //console.log('All templates before filter:', list);
+          const validList = list.filter((assessTemplate: AssessTemplate) => {
+            const validDocLang = assessTemplate.docLang === 'zh' || assessTemplate.docLang === 'en';
+            return assessTemplate && assessTemplate.id && assessTemplate.name && validDocLang;
+          });
+          //console.log('Valid templates after filter:', validList);
+          const options = validList.map((assessTemplate: AssessTemplate) => ({ 
+            label: assessTemplate.name, 
+            value: assessTemplate.id 
+          }));
+          setAssessTemplates(options);
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching templates:', error);
+        dispatchAlert({ 
+          type: AlertType.ERROR, 
+          content: '加载测试模板列表失败，请刷新页面重试'
+        });
       });
-      
-      const options = validList.map((assessTemplate: AssessTemplate) => ({ 
-        label: assessTemplate.name, 
-        value: assessTemplate.id 
-      }));
-      setAssessTemplates(options);
-    }).catch((error) => {
-      console.error('Error fetching templates:', error);
-    });
+  };
+
+  useEffect(() => {
+    loadTemplates();
   }, []);
 
   function checkStatus() {
-    setTimeout(() => {
+    setTimeout(async () => {
       setStatusCheckCount(prev => {
         const newCheckCount = prev + 1;
         
         addLog(`检查生成状态... (第 ${newCheckCount} 次)`);
         
-        client.graphql<any>({ query: getAssessment, variables: { id: assessId } }).then(({ data }) => {
+        client.graphql<any>({ query: getAssessment, variables: { id: assessId } }).then(({ data, errors }) => {
+          // 检查GraphQL错误
+          if (errors && errors.length > 0) {
+            addLog(`❌ 状态查询错误: ${JSON.stringify(errors)}`);
+            setFailureCount(prev => prev + 1);
+            checkStatus();
+            return;
+          }
+
           const assessment = data.getAssessment;
+          if (!assessment) {
+            addLog(`❌ 找不到评估记录 ID: ${assessId}`);
+            setFailureCount(prev => prev + 1);
+            checkStatus();
+            return;
+          }
+
           const { status } = assessment;
           
           addLog(`当前状态: ${status}`);
@@ -145,9 +206,13 @@ export default () => {
             setIsGenerating(false);
             setFailureCount(0); // 重置失败计数
             dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.generate_assessments.generate_success') });
-            setTimeout(() => {
-              navigate(`/edit-assessment/${assessId}`);
-            }, 1000);
+            // 立即关闭模态窗口并跳转到编辑页面
+            setAssessId('');
+            setLogs([]);
+            setProgress(0);
+            setCurrentStep('');
+            setStatusCheckCount(0);
+            navigate(`/edit-assessment/${assessId}`);
             return;
           }
           
@@ -155,16 +220,33 @@ export default () => {
           if (status === AssessStatus.FAILED) {
             addLog('❌ 测试生成失败');
             updateStep('❌ 测试生成失败', 0);
+            
             setIsGenerating(false);
             setFailureCount(0); // 重置失败计数
             
-            // 提供详细的错误信息和建议
-            const errorMessage = '测试生成失败。可能的原因：\n' +
-              '1. 未上传课程文件 - 请确保上传了相关的课程材料\n' +
-              '2. 知识库未创建 - 请先为该课程创建知识库\n' +
-              '3. Bedrock服务问题 - 请稍后重试\n\n' +
-              '建议：请确保已上传课程文件并等待知识库创建完成后再试';
-            
+            // 提供详细的错误信息和建议 - 改进错误消息
+            const errorMessage = '测试生成失败。可能的原因包括：\n\n' +
+              '1. 📄 文档处理问题：\n' +
+              '   • 上传的文件格式不支持或损坏\n' +
+              '   • 文档内容无法提取或过于简短\n' +
+              '   • 文档语言与系统设置不匹配\n\n' +
+              '2. 🧠 知识库问题：\n' +
+              '   • 知识库中缺少足够的内容\n' +
+              '   • 文档索引尚未完成处理\n' +
+              '   • 知识库配置错误\n\n' +
+              '3. 🤖 AI服务问题：\n' +
+              '   • Bedrock服务暂时不可用\n' +
+              '   • 模型调用限制或配额超出\n' +
+              '   • 网络连接问题\n\n' +
+              '4. ⚙️ 测试模板配置问题：\n' +
+              '   • 选择的测试模板参数不合理\n' +
+              '   • 题目数量设置过高\n\n' +
+              '💡 建议解决方案：\n' +
+              '• 检查上传的文件是否为有效的课程材料\n' +
+              '• 确保知识库中有足够的文档内容\n' +
+              '• 尝试使用更简单的测试模板设置\n' +
+              '• 稍后重试，可能是服务暂时繁忙\n' +
+              '• 联系管理员查看详细日志信息\n\n';       
             dispatchAlert({ 
               type: AlertType.ERROR, 
               content: errorMessage
@@ -253,8 +335,40 @@ export default () => {
                     if (!course?.value) {
                       throw new Error('请选择课程');
                     }
-                    if (files.length === 0) {
-                      throw new Error('请上传至少一个课程文件。\n\n系统需要基于上传的课程材料来生成测试题目。\n支持的文件格式：PDF、DOC、DOCX、TXT等');
+                    
+                    // 验证至少有文件或自定义prompt之一
+                    if (files.length === 0 && !customPrompt.trim()) {
+                      throw new Error('请上传至少一个课程文件或输入自定义学习目标。\n\n您可以：\n1. 上传课程材料（PDF、DOC、DOCX、TXT等）\n2. 或者在"自定义学习目标"中输入要考核的知识点');
+                    }
+
+                    // 验证文件（如果有上传文件的话）
+                    if (files.length > 0) {
+                      updateStep('🔍 验证上传文件...', 8);
+                      const invalidFiles = files.filter(file => {
+                        const validExtensions = ['.pdf', '.doc', '.docx', '.txt', '.md'];
+                        const fileName = file.name.toLowerCase();
+                        const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+                        const isValidSize = file.size > 0 && file.size < 50 * 1024 * 1024; // 小于50MB
+                        return !hasValidExtension || !isValidSize;
+                      });
+
+                      if (invalidFiles.length > 0) {
+                        const invalidFileNames = invalidFiles.map(f => f.name).join(', ');
+                        throw new Error(`以下文件格式不支持或文件过大：${invalidFileNames}\n\n支持的格式：PDF、DOC、DOCX、TXT、MD\n最大文件大小：50MB`);
+                      }
+                      
+                      addLog(`验证完成，准备处理 ${files.length} 个有效文件`);
+                    } else {
+                      addLog(`使用自定义学习目标模式，不上传文件`);
+                    }                    // 验证测试模板选择
+                    if (!useDefault && !assessTemplate?.value) {
+                      throw new Error('请选择测试测试模板或使用默认测试模板');
+                    }
+
+                    if (!useDefault && assessTemplate?.value) {
+                      addLog(`使用自定义测试模板：${assessTemplate.label}`);
+                    } else {
+                      addLog('使用默认测试模板设置');
                     }
                     
                     updateStep('📁 准备上传文件...', 10);
@@ -269,44 +383,72 @@ export default () => {
                         variables: { courseId: course.value }
                       });
                       
+                      // 检查GraphQL错误
+                      if ((kbResponse as any).errors && (kbResponse as any).errors.length > 0) {
+                        addLog(`知识库查询返回错误: ${JSON.stringify((kbResponse as any).errors)}`);
+                        throw new Error('知识库查询失败，请稍后重试');
+                      }
+                      
                       const knowledgeBase = kbResponse.data.getKnowledgeBase;
                       if (!knowledgeBase || !knowledgeBase.knowledgeBaseId) {
+                        addLog('❌ 该课程没有关联的知识库');
                         throw new Error(`该课程尚未创建知识库。\n\n请按以下步骤操作：\n1. 先上传课程文件到知识库\n2. 等待文档处理完成\n3. 再尝试生成测试\n\n提示：您可以在课程管理页面创建知识库`);
                       }
                       
                       addLog(`✅ 知识库检查通过，ID: ${knowledgeBase.knowledgeBaseId}`);
+                      
+                      // 检查知识库状态
+                      if (knowledgeBase.status && knowledgeBase.status !== 'ACTIVE') {
+                        addLog(`⚠️ 知识库状态: ${knowledgeBase.status}`);
+                        if (knowledgeBase.status === 'CREATING' || knowledgeBase.status === 'UPDATING') {
+                          throw new Error('知识库正在创建或更新中，请稍后重试');
+                        }
+                      }
+                      
                     } catch (error: any) {
                       // 如果是我们抛出的错误，直接抛出
-                      if (error.message.includes('该课程尚未创建知识库')) {
+                      if (error.message.includes('该课程尚未创建知识库') || 
+                          error.message.includes('知识库正在创建') ||
+                          error.message.includes('知识库查询失败')) {
                         throw error;
                       }
                       // 其他错误也视为知识库不存在
+                      addLog(`❌ 知识库检查失败: ${error.message || error}`);
                       throw new Error('无法访问课程知识库，请确保已为该课程创建知识库');
                     }
                     
-                    const data = files.map((file) => ({
-                      key: `Assessments/${userProfile?.userId}/${course?.value}/${file.name}`,
-                      file,
-                    }));
+                    let uploadedFileKeys: string[] = [];
                     
-                    addLog(`准备上传 ${files.length} 个文件`);
-                    
-                    updateStep('📤 正在上传文件到云存储...', 15);
-                    
-                    await Promise.all(
-                      data.map(
-                        ({ key, file }, index) => {
-                          addLog(`上传文件 ${index + 1}/${files.length}: ${file.name}`);
-                          return uploadData({
-                            key,
-                            data: file,
-                          }).result;
-                        }
-                      )
-                    );
-                    
-                    updateStep('✅ 文件上传完成', 25);
-                    addLog('所有文件上传成功');
+                    // 只有在有文件时才进行上传
+                    if (files.length > 0) {
+                      const data = files.map((file) => ({
+                        key: `Assessments/${userProfile?.userId}/${course?.value}/${file.name}`,
+                        file,
+                      }));
+                      
+                      addLog(`准备上传 ${files.length} 个文件`);
+                      
+                      updateStep('📤 正在上传文件到云存储...', 15);
+                      
+                      await Promise.all(
+                        data.map(
+                          ({ key, file }, index) => {
+                            addLog(`上传文件 ${index + 1}/${files.length}: ${file.name}`);
+                            return uploadData({
+                              key,
+                              data: file,
+                            }).result;
+                          }
+                        )
+                      );
+                      
+                      uploadedFileKeys = data.map(({ key }) => key);
+                      updateStep('✅ 文件上传完成', 25);
+                      addLog('所有文件上传成功');
+                    } else {
+                      updateStep('📝 使用自定义学习目标，跳过文件上传', 25);
+                      addLog('使用自定义学习目标模式');
+                    }
                     
                     updateStep('🤖 正在调用AI生成测试...', 30);
                     addLog('发送生成请求到后端服务...');
@@ -316,19 +458,24 @@ export default () => {
                       variables: {
                         input: {
                           name,
-                          lectureDate,
-                          deadline,
+                          lectureDate: lectureDate && lectureTime ? `${lectureDate}T${lectureTime}:00.000Z` : lectureDate,
+                          deadline: deadline && deadlineTime ? `${deadline}T${deadlineTime}:00.000Z` : deadline,
                           courseId: course.value,
                           assessTemplateId: assessTemplate?.value,
-                          locations: data.map(({ key }) => key),
+                          locations: uploadedFileKeys,
+                          customPrompt: customPrompt.trim() || null,
                         },
                       },
                     });
+                    
+                    console.log('generateAssessment API 响应:', res);
+                    console.log('返回的ID:', res.data.generateAssessment);
                     
                     const id = res.data.generateAssessment;
                     setAssessId(id);
                     
                     addLog(`✅ 测试请求已提交，ID: ${id}`);
+                    console.log('生成测试的地方测试请求id为', id);
                     updateStep('⏳ 正在后台生成测试内容...', 35);
                     addLog('开始监控生成进度...');
                     
@@ -390,14 +537,59 @@ export default () => {
                     </SpaceBetween>
                   </FormField>
                   <FormField label={getText('teachers.assessments.generate.lecture_date')}>
-                    <DatePicker onChange={({ detail }) => setLectureDate(detail.value)} value={lectureDate} placeholder={getText('date_format.yyyy_mm_dd')} />
+                    <SpaceBetween direction="horizontal" size="xs">
+                      <DatePicker 
+                        onChange={({ detail }) => setLectureDate(detail.value)} 
+                        value={lectureDate} 
+                        placeholder={getText('date_format.yyyy_mm_dd')} 
+                      />
+                      <TimeInput
+                        onChange={({ detail }) => setLectureTime(detail.value)}
+                        value={lectureTime}
+                        format="hh:mm"
+                        placeholder="时间"
+                      />
+                    </SpaceBetween>
                   </FormField>
                   <FormField label={getText('common.labels.deadline')}>
-                    <DatePicker onChange={({ detail }) => setDeadline(detail.value)} value={deadline} placeholder={getText('date_format.yyyy_mm_dd')} />
+                    <SpaceBetween direction="horizontal" size="xs">
+                      <DatePicker 
+                        onChange={({ detail }) => setDeadline(detail.value)} 
+                        value={deadline} 
+                        placeholder={getText('date_format.yyyy_mm_dd')} 
+                      />
+                      <TimeInput
+                        onChange={({ detail }) => setDeadlineTime(detail.value)}
+                        value={deadlineTime}
+                        format="hh:mm"
+                        placeholder="时间"
+                      />
+                    </SpaceBetween>
                   </FormField>
+                  
+                  {/* 自定义学习目标输入框 */}
                   <FormField 
-                    label={getText('teachers.assessments.generate.add_lecture_notes')}
-                    description="请上传课程相关的文档材料（如讲义、教材、作业等），系统将基于这些材料生成测试题目。支持PDF、DOC、DOCX、TXT等格式。"
+                    label="自定义学习目标（可选）"
+                    description="如果您有特定的学习目标或知识点要考核，可以在此输入。这将作为测试生成的主要依据。如果不填写，系统将基于上传的讲义文件生成题目。"
+                  >
+                    <Textarea
+                      value={customPrompt}
+                      onChange={({ detail }) => setCustomPrompt(detail.value)}
+                      placeholder="例如：请基于以下学习目标生成测试题目：
+1. 理解大语言模型的“黑箱”现象
+2. 理解大语言模型的基本原理与架构
+3. 应用大语言模型进行文本生成与处理
+4. 分析和评估大语言模型的局限性与伦理问题"
+                      rows={6}
+                    />
+                  </FormField>
+                  
+                  <FormField 
+                    label={files.length > 0 || !customPrompt.trim() ? getText('teachers.assessments.generate.add_lecture_notes') : getText('teachers.assessments.generate.add_lecture_notes') + "（可选）"}
+                    description={customPrompt.trim() 
+                      ? "您已输入自定义学习目标。可以选择性地上传课程文档作为补充材料，或跳过此步骤。" 
+                      : "请上传课程相关的文档材料（如讲义、教材、作业等），系统将基于这些材料生成测试题目。支持PDF、DOC、DOCX、TXT等格式。"
+                    }
                   >
                     <FileUpload
                       multiple
@@ -458,7 +650,7 @@ export default () => {
           
           {/* 实时日志 */}
           <Box>
-            <Header variant="h3">生成日志</Header>
+            <Header variant="h3">📋 生成日志</Header>
             <div
               style={{
                 backgroundColor: '#f8f9fa',
@@ -474,7 +666,13 @@ export default () => {
               {logs.length > 0 ? (
                 <div>
                   {logs.map((log, index) => (
-                    <div key={index} style={{ marginBottom: '4px' }}>
+                    <div key={index} style={{ 
+                      marginBottom: '4px',
+                      color: log.includes('❌') ? '#dc3545' :
+                             log.includes('⚠️') ? '#856404' :
+                             log.includes('✅') ? '#28a745' :
+                             log.includes('🔍') || log.includes('📋') ? '#007bff' : '#495057'
+                    }}>
                       {log}
                     </div>
                   ))}

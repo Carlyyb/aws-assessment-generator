@@ -64,8 +64,20 @@ export class GenAssessStack extends Stack {
           Bucket: frontendStack.bucket.bucketName,
           Key: 'config.json',
           Body: JSON.stringify(config),
+          ContentType: 'application/json',
         },
-        physicalResourceId: cr.PhysicalResourceId.of('NO_DELETE_REQUIRED'),
+        physicalResourceId: cr.PhysicalResourceId.of('config-json-' + Date.now()),
+      },
+      onCreate: {
+        service: 'S3',
+        action: 'putObject',
+        parameters: {
+          Bucket: frontendStack.bucket.bucketName,
+          Key: 'config.json',
+          Body: JSON.stringify(config),
+          ContentType: 'application/json',
+        },
+        physicalResourceId: cr.PhysicalResourceId.of('config-json-' + Date.now()),
       },
       policy: cr.AwsCustomResourcePolicy.fromSdkCalls({
         resources: [frontendStack.bucket.bucketArn, `${frontendStack.bucket.bucketArn}/*`],

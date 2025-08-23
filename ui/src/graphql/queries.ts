@@ -1,13 +1,14 @@
 /* tslint:disable */
 /* eslint-disable */
 // this is an auto generated file. This will be overwritten
+// Manual additions for user management
 
 export const getSettings = /* GraphQL */ `
   query GetSettings {
     getSettings {
       uiLang
-      docLang
-      assessType
+      globalLogo
+      themeSettings
     }
   }
 `;
@@ -24,8 +25,34 @@ export const listStudents = /* GraphQL */ `
   query ListStudents {
     listStudents {
       id
-      firstName
-      lastName
+      name
+      email
+      lastLoginAt
+      assessmentCount
+      groups {
+        id
+        name
+        description
+        color
+        createdBy
+        teachers
+        students
+        createdAt
+      }
+    }
+  }
+`;
+export const listStudentGroups = /* GraphQL */ `
+  query ListStudentGroups {
+    listStudentGroups {
+      id
+      name
+      description
+      color
+      createdBy
+      teachers
+      students
+      createdAt
     }
   }
 `;
@@ -53,6 +80,20 @@ export const getAssessment = /* GraphQL */ `
           weight
           point
         }
+      }
+      singleAnswerAssessment {
+        title
+        question
+        answerChoices
+        correctAnswer
+        explanation
+      }
+      trueFalseAssessment {
+        title
+        question
+        answerChoices
+        correctAnswer
+        explanation
       }
       published
       status
@@ -89,6 +130,20 @@ export const listAssessments = /* GraphQL */ `
           point
         }
       }
+      singleAnswerAssessment {
+        title
+        question
+        answerChoices
+        correctAnswer
+        explanation
+      }
+      trueFalseAssessment {
+        title
+        question
+        answerChoices
+        correctAnswer
+        explanation
+      }
       published
       status
       course {
@@ -112,6 +167,33 @@ export const listAssessTemplates = /* GraphQL */ `
       mediumQuestions
       hardQuestions
       createdAt
+    }
+  }
+`;
+export const listPublishedAssessments = /* GraphQL */ `
+  query ListPublishedAssessments {
+    listPublishedAssessments {
+      id
+      name
+      courseId
+      lectureDate
+      deadline
+      updatedAt
+      assessType
+      published
+      status
+      timeLimited
+      timeLimit
+      allowAnswerChange
+      studentGroups
+      courses
+      attemptLimit
+      scoreMethod
+      course {
+        id
+        name
+        description
+      }
     }
   }
 `;
@@ -141,6 +223,20 @@ export const getStudentAssessment = /* GraphQL */ `
             weight
             point
           }
+        }
+        singleAnswerAssessment {
+          title
+          question
+          answerChoices
+          correctAnswer
+          explanation
+        }
+        trueFalseAssessment {
+          title
+          question
+          answerChoices
+          correctAnswer
+          explanation
         }
         published
         status
@@ -185,6 +281,20 @@ export const listStudentAssessments = /* GraphQL */ `
             point
           }
         }
+        singleAnswerAssessment {
+          title
+          question
+          answerChoices
+          correctAnswer
+          explanation
+        }
+        trueFalseAssessment {
+          title
+          question
+          answerChoices
+          correctAnswer
+          explanation
+        }
         published
         status
         course {
@@ -227,6 +337,20 @@ export const listMyStudentAssessments = /* GraphQL */ `
             weight
             point
           }
+        }
+        singleAnswerAssessment {
+          title
+          question
+          answerChoices
+          correctAnswer
+          explanation
+        }
+        trueFalseAssessment {
+          title
+          question
+          answerChoices
+          correctAnswer
+          explanation
         }
         published
         status
@@ -275,5 +399,84 @@ export const getIngestionJob = /* GraphQL */ `
       dataSourceId
       status
     }
+  }
+`;
+
+// User Management Queries
+export const listUsers = /* GraphQL */ `
+  query ListUsers($role: UserRole) {
+    listUsers(role: $role) {
+      id
+      username
+      name
+      email
+      phoneNumber
+      role
+      needsPasswordChange
+      lastLoginAt
+      createdAt
+      createdBy
+      isActive
+    }
+  }
+`;
+
+export const getUser = /* GraphQL */ `
+  query GetUser($username: String!) {
+    getUser(username: $username) {
+      id
+      username
+      name
+      email
+      phoneNumber
+      role
+      needsPasswordChange
+      lastLoginAt
+      createdAt
+      createdBy
+      isActive
+    }
+  }
+`;
+
+export const getCurrentUser = /* GraphQL */ `
+  query GetCurrentUser {
+    getCurrentUser {
+      id
+      username
+      name
+      email
+      phoneNumber
+      role
+      needsPasswordChange
+      lastLoginAt
+      createdAt
+      createdBy
+      isActive
+    }
+  }
+`;
+
+export const previewExcelImport = /* GraphQL */ `
+  query PreviewExcelImport($fileContent: String!) {
+    previewExcelImport(fileContent: $fileContent) {
+      previewData {
+        name
+        username
+        password
+        role
+        email
+      }
+      totalRows
+      validRows
+      invalidRows
+      errors
+    }
+  }
+`;
+
+export const checkPasswordResetToken = /* GraphQL */ `
+  query CheckPasswordResetToken($token: String!) {
+    checkPasswordResetToken(token: $token)
   }
 `;
