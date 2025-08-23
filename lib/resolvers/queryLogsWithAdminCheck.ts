@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT-0
 
 import { util } from '@aws-appsync/utils';
-import { requireAdminPermission, canAccessLogManagement } from '../utils/adminUtils';
-import { AdminPermissionLevel } from '../config/adminConfig';
+import { getUserGroupsFromContext } from '../utils/adminUtils';
+import { hasPermission } from '../config/adminConfig';
 
 /**
  * 日志查询的管理员权限检查 resolver
@@ -11,7 +11,8 @@ import { AdminPermissionLevel } from '../config/adminConfig';
  */
 export function request(ctx) {
   // 检查用户是否有日志管理权限
-  if (!canAccessLogManagement(ctx)) {
+  const groups = getUserGroupsFromContext(ctx);
+  if (!hasPermission(groups, 'ACCESS_LOGS')) {
     util.error('访问日志管理功能需要管理员权限', 'Forbidden');
   }
   

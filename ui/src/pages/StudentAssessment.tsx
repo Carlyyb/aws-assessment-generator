@@ -718,8 +718,8 @@ export default function StudentAssessment() {
             hideLegend
             variant="donut"
             data={[
-              { title: getText('assessment.correct'), value: score! },
-              { title: getText('assessment.incorrect'), value: 100 - score! },
+              { title: getText('components.assessment.correct'), value: score! },
+              { title: getText('components.assessment.incorrect'), value: 100 - score! },
             ]}
             innerMetricValue={`${score}%`}
           />
@@ -766,7 +766,7 @@ export default function StudentAssessment() {
                 </Container>
 
                 {/* 答题区域 */}
-                <Container header={<Header variant="h2">{getText('assessment.answer')}</Header>}>
+                <Container header={<Header variant="h2">{getText('components.assessment.answer')}</Header>}>
                   {assessType === AssessType.freeTextAssessment ? (
                     <FormField label={getText('student.assessments.detail.provide_answer')}>
                       <Textarea

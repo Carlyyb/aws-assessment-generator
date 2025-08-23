@@ -14,11 +14,20 @@ const studentAssessmentsTable = process.env.studentAssessmentsTable!;
 const dynamoClient = new DynamoDBClient({ region });
 
 export const handler: Handler = async (event) => {
+  console.log('PublishAssessment handler called with event:', JSON.stringify(event, null, 2));
+  
   const { assessmentId } = event.ctx.arguments;
   const userId = event.ctx.identity.sub;
+  
+  console.log('Publishing assessment:', { assessmentId, userId });
 
   const { Items: students }: any = await dynamoClient.send(new ScanCommand({ TableName: studentsTable }));
-  if (!students || students.length === 0) return;
+  if (!students || students.length === 0) {
+    console.log('No students found in students table');
+    return false;
+  }
+
+  console.log(`Found ${students.length} students`);
 
   // noinspection TypeScriptValidateTypes
   await dynamoClient.send(
@@ -46,14 +55,16 @@ export const handler: Handler = async (event) => {
     })
   );
 
+  console.log('Student assessment records created');
+
   // noinspection TypeScriptValidateTypes
-  await dynamoClient.send(
+  const updateResult = await dynamoClient.send(
     new UpdateItemCommand({
       TableName: assessmentsTable,
       Key: { id: { S: assessmentId }, userId: { S: userId } },
       UpdateExpression: 'set published = :published, #st = :status',
       ExpressionAttributeValues: {
-        ':published': { BOOL: 'true' },
+        ':published': { BOOL: true },
         ':status': { S: AssessStatus.PUBLISHED },
       },
       ExpressionAttributeNames: {
@@ -62,4 +73,9 @@ export const handler: Handler = async (event) => {
       ReturnValues: 'ALL_NEW',
     } as any)
   );
+
+  console.log('Assessment updated:', JSON.stringify(updateResult, null, 2));
+  
+  return true;
 };
+ 

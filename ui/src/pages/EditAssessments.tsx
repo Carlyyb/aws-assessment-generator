@@ -147,6 +147,7 @@ export default () => {
   // 加载评估数据 - 只在组件挂载时执行一次
   useEffect(() => {
     if (!params.id) return;
+    let cancelled = false; // 防止卸载后继续设置状态
     
     client
       .graphql<any>({ query: getAssessment, variables: { id: params.id } })
@@ -154,6 +155,7 @@ export default () => {
         const result = data.getAssessment;
         if (!result) throw new Error();
         const { updatedAt, ...content } = removeTypenames(result);
+        if (cancelled) return;
         dispatch({ type: ActionTypes.Put, content }); // 直接调用 dispatch，避免循环依赖
         
         // 设置面包屑覆盖，使测试名称显示在面包屑中
@@ -164,7 +166,12 @@ export default () => {
         setIsDataLoaded(true); // 标记数据已加载
       })
       .catch(() => {});
-  }, [params.id, setOverride]); // 添加必要的依赖
+    return () => {
+      cancelled = true;
+    };
+    // 注意：不要把 setOverride 放入依赖，否则其引用变化会导致重复拉取与刷新
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id]);
 
   // 组件卸载时清理面包屑覆盖
   useEffect(() => {
@@ -173,14 +180,16 @@ export default () => {
         removeOverride(`/edit-assessment/${params.id}`);
       }
     };
-  }, [params.id, removeOverride]);
+    // 注意：不将 removeOverride 放入依赖，避免其引用变化导致重复注册清理函数
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id]);
 
   // 监听页面离开事件
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         event.preventDefault();
-        event.returnValue = '您有未保存的更改，确定要离开吗？';
+        //event.returnValue = '您有未保存的更改，确定要离开吗？';
         return '您有未保存的更改，确定要离开吗？';
       }
     };

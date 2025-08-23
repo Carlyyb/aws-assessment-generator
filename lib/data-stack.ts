@@ -614,6 +614,14 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    // 创建 listAllAssessments 解析器 - 管理员查看所有评估
+    assessmentsDs.createResolver('QueryListAllAssessmentsResolver', {
+      typeName: 'Query',
+      fieldName: 'listAllAssessments',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/listAllAssessments.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     // 学生查看已发布测试的resolver
     assessmentsDs.createResolver('QueryListPublishedAssessmentsResolver', {
       typeName: 'Query',
@@ -807,7 +815,7 @@ export class DataStack extends NestedStack {
     const publishAssessmentDs = api.addLambdaDataSource('PublishAssessmentDataSource', publishFn);
 
     publishAssessmentDs.createResolver('PublishAssessmentResolver', {
-      typeName: 'Query',
+    typeName: 'Mutation',
       fieldName: 'publishAssessment',
       code: aws_appsync.Code.fromAsset('lib/resolvers/publishAssessment.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,

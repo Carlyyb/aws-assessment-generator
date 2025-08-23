@@ -17,7 +17,7 @@ import {
 } from '@cloudscape-design/components';
 import { useParams, useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
-import { getAssessment, listCourses } from '../graphql/queries';
+import { getAssessment, listCourses, listStudentGroups } from '../graphql/queries';
 import { upsertAssessment } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { ExtendedAssessment, addAssessmentDefaults } from '../types/ExtendedTypes';
@@ -33,7 +33,7 @@ interface Course {
 interface StudentGroup {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   color: string;
 }
 
@@ -92,14 +92,20 @@ const AssessmentSettings = () => {
       });
       
       setCourses((coursesResponse as any).data.listCourses || []);
-      
-      // 模拟学生分组数据（实际情况应该从API获取）
-      setAvailableGroups([
-        { id: 'ALL', name: '所有学生', description: '包含所有学生的默认分组', color: '#0073bb' },
-        { id: 'group-1', name: '高级班', description: '高级学生分组', color: '#28a745' },
-        { id: 'group-2', name: '基础班', description: '基础学生分组', color: '#dc3545' },
-        { id: 'group-3', name: '实验班', description: '实验学生分组', color: '#ffc107' }
-      ]);
+
+      // 加载学生分组（真实API）
+      const groupsResponse = await client.graphql({
+        query: listStudentGroups
+      });
+      const groups = (
+        (groupsResponse as { data?: { listStudentGroups?: StudentGroup[] } }).data?.listStudentGroups || []
+      ) as StudentGroup[];
+      // 确保至少包含默认分组
+      const hasAll = groups.some(g => g.id === 'ALL');
+      const normalizedGroups: StudentGroup[] = hasAll
+        ? groups
+        : [{ id: 'ALL', name: '所有学生', description: '系统默认分组，包含所有学生', color: '#0073bb' }, ...groups];
+      setAvailableGroups(normalizedGroups);
       
     } catch (error) {
       console.error('Failed to load assessment data:', error);
@@ -121,8 +127,21 @@ const AssessmentSettings = () => {
     
     setSaving(true);
     try {
-      const updatedAssessment = {
-        ...assessment,
+      // 仅构造 GraphQL AssessmentInput 允许的字段
+      const baseAssessment = {
+        id: assessment.id,
+        name: assessment.name,
+        courseId: assessment.courseId,
+        lectureDate: assessment.lectureDate,
+        deadline: assessment.deadline,
+        assessType: assessment.assessType,
+        multiChoiceAssessment: assessment.multiChoiceAssessment,
+        freeTextAssessment: assessment.freeTextAssessment,
+        trueFalseAssessment: assessment.trueFalseAssessment,
+        singleAnswerAssessment: assessment.singleAnswerAssessment,
+        published: assessment.published,
+        status: assessment.status,
+        // 扩展设置字段（schema 已支持）
         timeLimited,
         timeLimit: parseInt(timeLimit, 10),
         allowAnswerChange,
@@ -130,11 +149,7 @@ const AssessmentSettings = () => {
         courses: Array.from(selectedCourses),
         attemptLimit: parseInt(attemptLimit, 10),
         scoreMethod
-      };
-
-      // 移除扩展类型字段，只保留基础Assessment字段
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { course, ...baseAssessment } = updatedAssessment;
+  };
       
       await client.graphql({
         query: upsertAssessment,

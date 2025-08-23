@@ -165,7 +165,8 @@
       "free_text": "Free Text",
       "edit_answers": "Edit Answers",
       "choose_answer": "Choose Correct Answer",
-      "choose_multiple_answers": "Choose Multiple Correct Answers (at least 2)"
+      "choose_multiple_answers": "Choose Multiple Correct Answers (at least 2)",
+      "question_number":"Question {number}"
     }
   },
   "teachers": {

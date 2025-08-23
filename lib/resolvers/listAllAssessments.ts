@@ -4,13 +4,6 @@
 import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
-  // 检查用户权限 - 只有管理员和超级管理员可以访问
-  const groups = ctx.identity['cognito:groups'] || [];
-  const isAdmin = groups.includes('admin') || groups.includes('super_admin');
-  
-  if (!isAdmin) {
-    util.error('Access denied. Only administrators can list all assessments.', 'Unauthorized');
-  }
 
   // 管理员可以查看所有评估，不需要用户过滤
   return {
@@ -20,6 +13,7 @@ export function request(ctx) {
 }
 
 export function response(ctx) {
+  console.log("listAllAssessments", ctx);
   // 检查是否有错误
   if (ctx.error) {
     util.error(ctx.error.message, ctx.error.type);

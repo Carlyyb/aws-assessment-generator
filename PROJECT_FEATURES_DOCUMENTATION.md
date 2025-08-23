@@ -8,6 +8,46 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ## 最新更新记录
 
+### 2025-08-23: EditAssessments 无限刷新与 i18n 日志刷屏修复
+
+- 功能名称：编辑试卷页面无限刷新修复
+- 功能描述：修复 `EditAssessments` 页面因副作用依赖不当导致的重复拉取 assessment 数据、页面不断刷新以及控制台持续输出 i18n 缺失日志的问题。
+- 技术细节：
+  - 调整数据加载 `useEffect` 依赖：从 `[params.id, setOverride]` 精简为 `[params.id]`，避免 `setOverride` 引用变化触发重复请求。
+  - 增加 `cancelled` 守卫，防止组件卸载后继续 `setState` 引发的异常重渲染。
+  - 清理面包屑覆盖的 `useEffect` 同步精简依赖，避免重复注册/清理。
+- 影响范围：`ui/src/pages/EditAssessments.tsx`
+- 已知问题与限制：若外部 context 提供的 `setOverride/removeOverride` 引用在运行时频繁变化，仍建议保持其稳定性；当前前端已规避此问题。
+- 版本控制：v1.9.1
+- 未来扩展：引入请求层去抖或缓存策略，进一步降低不必要的网络请求。
+
+### 2025-08-23: Assessment 设置页保存输入修复与学生分组 API 对接
+
+- 功能名称：Assessment 设置保存修复 & 学生分组真实 API 对接
+- 功能描述：
+  - 修复 AssessmentSettings 页面保存时报错 “The variables input contains a field that is not defined for input object type 'AssessmentInput'”。
+  - 移除前端模拟分组数据，改为调用后端 `listStudentGroups` 查询，展示真实的学生分组（包含系统默认分组 ALL）。
+- 输入/输出：
+  - 输入：AssessmentInput（仅包含 schema 中允许的字段：id、name、courseId、lectureDate、deadline、assessType、各题型、published、status、timeLimited、timeLimit、allowAnswerChange、studentGroups、courses、attemptLimit、scoreMethod）。
+  - 输出：Assessment（保持既有字段）。
+  - 分组查询输出：`[StudentGroup]`，含 id、name、description、color、createdBy、teachers、students、createdAt。
+- 使用示例：
+  - 前端：`ui/src/pages/AssessmentSettings.tsx` 在保存时仅构造允许的 AssessmentInput 字段；加载时调用 `listStudentGroups` 获取分组列表。
+- 依赖关系：
+  - GraphQL Schema：`lib/schema.graphql`（AssessmentInput 已包含扩展字段；Query 含 `listStudentGroups`）。
+  - Resolvers：`lib/resolvers/listStudentGroups.ts`；Lambda：`lib/lambdas/userManagement.ts`（operation: listStudentGroups）。
+  - 基础设施：`lib/data-stack.ts` 已将 `listStudentGroups` 绑定到 Lambda 数据源，并配置 StudentGroups 表权限。
+- 已知问题与限制：
+  - `listStudentGroups` 需管理员/超级管理员/教师角色方可访问；无权限将返回错误。
+  - `ui/src/graphql/queries.ts` 的 `getAssessment` 未选择扩展字段，前端通过默认值填充；如需显示已保存的扩展字段，可在未来调整查询选择集。
+- 版本控制：v1.9.0
+  - 变动日志：
+    - 修复保存时 AssessmentInput 字段越界导致的 GraphQL 变量校验错误。
+    - AssessmentSettings 对接真实分组查询 API，移除模拟数据。
+- 未来扩展：
+  - 在 `getAssessment` 查询中选择扩展设置字段，以在编辑时回显已保存设置。
+  - 分组选择支持搜索、按教师过滤等能力。
+
 ### 2025-08-23: 多选题AI生成强化约束
 
 - **功能描述**：强化多选题AI生成的约束条件，确保AI必须为每道多选题生成至少2个正确答案

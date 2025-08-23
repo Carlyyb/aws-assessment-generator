@@ -168,7 +168,8 @@
       "free_text": "自由文本",
       "edit_answers": "编辑答案",
       "choose_answer": "选择正确答案",
-      "choose_multiple_answers": "选择多个正确答案（至少选择2个）"
+      "choose_multiple_answers": "选择多个正确答案（至少选择2个）",
+      "question_number":"第 {number} 题"
     }
   },
   "teachers": {
