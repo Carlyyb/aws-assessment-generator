@@ -401,6 +401,13 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    classManagementDs.createResolver('MutationUpdateClassPermissionsResolver', {
+      typeName: 'Mutation',
+      fieldName: 'updateClassPermissions',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/class.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     /////////// Courses
 
     const coursesTable = new aws_dynamodb.TableV2(this, 'CoursesTable', {

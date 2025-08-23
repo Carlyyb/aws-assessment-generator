@@ -170,14 +170,15 @@ type ExcelImportResult {
   errors: [String!]!
 }
 
+# 学生分组类型（用于教学管理，如按能力分组、临时学习小组等）
 type StudentGroup {
   id: ID!
   name: String!
   description: String
   color: String!
   createdBy: String!
-  teachers: [String!]!
-  students: [String!]!
+  teachers: [String!]! # 管理该分组的教师列表
+  students: [String!]! # 分组内的学生ID列表
   createdAt: AWSDateTime!
 }
 
@@ -199,6 +200,7 @@ type Class @model @auth(rules: [
   name: String!
   description: String
   teacherId: String! @index
+  accessibleTeachers: [String!]! # 可访问此班级的老师用户名列表
   students: [Student] @hasMany
   createdAt: AWSDateTime!
   updatedAt: AWSDateTime!
@@ -207,11 +209,17 @@ type Class @model @auth(rules: [
 input CreateClassInput {
   name: String!
   description: String
+  accessibleTeachers: [String!]
+}
+
+input UpdateClassPermissionsInput {
+  classId: ID!
+  accessibleTeachers: [String!]!
 }
 
 input AddStudentToClassInput {
   classId: ID!
-  studentEmail: String!
+  studentIdentifier: String!  # 支持姓名或用户名搜索
 }
 
 type AssessTemplate {
@@ -464,6 +472,7 @@ type Mutation {
   # 班级管理mutations
   createClass(input: CreateClassInput!): Class
   updateClass(id: ID!, input: CreateClassInput!): Class
+  updateClassPermissions(input: UpdateClassPermissionsInput!): Class
   deleteClass(id: ID!): Boolean
   addStudentToClass(input: AddStudentToClassInput!): Class
   removeStudentFromClass(classId: ID!, studentId: ID!): Class

@@ -27,7 +27,17 @@ interface Class {
   id: string;
   name: string;
   description: string;
+  teacherId: string;
+  accessibleTeachers: string[];
   students: Student[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Teacher {
+  username: string;
+  name: string;
+  email?: string;
 }
 
 const client = generateClient();
@@ -37,14 +47,35 @@ export default function ClassManagement() {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [isCreateModalVisible, setCreateModalVisible] = useState(false);
   const [isAddStudentModalVisible, setAddStudentModalVisible] = useState(false);
+  const [isPermissionsModalVisible, setPermissionsModalVisible] = useState(false);
   const [newClassName, setNewClassName] = useState('');
   const [newClassDescription, setNewClassDescription] = useState('');
   const [newStudentEmail, setNewStudentEmail] = useState('');
+  const [availableTeachers, setAvailableTeachers] = useState<Teacher[]>([]);
+  const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
   const dispatchAlert = useContext(DispatchAlertContext);
 
   useEffect(() => {
     loadClasses();
+    loadTeachers();
   }, []);
+
+  const loadTeachers = async () => {
+    try {
+      const response = await client.graphql<any>({
+        query: `query ListTeachers {
+          listUsers(role: teachers) {
+            username
+            name
+            email
+          }
+        }`
+      });
+      setAvailableTeachers(response.data.listUsers);
+    } catch (error) {
+      console.error('Error loading teachers:', error);
+    }
+  };
 
   const loadClasses = async () => {
     try {
@@ -54,6 +85,10 @@ export default function ClassManagement() {
             id
             name
             description
+            teacherId
+            accessibleTeachers
+            createdAt
+            updatedAt
             students {
               id
               name
@@ -143,6 +178,47 @@ export default function ClassManagement() {
     }
   };
 
+  const handleUpdatePermissions = async () => {
+    if (!selectedClass) return;
+
+    try {
+      await client.graphql<any>({
+        query: `mutation UpdateClassPermissions($input: UpdateClassPermissionsInput!) {
+          updateClassPermissions(input: $input) {
+            id
+            name
+            accessibleTeachers
+          }
+        }`,
+        variables: {
+          input: {
+            classId: selectedClass.id,
+            accessibleTeachers: selectedTeachers,
+          },
+        },
+      });
+
+      setPermissionsModalVisible(false);
+      setSelectedTeachers([]);
+      loadClasses();
+      dispatchAlert({
+        type: AlertType.SUCCESS,
+        content: getText('teachers.class.update_permissions_success'),
+      });
+    } catch (error) {
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: getText('teachers.class.update_permissions_error'),
+      });
+    }
+  };
+
+  const openPermissionsModal = (classItem: Class) => {
+    setSelectedClass(classItem);
+    setSelectedTeachers(classItem.accessibleTeachers || []);
+    setPermissionsModalVisible(true);
+  };
+
   return (
     <SpaceBetween size="l">
       <Container
@@ -183,14 +259,22 @@ export default function ClassManagement() {
               id: 'actions',
               header: getText('common.actions.title'),
               cell: item => (
-                <Button
-                  onClick={() => {
-                    setSelectedClass(item);
-                    setAddStudentModalVisible(true);
-                  }}
-                >
-                  {getText('teachers.class.add_student')}
-                </Button>
+                <SpaceBetween direction="horizontal" size="xs">
+                  <Button
+                    onClick={() => {
+                      setSelectedClass(item);
+                      setAddStudentModalVisible(true);
+                    }}
+                  >
+                    {getText('teachers.class.add_student')}
+                  </Button>
+                  <Button
+                    variant="normal"
+                    onClick={() => openPermissionsModal(item)}
+                  >
+                    {getText('teachers.class.manage_permissions')}
+                  </Button>
+                </SpaceBetween>
               ),
             },
           ]}
@@ -278,6 +362,83 @@ export default function ClassManagement() {
               value={newStudentEmail}
               onChange={({ detail }) => setNewStudentEmail(detail.value)}
               type="email"
+            />
+          </FormField>
+        </Form>
+      </Modal>
+
+      <Modal
+        visible={isPermissionsModalVisible}
+        onDismiss={() => setPermissionsModalVisible(false)}
+        header={getText('teachers.class.manage_permissions')}
+        size="medium"
+      >
+        <Form
+          actions={
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button
+                variant="link"
+                onClick={() => setPermissionsModalVisible(false)}
+              >
+                {getText('common.actions.cancel')}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleUpdatePermissions}
+              >
+                {getText('common.actions.save')}
+              </Button>
+            </SpaceBetween>
+          }
+        >
+          <FormField
+            label={getText('teachers.class.accessible_teachers')}
+            description={getText('teachers.class.accessible_teachers_description')}
+          >
+            <Table
+              columnDefinitions={[
+                {
+                  id: 'select',
+                  header: '',
+                  cell: (teacher) => (
+                    <input
+                      type="checkbox"
+                      checked={selectedTeachers.includes(teacher.username)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedTeachers([...selectedTeachers, teacher.username]);
+                        } else {
+                          setSelectedTeachers(selectedTeachers.filter(t => t !== teacher.username));
+                        }
+                      }}
+                    />
+                  ),
+                  width: 50,
+                },
+                {
+                  id: 'name',
+                  header: getText('common.name'),
+                  cell: (teacher) => teacher.name,
+                },
+                {
+                  id: 'username',
+                  header: getText('common.username'),
+                  cell: (teacher) => teacher.username,
+                },
+                {
+                  id: 'email',
+                  header: getText('common.email'),
+                  cell: (teacher) => teacher.email || '-',
+                },
+              ]}
+              items={availableTeachers}
+              empty={
+                <Box textAlign="center" color="inherit">
+                  <TextContent>
+                    <p>{getText('teachers.class.no_teachers')}</p>
+                  </TextContent>
+                </Box>
+              }
             />
           </FormField>
         </Form>
