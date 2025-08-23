@@ -475,7 +475,8 @@
         "question_number": "Question {number}",
         "question_progress": "Question {current} of {total}",
         "skip_to": "Skip to {title}",
-        "delete_question": "Delete this Question"
+        "delete_question": "Delete this Question",
+        "add_question": "Add Question"
       }
     },
     "section": {
@@ -488,7 +489,8 @@
         "courses": "Courses",
         "log-management": "Log Management",
         "find-student": "Find Student",
-        "student-list": "Student List"
+        "student-list": "Student List",
+        "user-management": "User Management"
       },
       "assessments": "Assessment",
       "settings": "Settings",
@@ -518,7 +520,40 @@
     },
     "assessment": {
       "title": "Assessment",
-      "current": "Current Assessment"
+      "current": "Current Assessment",
+      "preview": {
+        "mode": "Preview Mode",
+        "teacher_mode": "🎭 Teacher Preview Mode",
+        "timer_note": "(In preview mode, timer works normally but no data is saved)",
+        "description": "This is preview mode, all operations will not be saved to database",
+        "back_to_management": "Back to Assessment Management",
+        "no_data_saved": "Note: This is only a preview, no data saved",
+        "failed_to_load": "Preview mode: Failed to load assessment data",
+        "time_up": "Preview mode - Time's up! Simulated score: {score} points (Note: This is only a preview, no data saved)",
+        "completed": "Preview mode completed! Simulated score: {score} points (Note: This is only a preview, no data saved)",
+        "start_assessment": "Preview Mode - Start Assessment",
+        "confirm_submit": "Preview Mode - Confirm Submit",
+        "simulated_result": "Preview Mode - Simulated Result"
+      },
+      "start": {
+        "title": "Start Assessment",
+        "waiting": "Waiting to Start",
+        "confirm": "Confirm Start",
+        "time_limit_info": "This assessment is time-limited to {timeLimit} minutes",
+        "note": "Cannot pause after starting, please ensure you have enough time to complete"
+      },
+      "submit": {
+        "title": "Confirm Submit",
+        "completed": "Completed {count}/{total} questions",
+        "unanswered": "Unanswered questions: {questions}",
+        "warning": "Cannot modify answers after submission, are you sure to submit?"
+      },
+      "timer": {
+        "remaining": "Time Remaining",
+        "elapsed": "Time Elapsed",
+        "time_up": "Time's up!",
+        "warning_5min": "You have 5 minutes left, please hurry up to complete the assessment."
+      }
     },
     "review": {
       "title": "Review Assessment",
@@ -550,6 +585,7 @@
         "skip_to": "Skip to {title}",
         "provide_answer": "Provide:",
         "choose_answer": "Choose:",
+        "choose_multiple_answers": "Please choose multiple answers (you may select multiple options):",
         "grading": "Grading..."
       },
       "review": {
@@ -634,6 +670,16 @@
     },
     "permission": {
       "required": "Only teachers can create custom themes"
+    }
+  },
+  "assessment": {
+    "choose_multiple_answers": "",
+    "explanation": "",
+    "edit_answers": ""
+  },
+  "pages": {
+    "edit_assessments": {
+      "question_number": ""
     }
   }
 }
