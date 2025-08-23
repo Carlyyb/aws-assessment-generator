@@ -8,6 +8,7 @@ import {
   SideNavigation,
   TopNavigation,
 } from '@cloudscape-design/components';
+import '@cloudscape-design/global-styles/index.css';
 import './styles/high-contrast.css';
 import './styles/cross-browser.css';
 import './styles/theme.css';
@@ -141,7 +142,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
             <RoutesContext.Provider value={routes}>
             <I18nProvider locale={LOCALE} messages={[messages]}>
               <Notifications />
-              {/* 应用主题样式到整个应用框架 */}
+              {/* 应用现代化Cloudscape主题样式到整个应用框架 */}
               <div 
                 style={{
                   '--theme-primary-color': currentTheme.primaryColor,
@@ -149,6 +150,8 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
                   '--theme-background-color': currentTheme.backgroundColor,
                   '--theme-text-color': currentTheme.textColor,
                 } as React.CSSProperties}
+                data-theme={currentTheme.id === 'dark' ? 'dark' : 'light'}
+                className="cloudscape-modern-theme"
               >
                 <div id="h" style={{ position: 'relative' }} data-has-logo={globalLogo ? 'true' : 'false'}>
                   <TopNavigation
