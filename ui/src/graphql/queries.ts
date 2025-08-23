@@ -368,11 +368,6 @@ export const listMyStudentAssessments = /* GraphQL */ `
     }
   }
 `;
-export const publishAssessment = /* GraphQL */ `
-  query PublishAssessment($assessmentId: ID!) {
-    publishAssessment(assessmentId: $assessmentId)
-  }
-`;
 export const generateAssessment = /* GraphQL */ `
   query GenerateAssessment($input: GenerateAssessmentInput) {
     generateAssessment(input: $input)

@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useState, useReducer, useEffect, useContext, useCallback } from 'react';
+import { useState, useReducer, useEffect, useContext, useCallback, useMemo } from 'react';
 import { Wizard, AppLayout, Button, SpaceBetween, Box, Header, Container, Modal, Alert } from '@cloudscape-design/components';
 import { useParams, useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
@@ -271,7 +271,7 @@ export default () => {
             </Box>
             <Box>
               <strong>题目数量：</strong>
-              <Box variant="span">{getQuestions().length} 题</Box>
+              <Box variant="span">{questions.length} 题</Box>
             </Box>
             <Box>
               <strong>题目类型：</strong>
@@ -298,18 +298,15 @@ export default () => {
     // 调用原始的更新函数
     updateAssessment(action);
     
-    // 如果是添加操作，在状态更新后跳转到新添加的题目
+    // 如果是添加操作，跳转到新添加的题目
     if (action.type === ActionTypes.Add) {
-      // 使用 setTimeout 确保状态更新完成后再设置 activeStepIndex
-      setTimeout(() => {
-        const currentQuestions = getQuestions();
-        setActiveStepIndex(currentQuestions.length - 1); // 新题目的索引
-      }, 0);
+      // 新题目将被添加到数组末尾，所以索引是当前长度
+      setActiveStepIndex(questions.length); // questions.length 即为新题目的索引
     }
   };
 
   // 处理添加新题目
-  const handleAddQuestion = (newQuestion: any, questionType: AssessType) => {
+  const handleAddQuestion = (newQuestion: MultiChoice | FreeText | SingleAnswer | TrueFalse, questionType: AssessType) => {
     wrappedUpdateAssessment({
       type: ActionTypes.Add,
       content: newQuestion,
@@ -318,7 +315,8 @@ export default () => {
     setShowAddQuestionModal(false);
   };
 
-  const getQuestions = () => {
+  // 使用 useMemo 缓存题目列表，避免不必要的重新计算
+  const questions = useMemo(() => {
     if (!assessment || !assessment.assessType) return [];
     
     switch (assessment.assessType) {
@@ -333,9 +331,9 @@ export default () => {
       default:
         return [];
     }
-  };
+  }, [assessment]);
 
-  const steps = getQuestions().map((q) => ({
+  const steps = questions.map((q: MultiChoice | FreeText | SingleAnswer | TrueFalse) => ({
       title: q.title,
       content:
         assessment.assessType === AssessType.multiChoiceAssessment ? (    // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断
@@ -371,6 +369,7 @@ export default () => {
               onSubmit={() => {
                 const { course, ...inputAssessment } = assessment;
                 client
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   .graphql<any>({ query: upsertAssessment, variables: { input: inputAssessment } })
                   .then(() => {
                     setHasUnsavedChanges(false);

@@ -247,6 +247,12 @@ export const unpublishAssessment = /* GraphQL */ `
   }
 `;
 
+export const publishAssessment = /* GraphQL */ `
+  mutation PublishAssessment($assessmentId: ID!) {
+    publishAssessment(assessmentId: $assessmentId)
+  }
+`;
+
 // User Management Mutations
 export const batchCreateUsersMutation = /* GraphQL */ `
   mutation BatchCreateUsers($users: [BatchUserInput!]!) {

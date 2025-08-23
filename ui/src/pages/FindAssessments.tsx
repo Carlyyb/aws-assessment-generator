@@ -18,8 +18,8 @@ import {
 } from '@cloudscape-design/components';
 import { useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
-import { listAssessments, publishAssessment } from '../graphql/queries';
-import { deleteAssessment, unpublishAssessment } from '../graphql/mutations';
+import { listAssessments } from '../graphql/queries';
+import { deleteAssessment, unpublishAssessment, publishAssessment } from '../graphql/mutations';
 import { Assessment, AssessStatus } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { getText } from '../i18n/lang';

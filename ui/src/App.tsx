@@ -174,13 +174,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
                   />
                   {/* 自定义Logo显示区域 */}
                   {(() => {
-                    console.log('🔍 Logo Debug Info:', {
-                      hasGlobalLogo: !!globalLogo,
-                      globalLogoLength: globalLogo?.length,
-                      globalLogoPreview: globalLogo?.substring(0, 50) + '...',
-                      logoType: globalLogo?.startsWith('data:') ? 'base64' : 'url'
-                    });
-                    return null;
+                    if (!globalLogo) return null;
                   })()}
                   {globalLogo ? (
                     <div className="custom-logo-container">
