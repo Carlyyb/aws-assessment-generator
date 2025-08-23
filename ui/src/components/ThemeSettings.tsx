@@ -245,13 +245,28 @@ export const ThemeSettings: React.FC = () => {
                       <img 
                         src={logoUrl} 
                         alt="Logo preview" 
-                        style={{ height: '60px', objectFit: 'contain' }}
+                        style={{ 
+                          height: '60px', 
+                          objectFit: 'contain',
+                          border: '2px solid green' // 临时边框用于调试
+                        }}
+                        onLoad={() => console.log('✅ ThemeSettings logo preview loaded')}
+                        onError={(e) => console.error('❌ ThemeSettings logo preview failed:', e)}
                       />
+                      <div style={{ fontSize: '10px', color: 'blue', marginTop: '5px' }}>
+                        Logo URL: {logoUrl.substring(0, 30)}...
+                      </div>
                     </Box>
                   )}
                   <Button
                     variant="primary"
                     onClick={() => {
+                      console.log('🔍 Saving logo from ThemeSettings:', {
+                        logoUrl: logoUrl.substring(0, 50) + '...',
+                        logoLength: logoUrl.length,
+                        hasLogo: !!logoUrl
+                      });
+                      
                       // 保存全局Logo设置
                       setGlobalLogo(logoUrl);
                       addNotification({

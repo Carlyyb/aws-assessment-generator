@@ -29,6 +29,7 @@ import { Course, AssessStatus, AssessTemplate } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { UserProfileContext } from '../contexts/userProfile';
 import { getText, getTextWithParams } from '../i18n/lang';
+import { getBeijingTimeString } from '../utils/timeUtils';
 
 const client = generateClient();
 
@@ -64,7 +65,7 @@ export default () => {
 
   // 添加日志函数
   const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
+    const timestamp = getBeijingTimeString();
     const logMessage = `[${timestamp}] ${message}`;
     setLogs(prev => [...prev, logMessage]);
     console.log(logMessage); // 同时输出到控制台
@@ -245,15 +246,7 @@ export default () => {
               '• 确保知识库中有足够的文档内容\n' +
               '• 尝试使用更简单的测试模板设置\n' +
               '• 稍后重试，可能是服务暂时繁忙\n' +
-              '• 联系管理员查看详细日志信息\n\n' +
-              `📋 诊断信息：\n` +
-              `• 评估ID: ${assessId}\n` +
-              `• 课程ID: ${course?.value}\n` +
-              `• 文件数量: ${files.length}\n` +
-              `• 自定义学习目标: ${customPrompt.trim() ? '是' : '否'}\n` +
-              `• 测试模板: ${useDefault ? '默认测试模板' : assessTemplate?.label || '未选择'}\n` +
-              `• 时间戳: ${new Date().toISOString()}`;
-            
+              '• 联系管理员查看详细日志信息\n\n';       
             dispatchAlert({ 
               type: AlertType.ERROR, 
               content: errorMessage
@@ -680,9 +673,6 @@ export default () => {
                              log.includes('✅') ? '#28a745' :
                              log.includes('🔍') || log.includes('📋') ? '#007bff' : '#495057'
                     }}>
-                      <span style={{ color: '#6c757d' }}>
-                        [{new Date().toLocaleTimeString()}]
-                      </span>{' '}
                       {log}
                     </div>
                   ))}

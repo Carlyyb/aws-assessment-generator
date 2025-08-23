@@ -456,103 +456,34 @@ export default () => {
                     const isCompletelyCorrupted = errorMessage.includes('所有题目内容为空，数据完全异常');
                     
                     return (
-                      <SpaceBetween size="xs" direction="horizontal">
-                        {hasDataError && (
-                          <Alert type={isCompletelyCorrupted ? "error" : "warning"} statusIconAriaLabel="数据异常">
-                            {isCompletelyCorrupted ? '数据完全损坏，仅可删除' : '此记录存在数据格式问题，建议删除'}
-                          </Alert>
-                        )}
-                        
-                        {isCompletelyCorrupted ? (
-                          <Button
-                            variant="normal"
-                            iconName="remove"
-                            onClick={() => {
-                              setAssessmentToDelete(item);
-                              setShowDeleteModal(true);
-                            }}
-                          >
-                            删除
-                          </Button>
+                      <SpaceBetween size="xs" direction="horizontal" alignItems="center">
+                        {/* 对于失败状态的评估，只显示删除按钮和失败信息 */}
+                        {item.status === AssessStatus.FAILED ? (
+                          <>
+                            <Box variant="small" color="text-status-error">
+                              生成失败
+                            </Box>
+                            <Button
+                              variant="normal"
+                              iconName="remove"
+                              onClick={() => {
+                                setAssessmentToDelete(item);
+                                setShowDeleteModal(true);
+                              }}
+                            >
+                              删除
+                            </Button>
+                          </>
                         ) : (
                           <>
-                            {/* 设置按钮 - 对于已创建的测试 */}
-                            {!hasDataError && item.status === AssessStatus.CREATED && (
-                              <Button
-                                variant="normal"
-                                iconName="settings"
-                                onClick={() => navigate(`/assessment-settings/${item.id}`)}
-                              >
-                                设置
-                              </Button>
+                            {/* 数据异常警告信息 - 以简洁的文本形式显示 */}
+                            {hasDataError && (
+                              <Box variant="small" color={isCompletelyCorrupted ? "text-status-error" : "text-status-warning"}>
+                                {isCompletelyCorrupted ? '数据损坏' : '数据异常'}
+                              </Box>
                             )}
                             
-                            {/* 模拟测试按钮 - 对于已创建且已发布的测试 */}
-                            {!hasDataError && item.status === AssessStatus.CREATED && item.published && (
-                              <Button
-                                variant="normal"
-                                iconName="external"
-                                onClick={() => navigate(`/assessment/${item.id}?preview=true`)}
-                              >
-                                模拟测试
-                              </Button>
-                            )}
-                            
-                            {/* 查看数据按钮 - 已发布或已创建的测试都显示 */}
-                            {!hasDataError && (item.published || item.status === AssessStatus.CREATED) && (
-                              <Button
-                                variant="normal"
-                                iconName="search"
-                                onClick={() => navigate(`/assessment-results/${item.id}`)}
-                              >
-                                {item.published ? '测试结果' : '查看数据'}
-                              </Button>
-                            )}
-                            
-                            {!hasDataError && item.status === AssessStatus.CREATED && (
-                              item.published ? (
-                                <Button
-                                  iconName="status-negative"
-                                  onClick={() => handleUnpublish(item)}
-                                >
-                                  取消发布
-                                </Button>
-                              ) : (
-                                <>
-                                  <Button
-                                    variant="primary"
-                                    iconName="status-positive"
-                                    onClick={() =>
-                                      client
-                                        .graphql<any>({ query: publishAssessment, variables: { assessmentId: item.id } })
-                                        .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.assessments.find.published_successfully') }))
-                                        .then(getAssessments)
-                                        .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.status.error') }))
-                                    }
-                                  >
-                                    {getText('common.actions.publish')}
-                                  </Button>
-                                  <Button
-                                    variant="normal"
-                                    iconName="edit"
-                                    onClick={() => navigate(`/edit-assessment/${item.id}`)}
-                                  >
-                                    编辑试卷
-                                  </Button>
-                                </>
-                              )
-                            )}
-
-                            {!hasDataError && item.status === AssessStatus.PUBLISHED && (
-                              <Button
-                                iconName="status-negative"
-                                onClick={() => handleUnpublish(item)}
-                              >
-                                取消发布
-                              </Button>
-                            )}
-                            
-                            {canDelete(item) && (
+                            {isCompletelyCorrupted ? (
                               <Button
                                 variant="normal"
                                 iconName="remove"
@@ -563,6 +494,97 @@ export default () => {
                               >
                                 删除
                               </Button>
+                            ) : (
+                              <>
+                                {/* 设置按钮 - 对于已创建的测试 */}
+                                {!hasDataError && item.status === AssessStatus.CREATED && (
+                                  <Button
+                                    variant="normal"
+                                    iconName="settings"
+                                    onClick={() => navigate(`/assessment-settings/${item.id}`)}
+                                  >
+                                    设置
+                                  </Button>
+                                )}
+                                
+                                {/* 模拟测试按钮 - 对于已创建且已发布的测试 */}
+                                {!hasDataError && item.status === AssessStatus.CREATED && item.published && (
+                                  <Button
+                                    variant="normal"
+                                    iconName="external"
+                                    onClick={() => navigate(`/assessment/${item.id}?preview=true`)}
+                                  >
+                                    模拟测试
+                                  </Button>
+                                )}
+                                
+                                {/* 查看数据按钮 - 已发布或已创建的测试都显示 */}
+                                {!hasDataError && (item.published || item.status === AssessStatus.CREATED) && (
+                                  <Button
+                                    variant="normal"
+                                    iconName="search"
+                                    onClick={() => navigate(`/assessment-results/${item.id}`)}
+                                  >
+                                    {item.published ? '测试结果' : '查看数据'}
+                                  </Button>
+                                )}
+                                
+                                {!hasDataError && item.status === AssessStatus.CREATED && (
+                                  item.published ? (
+                                    <Button
+                                      iconName="status-negative"
+                                      onClick={() => handleUnpublish(item)}
+                                    >
+                                      取消发布
+                                    </Button>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        variant="primary"
+                                        iconName="status-positive"
+                                        onClick={() =>
+                                          client
+                                            .graphql<any>({ query: publishAssessment, variables: { assessmentId: item.id } })
+                                            .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.assessments.find.published_successfully') }))
+                                            .then(getAssessments)
+                                            .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.status.error') }))
+                                        }
+                                      >
+                                        {getText('common.actions.publish')}
+                                      </Button>
+                                      <Button
+                                        variant="normal"
+                                        iconName="edit"
+                                        onClick={() => navigate(`/edit-assessment/${item.id}`)}
+                                      >
+                                        编辑试卷
+                                      </Button>
+                                    </>
+                                  )
+                                )}
+
+                                {!hasDataError && item.status === AssessStatus.PUBLISHED && (
+                                  <Button
+                                    iconName="status-negative"
+                                    onClick={() => handleUnpublish(item)}
+                                  >
+                                    取消发布
+                                  </Button>
+                                )}
+                                
+                                {canDelete(item) && (
+                                  <Button
+                                    variant="normal"
+                                    iconName="remove"
+                                    onClick={() => {
+                                      setAssessmentToDelete(item);
+                                      setShowDeleteModal(true);
+                                    }}
+                                  >
+                                    删除
+                                  </Button>
+                                )}
+                              </>
                             )}
                           </>
                         )}

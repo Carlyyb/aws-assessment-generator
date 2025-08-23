@@ -84,14 +84,10 @@ function generateDefaultPassword(role: string, username: string): string {
 }
 
 /**
- * 验证密码复杂度 - 8位长度，包含字母和数字
+ * 验证密码复杂度 - 8位长度，包含数字
  */
 function validatePassword(password: string): boolean {
   if (password.length < 8) {
-    return false;
-  }
-  
-  if (!/[a-zA-Z]/.test(password)) {
     return false;
   }
   
@@ -290,7 +286,7 @@ function convertRowToUserInput(row: string[], defaultRole: string, rowIndex: num
   
   // 验证密码（如果提供了密码）
   if (password && password.trim() && !validatePassword(password)) {
-    return { error: `第 ${rowIndex + 1} 行：密码格式错误（至少8位字符，包含字母和数字）` };
+    return { error: `第 ${rowIndex + 1} 行：密码格式错误（至少8位字符，包含数字）` };
   }
   
   const user: any = {

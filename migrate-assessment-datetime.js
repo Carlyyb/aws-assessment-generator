@@ -1,6 +1,6 @@
 /**
  * 数据迁移脚本：将Assessment表中的lectureDate和deadline字段从AWSDate转换为AWSDateTime
- * 这个脚本将现有的日期字段转换为包含时间信息的datetime格式
+ * 这个脚本将现有的日期字段转换为包含时间信息的datetime格式（使用UTC+8北京时间）
  */
 
 const AWS = require('aws-sdk');
@@ -12,6 +12,17 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 
 const TABLE_NAME = 'GenAssessStack-DataStackNestedStackDataStackNestedStackResource8D986F6F-WZN8STT9JLUJ-AssessmentsTable6996196E-1JTSUQZSJTVXK';
 // arn:aws:dynamodb:us-west-2:590771341960:table/GenAssessStack-DataStackNestedStackDataStackNestedStackResource8D986F6F-WZN8STT9JLUJ-AssessmentsTable6996196E-1JTSUQZSJTVXK
+
+/**
+ * 将日期字符串转换为北京时间的ISO字符串
+ * @param {string} dateStr 日期字符串（YYYY-MM-DD格式）
+ * @param {string} timeStr 时间字符串（HH:mm格式）
+ * @returns {string} 北京时间的ISO字符串
+ */
+function toBeijingTimeISO(dateStr, timeStr) {
+  const beijingDateTime = `${dateStr}T${timeStr}:00+08:00`;
+  return new Date(beijingDateTime).toISOString();
+}
 
 async function migrateAssessmentDatetime() {
   console.log('开始迁移Assessment表的datetime字段...');
@@ -37,8 +48,8 @@ async function migrateAssessmentDatetime() {
       
       // 检查lectureDate字段
       if (assessment.lectureDate && !assessment.lectureDate.includes('T')) {
-        // 如果是日期格式（YYYY-MM-DD），转换为datetime格式
-        const lectureDatetime = `${assessment.lectureDate}T09:00:00.000Z`;
+        // 如果是日期格式（YYYY-MM-DD），转换为北京时间datetime格式
+        const lectureDatetime = toBeijingTimeISO(assessment.lectureDate, '09:00');
         updateExpression.push('lectureDate = :lectureDate');
         expressionAttributeValues[':lectureDate'] = lectureDatetime;
         needsUpdate = true;
@@ -47,8 +58,8 @@ async function migrateAssessmentDatetime() {
       
       // 检查deadline字段
       if (assessment.deadline && !assessment.deadline.includes('T')) {
-        // 如果是日期格式（YYYY-MM-DD），转换为datetime格式
-        const deadlineDatetime = `${assessment.deadline}T23:59:00.000Z`;
+        // 如果是日期格式（YYYY-MM-DD），转换为北京时间datetime格式
+        const deadlineDatetime = toBeijingTimeISO(assessment.deadline, '23:59');
         updateExpression.push('deadline = :deadline');
         expressionAttributeValues[':deadline'] = deadlineDatetime;
         needsUpdate = true;

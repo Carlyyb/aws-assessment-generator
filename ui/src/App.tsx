@@ -170,13 +170,38 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
                     ]}
                   />
                   {/* 自定义Logo显示区域 */}
-                  {globalLogo && (
+                  {(() => {
+                    console.log('🔍 Logo Debug Info:', {
+                      hasGlobalLogo: !!globalLogo,
+                      globalLogoLength: globalLogo?.length,
+                      globalLogoPreview: globalLogo?.substring(0, 50) + '...',
+                      logoType: globalLogo?.startsWith('data:') ? 'base64' : 'url'
+                    });
+                    return null;
+                  })()}
+                  {globalLogo ? (
                     <div className="custom-logo-container">
                       <img 
                         src={globalLogo} 
                         alt={getText('common.brand')} 
                         className="custom-logo"
+                        onLoad={() => console.log('✅ Logo loaded successfully')}
+                        onError={(e) => console.error('❌ Logo failed to load:', e)}
+                        style={{ 
+                          border: '2px solid red', // 临时边框用于调试定位
+                          backgroundColor: 'yellow' // 临时背景色用于调试
+                        }}
                       />
+                    </div>
+                  ) : (
+                    <div style={{ 
+                      position: 'absolute', 
+                      left: '16px', 
+                      top: '10px', 
+                      color: 'red', 
+                      fontSize: '12px' 
+                    }}>
+                      No Logo
                     </div>
                   )}
                 </div>

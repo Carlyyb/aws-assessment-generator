@@ -157,10 +157,17 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, userProf
     if (savedGlobalLogo) {
       try {
         const logoConfig = JSON.parse(savedGlobalLogo);
+        console.log('🔍 Loading logo from localStorage:', {
+          savedGlobalLogo: savedGlobalLogo.substring(0, 100) + '...',
+          logoConfig,
+          logoUrl: logoConfig.logoUrl?.substring(0, 50) + '...'
+        });
         setGlobalLogoState(logoConfig.logoUrl || '');
       } catch (error) {
-        console.error('Error loading global logo:', error);
+        console.error('❌ Error loading global logo:', error);
       }
+    } else {
+      console.log('🔍 No saved logo found in localStorage');
     }
 
     // 从云端加载最新设置
@@ -169,13 +176,25 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, userProf
 
   // 设置全局Logo并保存到云端
   const setGlobalLogo = async (logoUrl: string) => {
+    console.log('🔍 Setting global logo:', {
+      logoLength: logoUrl.length,
+      logoPreview: logoUrl.substring(0, 50) + '...',
+      logoType: logoUrl.startsWith('data:') ? 'base64' : 'url'
+    });
+    
     setGlobalLogoState(logoUrl);
     const logoConfig: GlobalLogoConfig = {
       logoUrl,
       lastUpdated: new Date().toISOString(),
       updatedBy: userProfile?.email || 'unknown',
     };
-    localStorage.setItem('globalLogo', JSON.stringify(logoConfig));
+    
+    const logoConfigString = JSON.stringify(logoConfig);
+    localStorage.setItem('globalLogo', logoConfigString);
+    console.log('✅ Logo saved to localStorage:', {
+      configLength: logoConfigString.length,
+      updatedBy: logoConfig.updatedBy
+    });
     
     // 保存到云端
     try {

@@ -8,6 +8,39 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ## 最新更新记录
 
+### 2025-08-23: 用户登录时间记录功能
+
+- **功能描述**：实现用户登录时自动记录最后登录时间到用户表的 `lastLoginAt` 字段
+- **实现方式**：
+  - 使用 AWS Cognito PostAuthentication 触发器
+  - 在用户成功登录后自动执行 `postAuthentication` Lambda 函数
+  - 根据用户角色更新对应的数据表（Users表或Students表）
+- **技术实现**：
+  - **Lambda 函数** (`lib/lambdas/postAuthentication.ts`)：
+    - 监听 Cognito PostAuthentication 事件
+    - 获取用户ID和角色信息
+    - 使用北京时间格式记录登录时间
+    - 分别处理学生和其他用户的数据更新
+  - **权限配置** (`lib/auth-stack.ts`)：
+    - Lambda 具有 DynamoDB UpdateItem 权限
+    - 可访问所有 gen-assess 相关表
+    - 通过 SSM Parameter Store 获取表名
+  - **错误处理**：
+    - 使用条件表达式确保记录存在才更新
+    - 记录详细日志用于调试
+    - 错误不会阻止用户登录流程
+- **数据库字段**：
+  - `lastLoginAt`: AWSDateTime 类型，记录最后登录时间
+  - 使用 `createTimestamp()` 函数生成标准时间格式
+- **影响范围**：
+  - 所有用户登录时自动触发
+  - 支持学生和教师/管理员的不同表结构
+  - 提供用户活跃度统计基础数据
+- **调试功能**：
+  - Lambda 函数包含详细的日志记录
+  - 记录用户ID、角色和登录时间
+  - 区分成功更新和记录不存在的情况
+
 ### 2025-08-23: i18n 国际化文本缺失修复
 
 - **功能描述**：修复了编辑测试页面和学生测试页面中 i18n 文本缺失导致的错误和页面重复刷新问题
@@ -46,6 +79,64 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
   - 消除硬编码文本，提高代码维护性
   - 解决页面重复渲染问题
 - **影响范围**：修复影响所有使用 listAssessments 查询的页面，以及编辑测试和学生测试页面的用户体验
+
+### 2025-08-23: 编辑测试页面功能修复
+
+- **功能描述**：全面修复 EditAssessments 页面的多个功能问题，提升用户体验
+- **修复内容**：
+  1. **移除特定 AWS UI CSS 类**：
+     - 在 `ui/src/index.css` 中添加 CSS 规则隐藏以下类：
+       - `awsui_trigger-wrapper_hyvsj_zz5e8_1289`
+       - `awsui_show-tools_hyvsj_zz5e8_1108` 
+       - `awsui_has-tools-form_hyvsj_zz5e8_1086`
+     - 使用 `display: none !important` 强制隐藏
+  
+  2. **修复右侧工具栏空白问题**：
+     - 为 `AppLayout` 添加 `tools` 属性，提供丰富的工具栏内容
+     - 工具栏包含：快速操作按钮、评估信息展示、未保存更改提醒
+     - 添加 `toolsOpen` 和 `onToolsChange` 状态管理
+     - 设置 `toolsWidth={300}` 指定工具栏宽度
+  
+  3. **解决无限刷新问题**：
+     - 修复 `useEffect` 依赖数组，避免 `updateAssessment` 函数引起的循环
+     - 直接使用 `dispatch` 避免循环依赖：`dispatch({ type: ActionTypes.Put, content })`
+     - 添加 `isDataLoaded` 状态标记，确保只有数据加载后才标记为有更改
+     - 将依赖数组修改为 `[params.id, setOverride]`
+  
+  4. **添加未保存更改提醒**：
+     - 实现 `hasUnsavedChanges` 状态跟踪修改
+     - 添加 `beforeunload` 事件监听，页面关闭时提醒
+     - 创建自定义导航拦截器 `handleNavigation`
+     - 提供未保存更改确认对话框，支持：
+       - 保存并离开
+       - 放弃更改
+       - 取消导航
+
+- **新增功能组件**：
+  - **工具栏内容** (`renderToolsPanel`)：
+    - 快速操作：添加题目、保存评估、返回列表
+    - 评估信息：名称、题目数量、题目类型
+    - 状态提示：未保存更改警告
+  - **保存功能** (`handleSaveAssessment`)：
+    - 异步保存评估数据
+    - 更新 `hasUnsavedChanges` 状态
+    - 显示成功/错误提示
+  - **导航拦截**：
+    - `handleNavigation` - 检查未保存更改
+    - `handleDiscardChanges` - 确认放弃更改
+    - `handleCancelNavigation` - 取消导航
+
+- **技术改进**：
+  - 使用 `useCallback` 优化性能
+  - 状态管理更加合理，避免不必要的重渲染
+  - 添加完整的 TypeScript 类型支持
+  - 增强用户体验，防止意外丢失数据
+
+- **文件修改**：
+  - `ui/src/pages/EditAssessments.tsx` - 主要功能实现
+  - `ui/src/index.css` - CSS 类隐藏规则
+
+- **影响范围**：编辑测试页面用户体验大幅提升，解决了工具栏空白、无限刷新、数据丢失等关键问题
 
 ### 2025-08-23: 编辑测试页面功能修复
 

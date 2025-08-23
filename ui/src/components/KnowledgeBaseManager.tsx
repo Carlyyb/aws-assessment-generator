@@ -23,6 +23,7 @@ import { createKnowledgeBase } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { getText } from '../i18n/lang';
 import { UserProfileContext } from '../contexts/userProfile';
+import { getBeijingTimeString } from '../utils/timeUtils';
 
 const client = generateClient();
 
@@ -91,7 +92,7 @@ export default function KnowledgeBaseManager({
 
   // 添加创建日志函数
   const addCreateLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
+    const timestamp = getBeijingTimeString();
     const logMessage = `[${timestamp}] ${message}`;
     setCreateLogs(prev => [...prev, logMessage]);
     console.log(logMessage);

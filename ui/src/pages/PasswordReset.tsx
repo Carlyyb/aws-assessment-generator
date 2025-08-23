@@ -92,8 +92,8 @@ const PasswordReset: React.FC = () => {
       errors.newPassword = '请输入新密码';
     } else if (confirmForm.newPassword.length < 8) {
       errors.newPassword = '密码长度至少8个字符';
-    } else if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(confirmForm.newPassword)) {
-      errors.newPassword = '密码必须包含字母和数字';
+    } else if (!/(?=.*\d)/.test(confirmForm.newPassword)) {
+      errors.newPassword = '密码必须包含数字';
     }
     
     if (!confirmForm.confirmPassword) {

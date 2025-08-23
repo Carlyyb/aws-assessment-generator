@@ -28,14 +28,24 @@
 }
 
 /* 修复顶部导航栏和左侧导航栏重叠问题 */
-/* 确保顶部导航栏的z-index高于侧边导航栏 */
-.awsui_top-navigation_k5dlb_d6w6r_117 {
-  z-index: 1100 !important;
-  position: relative;
+/* 确保顶部导航栏的z-index高于侧边导航栏 - 使用更通用的选择器 */
+[data-awsui-context="top-navigation"],
+.awsui_top-navigation_k5dlb_d6w6r_117,
+.awsui-context-top-navigation,
+[class*="awsui_top-navigation"],
+[class*="top-navigation"] {
+  z-index: 1200 !important;
+  position: relative !important;
 }
 
-/* 确保侧边导航栏不会覆盖顶部导航栏 */
-.awsui_navigation-container_hyvsj_zz5e8_707 {
+/* 确保侧边导航栏不会覆盖顶部导航栏 - 覆盖所有可能的导航栏类名 */
+.awsui_navigation-container_hyvsj_zz5e8_707,
+.awsui_navigation_hyvsj_zz5e8_707,
+.awsui_is-navigation-open_hyvsj_zz5e8_657,
+.awsui_navigation_1fj9k_1uvk8_9,
+[class*="awsui_navigation"],
+[class*="navigation-container"],
+.awsui-app-layout__navigation {
   z-index: 1000 !important;
   margin-top: 0 !important;
   top: 56px !important; /* 为顶部导航栏留出空间 */
@@ -47,8 +57,9 @@
 }
 
 /* 修复中等尺寸屏幕下的重叠问题 */
-.awsui_medium_k5dlb_d6w6r_162 {
-  z-index: 1100 !important;
+.awsui_medium_k5dlb_d6w6r_162,
+[class*="awsui_medium"] {
+  z-index: 1200 !important;
 }
 
 /* 确保主内容区域不被导航栏遮挡 */
@@ -57,6 +68,14 @@
 }
 
 /* 修复收纳状态下的重叠 */
-.awsui-app-layout__navigation.awsui-app-layout__navigation--closed {
+.awsui-app-layout__navigation.awsui-app-layout__navigation--closed,
+[class*="navigation"][class*="closed"] {
   z-index: 999 !important;
+}
+
+/* 强制确保顶部导航栏容器在最上层 */
+#h,
+[id="h"] {
+  z-index: 1300 !important;
+  position: relative !important;
 }

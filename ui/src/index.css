@@ -66,3 +66,10 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* 隐藏特定的 AWS UI CSS 类 */
+.awsui_trigger-wrapper_hyvsj_zz5e8_1289,
+.awsui_show-tools_hyvsj_zz5e8_1108,
+.awsui_has-tools-form_hyvsj_zz5e8_1086 {
+  display: none !important;
+}

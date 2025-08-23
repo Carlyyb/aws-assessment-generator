@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useEffect, useState, useContext } from 'react';
 import { Container, Header, SpaceBetween, Button, Form, FormField, Box, Select, SelectProps, Tabs, Input, Alert } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
@@ -94,8 +95,8 @@ export default () => {
       errors.newPassword = '请输入新密码';
     } else if (passwordForm.newPassword.length < 8) {
       errors.newPassword = '密码长度至少8个字符';
-    } else if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(passwordForm.newPassword)) {
-      errors.newPassword = '密码必须包含字母和数字';
+    } else if (!/(?=.*\d)/.test(passwordForm.newPassword)) {
+      errors.newPassword = '密码必须包含数字';
     }
 
     if (!passwordForm.confirmPassword) {
@@ -250,7 +251,7 @@ export default () => {
                   <Container>
                     <SpaceBetween direction="vertical" size="l">
                       <Alert type="info">
-                        为了账户安全，建议您定期更换密码。新密码应至少8位，包含字母和数字。
+                        为了账户安全，建议您定期更换密码。新密码应至少8位，包含数字。
                       </Alert>
                       
                       <FormField 
@@ -272,7 +273,7 @@ export default () => {
 
                       <FormField 
                         label="新密码"
-                        description="至少8个字符，包含字母和数字"
+                        description="至少8个字符，包含数字"
                         errorText={passwordErrors.newPassword}
                       >
                         <Input
