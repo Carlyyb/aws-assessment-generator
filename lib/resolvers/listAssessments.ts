@@ -14,6 +14,16 @@ export function request(ctx) {
 }
 
 export function response(ctx) {
-  // 直接返回 DynamoDB 的原始结果，让后续的 Lambda 函数进行转换
-  return ctx.result;
+  // 检查是否有错误
+  if (ctx.error) {
+    util.error(ctx.error.message, ctx.error.type);
+  }
+  
+  // 检查结果是否存在
+  if (!ctx.result || !ctx.result.items) {
+    return []; // 如果没有结果，返回空数组
+  }
+  
+  // 返回 DynamoDB 扫描结果中的 items 数组
+  return ctx.result.items;
 }

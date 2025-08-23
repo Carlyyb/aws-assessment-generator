@@ -11,6 +11,7 @@ import { CognitoIdentityProviderClient, AdminSetUserPasswordCommand } from '@aws
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
+import { createTimestamp } from '../utils/timeUtils';
 
 // 客户端初始化
 const cognitoClient = new CognitoIdentityProviderClient({});
@@ -81,7 +82,7 @@ async function markTokenAsUsed(token: string, resetTokenTableName: string): Prom
     UpdateExpression: 'SET used = :used, usedAt = :usedAt',
     ExpressionAttributeValues: {
       ':used': true,
-      ':usedAt': new Date().toISOString()
+      ':usedAt': createTimestamp()
     }
   }));
 }
@@ -116,7 +117,7 @@ async function updateUserPasswordStatus(username: string, usersTableName: string
       UpdateExpression: 'SET needsPasswordChange = :needsChange, passwordChangedAt = :changedAt',
       ExpressionAttributeValues: {
         ':needsChange': false,
-        ':changedAt': new Date().toISOString()
+        ':changedAt': createTimestamp()
       }
     }));
   } catch (error) {

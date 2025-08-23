@@ -7,6 +7,7 @@ import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { LambdaInterface } from "@aws-lambda-powertools/commons/types";
 import { logger, tracer } from "../rag-pipeline/lambdas/event-handler/utils/pt";
 import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
+import { createTimestamp } from '../utils/timeUtils';
 
 const client = new DynamoDBClient();
 const documentClient = DynamoDBDocumentClient.from(client);
@@ -24,7 +25,7 @@ class Lambda implements LambdaInterface {
       const { userAttributes } = event.request;
       const userId = event.userName;
       const userRole = userAttributes['custom:role'];
-      const currentTime = new Date().toISOString();
+      const currentTime = createTimestamp();
 
       // 根据用户角色更新相应的表
       if (userRole === 'students') {

@@ -1,5 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useReducer, useEffect, useContext } from 'react';
-import { Wizard, AppLayout } from '@cloudscape-design/components';
+import { Wizard, AppLayout, Button, SpaceBetween } from '@cloudscape-design/components';
 import { useParams, useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import { Assessment, AssessType, MultiChoice, FreeText, SingleAnswer, TrueFalse } from '../graphql/API'; // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断
@@ -33,18 +35,22 @@ const reducer: Reducer = (state, actions) => {
       if (!questionType || !content) return state;
       
       switch (questionType) {
-        case AssessType.multiChoiceAssessment:
+        case AssessType.multiChoiceAssessment: {
           const newMultiChoice = [...(state.multiChoiceAssessment || []), content];
           return { ...state, multiChoiceAssessment: newMultiChoice, assessType: questionType };
-        case AssessType.freeTextAssessment:
+        }
+        case AssessType.freeTextAssessment: {
           const newFreeText = [...(state.freeTextAssessment || []), content];
           return { ...state, freeTextAssessment: newFreeText, assessType: questionType };
-        case AssessType.singleAnswerAssessment:
+        }
+        case AssessType.singleAnswerAssessment: {
           const newSingleAnswer = [...(state.singleAnswerAssessment || []), content];
           return { ...state, singleAnswerAssessment: newSingleAnswer, assessType: questionType };
-        case AssessType.trueFalseAssessment:
+        }
+        case AssessType.trueFalseAssessment: {
           const newTrueFalse = [...(state.trueFalseAssessment || []), content];
           return { ...state, trueFalseAssessment: newTrueFalse, assessType: questionType };
+        }
         default:
           return state;
       }
@@ -158,13 +164,17 @@ export default () => {
 
   // 包装的更新函数
   const wrappedUpdateAssessment = (action: { type: ActionTypes; stepIndex?: number; key?: string; content?: any; questionType?: AssessType }) => {
-    // 如果是添加操作，跳转到新添加的题目
-    if (action.type === ActionTypes.Add) {
-      const currentQuestions = getQuestions();
-      setActiveStepIndex(currentQuestions.length); // 新题目的索引
-    }
     // 调用原始的更新函数
     updateAssessment(action);
+    
+    // 如果是添加操作，在状态更新后跳转到新添加的题目
+    if (action.type === ActionTypes.Add) {
+      // 使用 setTimeout 确保状态更新完成后再设置 activeStepIndex
+      setTimeout(() => {
+        const currentQuestions = getQuestions();
+        setActiveStepIndex(currentQuestions.length - 1); // 新题目的索引
+      }, 0);
+    }
   };
 
   // 处理添加新题目
@@ -212,32 +222,43 @@ export default () => {
     <>
       <AppLayout
         content={
-          <Wizard
-            onSubmit={() => {
-              const { course, ...inputAssessment } = assessment;
-              client
-                .graphql<any>({ query: upsertAssessment, variables: { input: inputAssessment } })
-                .then(() => {
-                  dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.assessments.edit.update_success') });
-                })
-                .then(() => navigate('/assessments/find-assessments'))
-                .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.status.error') }));
-            }}
-            i18nStrings={{
-              stepNumberLabel: (stepNumber) => getTextWithParams('teachers.assessments.edit.question_number', { number: stepNumber }),
-              collapsedStepsLabel: (stepNumber, stepsCount) => getTextWithParams('teachers.assessments.edit.question_progress', { current: stepNumber, total: stepsCount }),
-              skipToButtonLabel: (step, _stepNumber) => getTextWithParams('teachers.assessments.edit.skip_to', { title: step.title }),
-              cancelButton: getText('teachers.assessments.edit.delete_question'),
-              previousButton: getText('common.actions.previous'),
-              nextButton: getText('common.actions.next'),
-              submitButton: getText('common.actions.submit'),
-              optional: getText('common.status.optional'),
-            }}
-            onCancel={() => wrappedUpdateAssessment({ type: ActionTypes.Delete, stepIndex: activeStepIndex })}
-            onNavigate={({ detail }) => setActiveStepIndex(detail.requestedStepIndex)}
-            activeStepIndex={activeStepIndex}
-            steps={steps}
-          />
+          <SpaceBetween size="l">
+            {/* 添加题目按钮 */}
+            <Button
+              variant="primary"
+              iconName="add-plus"
+              onClick={() => setShowAddQuestionModal(true)}
+            >
+              {getText('teachers.assessments.edit.add_question')}
+            </Button>
+            
+            <Wizard
+              onSubmit={() => {
+                const { course, ...inputAssessment } = assessment;
+                client
+                  .graphql<any>({ query: upsertAssessment, variables: { input: inputAssessment } })
+                  .then(() => {
+                    dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.assessments.edit.update_success') });
+                  })
+                  .then(() => navigate('/assessments/find-assessments'))
+                  .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.status.error') }));
+              }}
+              i18nStrings={{
+                stepNumberLabel: (stepNumber) => getTextWithParams('teachers.assessments.edit.question_number', { number: stepNumber }),
+                collapsedStepsLabel: (stepNumber, stepsCount) => getTextWithParams('teachers.assessments.edit.question_progress', { current: stepNumber, total: stepsCount }),
+                skipToButtonLabel: (step, _stepNumber) => getTextWithParams('teachers.assessments.edit.skip_to', { title: step.title }),
+                cancelButton: getText('teachers.assessments.edit.delete_question'),
+                previousButton: getText('common.actions.previous'),
+                nextButton: getText('common.actions.next'),
+                submitButton: getText('common.actions.submit'),
+                optional: getText('common.status.optional'),
+              }}
+              onCancel={() => wrappedUpdateAssessment({ type: ActionTypes.Delete, stepIndex: activeStepIndex })}
+              onNavigate={({ detail }) => setActiveStepIndex(detail.requestedStepIndex)}
+              activeStepIndex={activeStepIndex}
+              steps={steps}
+            />
+          </SpaceBetween>
         }
         navigationHide
       />

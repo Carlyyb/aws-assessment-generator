@@ -612,7 +612,7 @@ export default function StudentAssessment() {
       {/* 开始确认对话框 */}
       <Modal
         visible={showStartDialog}
-        header={isPreviewMode ? "预览模式 - 开始评估" : "开始评估"}
+        header={isPreviewMode ? getText('students.assessment.preview.start_assessment') : getText('students.assessment.start.title')}
         footer={
           <Box float="right">
             <SpaceBetween direction="horizontal" size="xs">
@@ -669,7 +669,7 @@ export default function StudentAssessment() {
       {/* 最终提交确认对话框 */}
       <Modal
         visible={showSubmitConfirmation}
-        header={isPreviewMode ? "预览模式 - 确认提交" : "确认提交"}
+        header={isPreviewMode ? getText('students.assessment.preview.confirm_submit') : getText('students.assessment.submit.title')}
         footer={
           <Box float="right">
             <SpaceBetween direction="horizontal" size="xs">
@@ -697,11 +697,11 @@ export default function StudentAssessment() {
 
       <Modal
         visible={score !== undefined}
-        header={isPreviewMode ? "预览模式 - 模拟结果" : getText('student.assessments.detail.your_score')}
+        header={isPreviewMode ? getText('students.assessment.preview.simulated_result') : getText('students.assessments.detail.your_score')}
         footer={
           <Box float="right">
             <Button variant="primary" onClick={() => navigate(isPreviewMode ? '/assessments/find-assessments' : '/assessments')}>
-              {isPreviewMode ? '返回测试管理' : getText('common.actions.finish')}
+              {isPreviewMode ? getText('students.assessment.preview.back_to_management') : getText('common.actions.finish')}
             </Button>
           </Box>
         }
@@ -860,7 +860,7 @@ export default function StudentAssessment() {
               </SpaceBetween>
             </Container>
           ) : (
-            <Container header={<Header variant="h1">等待开始</Header>}>
+            <Container header={<Header variant="h1">{getText('students.assessment.start.waiting')}</Header>}>
               <SpaceBetween size="l">
                 <Alert type="info">
                   请点击下方开始按钮开始答题。

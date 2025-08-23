@@ -302,18 +302,93 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
-    coursesDs.createResolver('MutationDeleteCourseResolver', {
-      typeName: 'Mutation',
-      fieldName: 'deleteCourse',
-      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteCourse.ts'),
-      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
-    });
-
     coursesDs.createResolver('AssessmentCourseResolver', {
       typeName: 'Assessment',
       fieldName: 'course',
       code: aws_appsync.Code.fromAsset('lib/resolvers/getCourse.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 删除知识库Lambda函数
+    const deleteKnowledgeBaseFn = new NodejsFunction(this, 'DeleteKnowledgeBaseFn', {
+      entry: 'lib/lambdas/deleteKnowledgeBase.ts',
+      runtime: Runtime.NODEJS_20_X,
+      architecture: Architecture.ARM_64,
+      tracing: Tracing.ACTIVE,
+      bundling: {
+        minify: true,
+      },
+      environment: {
+        KB_TABLE: kbTable.tableName,
+        KB_STAGING_BUCKET: artifactsUploadBucket.bucketName,
+      },
+    });
+
+    // 为删除知识库Lambda添加权限
+    deleteKnowledgeBaseFn.addToRolePolicy(
+      new PolicyStatement({
+        effect: aws_iam.Effect.ALLOW,
+        resources: ['*'],
+        actions: [
+          'bedrock:DeleteKnowledgeBase',
+          'bedrock:DeleteDataSource',
+          'bedrock:GetKnowledgeBase',
+          'bedrock:ListDataSources',
+        ],
+      })
+    );
+
+    // S3权限
+    deleteKnowledgeBaseFn.addToRolePolicy(
+      new PolicyStatement({
+        effect: aws_iam.Effect.ALLOW,
+        resources: [
+          artifactsUploadBucket.bucketArn,
+          `${artifactsUploadBucket.bucketArn}/*`,
+        ],
+        actions: [
+          's3:DeleteObject',
+          's3:ListBucket',
+        ],
+      })
+    );
+
+    // DynamoDB权限
+    kbTable.grantReadWriteData(deleteKnowledgeBaseFn);
+
+    const deleteKnowledgeBaseDs = api.addLambdaDataSource('DeleteKnowledgeBaseDs', deleteKnowledgeBaseFn);
+
+    deleteKnowledgeBaseDs.createResolver('DeleteKnowledgeBaseResolver', {
+      typeName: 'Mutation',
+      fieldName: 'deleteKnowledgeBase',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteKnowledgeBase.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 删除课程的Pipeline Resolver - 先删除课程，然后清理知识库
+    const deleteCourseFunction = new aws_appsync.AppsyncFunction(this, 'DeleteCourseFunction', {
+      api,
+      dataSource: coursesDs,
+      name: 'DeleteCourseFunction',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteCourse.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    const cleanupKnowledgeBaseFunction = new aws_appsync.AppsyncFunction(this, 'CleanupKnowledgeBaseFunction', {
+      api,
+      dataSource: deleteKnowledgeBaseDs,
+      name: 'CleanupKnowledgeBaseFunction',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/cleanupKnowledgeBase.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    new aws_appsync.Resolver(this, 'MutationDeleteCourseResolver', {
+      api,
+      typeName: 'Mutation',
+      fieldName: 'deleteCourse',
+      pipelineConfig: [deleteCourseFunction, cleanupKnowledgeBaseFunction],
+      requestMappingTemplate: aws_appsync.MappingTemplate.fromString('{}'),
+      responseMappingTemplate: aws_appsync.MappingTemplate.fromString('$util.toJson($ctx.result)'),
     });
 
     const studentsTableParam = new StringParameter(this, 'StudentsTableParameter', {

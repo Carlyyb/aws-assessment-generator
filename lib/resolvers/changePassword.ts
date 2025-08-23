@@ -11,6 +11,7 @@ import { CognitoIdentityProviderClient, AdminSetUserPasswordCommand, AdminInitia
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { createTimestamp } from '../utils/timeUtils';
 
 // 客户端初始化
 const cognitoClient = new CognitoIdentityProviderClient({});
@@ -138,7 +139,7 @@ export const handler = async (event: AppSyncResolverEvent<{ input: ChangePasswor
         UpdateExpression: 'SET needsPasswordChange = :needsChange, passwordChangedAt = :changedAt',
         ExpressionAttributeValues: {
           ':needsChange': false,
-          ':changedAt': new Date().toISOString()
+          ':changedAt': createTimestamp()
         }
       }));
     } catch (updateError) {

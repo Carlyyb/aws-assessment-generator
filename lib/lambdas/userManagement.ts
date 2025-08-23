@@ -11,6 +11,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, ScanCommand, UpdateCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand, AdminSetUserPasswordCommand, AdminGetUserCommand, AdminUpdateUserAttributesCommand, AdminDeleteUserCommand, ListUsersCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
+import { createTimestamp } from '../utils/timeUtils';
 
 // 客户端初始化
 const ddbClient = new DynamoDBClient({});
@@ -483,7 +484,7 @@ async function createSingleUser(userInput: UserInput, userPoolId: string, usersT
     role,
     needsPasswordChange: !password,
     lastLoginAt: null,
-    createdAt: new Date().toISOString(),
+    createdAt: createTimestamp(),
     createdBy: requestorUsername,
     isActive: true
   };
@@ -620,7 +621,7 @@ export const handler = async (event: any): Promise<any> => {
               role: role,
               needsPasswordChange: user.UserStatus === 'FORCE_CHANGE_PASSWORD',
               phoneNumber: getAttributeValue('phone_number'),
-              createdAt: user.UserCreateDate?.toISOString() || new Date().toISOString(),
+              createdAt: user.UserCreateDate?.toISOString() || createTimestamp(),
               createdBy: 'system',
               isActive: true,
               lastLoginAt: null
@@ -713,7 +714,7 @@ export const handler = async (event: any): Promise<any> => {
               groups: [],
               needsPasswordChange: user.UserStatus === 'FORCE_CHANGE_PASSWORD',
               phoneNumber: getAttributeValue('phone_number'),
-              createdAt: user.UserCreateDate?.toISOString() || new Date().toISOString(),
+              createdAt: user.UserCreateDate?.toISOString() || createTimestamp(),
               createdBy: 'system',
               isActive: true
             };
@@ -823,7 +824,7 @@ export const handler = async (event: any): Promise<any> => {
           }
 
           updateExpression.push('updatedAt = :updatedAt');
-          expressionAttributeValues[':updatedAt'] = new Date().toISOString();
+          expressionAttributeValues[':updatedAt'] = createTimestamp();
 
           const updateParams = {
             TableName: USERS_TABLE_NAME,
@@ -877,7 +878,7 @@ export const handler = async (event: any): Promise<any> => {
             UpdateExpression: 'SET isActive = :isActive, deletedAt = :deletedAt, deletedBy = :deletedBy',
             ExpressionAttributeValues: {
               ':isActive': false,
-              ':deletedAt': new Date().toISOString(),
+              ':deletedAt': createTimestamp(),
               ':deletedBy': requestorUsername
             }
           }));
@@ -950,7 +951,7 @@ export const handler = async (event: any): Promise<any> => {
             UpdateExpression: 'SET needsPasswordChange = :needsPasswordChange, updatedAt = :updatedAt, updatedBy = :updatedBy',
             ExpressionAttributeValues: {
               ':needsPasswordChange': !customPassword, // 如果是默认密码则需要用户首次登录修改
-              ':updatedAt': new Date().toISOString(),
+              ':updatedAt': createTimestamp(),
               ':updatedBy': requestorUsername
             }
           }));
@@ -989,7 +990,7 @@ export const handler = async (event: any): Promise<any> => {
           createdBy: requestorUsername,
           teachers: [requestorUsername],
           students: input.students || [],
-          createdAt: new Date().toISOString()
+          createdAt: createTimestamp()
         };
         
         try {
@@ -1117,7 +1118,7 @@ export const handler = async (event: any): Promise<any> => {
               createdBy: 'system',
               teachers: [requestorUsername],
               students: [],
-              createdAt: new Date().toISOString()
+              createdAt: createTimestamp()
             });
           }
           
@@ -1134,7 +1135,7 @@ export const handler = async (event: any): Promise<any> => {
             createdBy: 'system',
             teachers: [requestorUsername],
             students: [],
-            createdAt: new Date().toISOString()
+            createdAt: createTimestamp()
           }];
         }
       }

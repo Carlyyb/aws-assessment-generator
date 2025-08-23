@@ -8,6 +8,97 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ## 最新更新记录
 
+### 2025-08-23: i18n 国际化文本缺失修复
+
+- **功能描述**：修复了编辑测试页面和学生测试页面中 i18n 文本缺失导致的错误和页面重复刷新问题
+- **问题分析**：
+  1. **listAssessments GraphQL 查询错误**：resolver 返回错误格式导致 "type mismatch error, expected type LIST"
+  2. **i18n 键缺失**：多个页面使用了未定义的 i18n 键，导致 `getText()` 函数返回错误
+  3. **硬编码文本**：部分页面仍使用硬编码的中文文本，未使用 i18n 系统
+  4. **页面重复刷新**：i18n 键缺失时组件可能进入无限重渲染循环
+- **修改位置**：
+  - `lib/resolvers/listAssessments.ts` - 修复 resolver 返回格式
+  - `ui/src/i18n/zh.json` 和 `ui/src/i18n/en.json` - 补充缺失的 i18n 键
+  - `ui/src/pages/EditAssessments.tsx` - 替换硬编码文本为 i18n
+  - `ui/src/pages/StudentAssessment.tsx` - 替换硬编码文本为 i18n
+- **修复内容**：
+  - **GraphQL Resolver 修复**：
+    ```typescript
+    // 修复前：返回 ctx.result（包含 items, count 等）
+    return ctx.result;
+    // 修复后：返回 ctx.result.items（数组格式）
+    return ctx.result.items;
+    ```
+  - **新增 i18n 键**：
+    - `teachers.assessments.edit.add_question`: "添加题目" / "Add Question"
+    - `students.assessment.preview.*`: 预览模式相关文本
+    - `students.assessment.start.*`: 开始评估相关文本
+    - `students.assessment.submit.*`: 提交确认相关文本
+    - `students.assessment.timer.*`: 计时器相关文本
+    - `students.assessments.detail.choose_multiple_answers`: 多选题提示文本
+  - **硬编码文本替换**：
+    - 编辑页面：`"添加题目"` → `getText('teachers.assessments.edit.add_question')`
+    - 学生页面：`"预览模式 - 开始评估"` → `getText('students.assessment.preview.start_assessment')`
+    - 等待页面：`"等待开始"` → `getText('students.assessment.start.waiting')`
+- **技术改进**：
+  - DynamoDB Scan 操作正确返回数组格式，符合 GraphQL LIST 类型要求
+  - i18n 文本完整性提升，支持中英文双语
+  - 消除硬编码文本，提高代码维护性
+  - 解决页面重复渲染问题
+- **影响范围**：修复影响所有使用 listAssessments 查询的页面，以及编辑测试和学生测试页面的用户体验
+
+### 2025-08-23: 编辑测试页面功能修复
+
+- **功能描述**：修复了编辑测试页面按钮无响应、UI闪烁和操作失效的问题
+- **问题分析**：原问题包括：
+  1. 添加题目、增加选项等按钮点击后闪烁无效果
+  2. 缺少"添加题目"的触发按钮
+  3. 状态更新时机导致的UI不同步
+  4. 删除选项时正确答案索引未正确更新
+- **修改位置**：
+  - `ui/src/pages/EditAssessments.tsx` - 修复状态更新逻辑，添加"添加题目"按钮
+  - `ui/src/components/QAView.tsx` - 修复选项操作逻辑和正确答案索引更新
+- **修复内容**：
+  - **状态更新时机优化**：使用 `setTimeout` 确保状态更新完成后再设置 `activeStepIndex`
+  - **添加功能按钮**：在 Wizard 顶部添加了"添加题目"按钮，使用 `SpaceBetween` 布局
+  - **选项操作限制**：判断题禁止添加新选项（固定两个选项：正确/错误）
+  - **删除逻辑优化**：选项少于3个时禁止删除，防止破坏题目结构
+  - **正确答案同步**：删除选项时正确更新多选题和单选题的正确答案索引
+- **技术细节**：
+  ```typescript
+  // 修复后的状态更新逻辑
+  const wrappedUpdateAssessment = (action) => {
+    updateAssessment(action);
+    if (action.type === ActionTypes.Add) {
+      setTimeout(() => {
+        setActiveStepIndex(getQuestions().length - 1);
+      }, 0);
+    }
+  };
+  
+  // 选项删除时的正确答案更新
+  if (isMultiChoice) {
+    const newCorrectAnswers = correctAnswers
+      .filter(ans => (ans as number) !== (answerIndex + 1))
+      .map(ans => (ans as number) > (answerIndex + 1) ? (ans as number) - 1 : ans);
+  }
+  ```
+- **支持的操作**：
+  - ✅ 添加新题目（四种类型：单选、多选、判断、简答）
+  - ✅ 删除题目
+  - ✅ 编辑题目内容
+  - ✅ 添加/删除选项（除判断题）
+  - ✅ 设置正确答案
+  - ✅ 编辑答案解释
+- **部署状态**：✅ 已完成修复，前端构建成功
+- **已知问题与限制**：
+  - 判断题固定为两个选项（正确/错误），不可添加选项
+  - 所有题型最少保持2个选项，防止意外删除
+- **未来扩展**：
+  - 考虑添加题目重排序功能
+  - 添加批量操作功能
+  - 优化用户体验（如确认删除对话框）
+
 ### 2025-08-22: Bedrock知识库权限修复
 
 - **功能描述**：修复了Lambda函数访问Bedrock知识库时的权限不足错误(AccessDeniedException)

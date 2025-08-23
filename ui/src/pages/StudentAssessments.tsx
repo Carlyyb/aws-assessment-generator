@@ -6,6 +6,7 @@ import { listStudentAssessments, listPublishedAssessments } from '../graphql/que
 import { upsertStudentAssessment } from '../graphql/mutations';
 import { StudentAssessment, Assessment } from '../graphql/API';
 import { getText } from '../i18n/lang';
+import { formatBeijingTime } from '../utils/timeUtils';
 
 const client = generateClient();
 
@@ -98,12 +99,13 @@ export default function StudentAssessments() {
                     {
                       id: 'deadline',
                       header: '截止时间',
-                      cell: (item: Assessment) => item.deadline ? new Date(item.deadline).toLocaleString('zh-CN', {
+                      cell: (item: Assessment) => item.deadline ? formatBeijingTime(item.deadline, {
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit',
                         hour: '2-digit',
-                        minute: '2-digit'
+                        minute: '2-digit',
+                        timeZone: 'Asia/Shanghai'
                       }) : '-',
                       sortingField: 'deadline',
                     },
@@ -156,12 +158,13 @@ export default function StudentAssessments() {
                     {
                       id: 'deadline',
                       header: getText('students.assessments.list.table.deadline'),
-                      cell: (item: StudentAssessment) => item.assessment?.deadline ? new Date(item.assessment.deadline).toLocaleString('zh-CN', {
+                      cell: (item: StudentAssessment) => item.assessment?.deadline ? formatBeijingTime(item.assessment.deadline, {
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit',
                         hour: '2-digit',
-                        minute: '2-digit'
+                        minute: '2-digit',
+                        timeZone: 'Asia/Shanghai'
                       }) : '-',
                       sortingField: 'course',
                     },

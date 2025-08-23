@@ -19,7 +19,7 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
 
   return (
     <SpaceBetween size="l">
-      <Container header={<Header variant="h2">{getTextWithParams('pages.edit_assessments.question_number', { number: activeStepIndex + 1 })}</Header>}>
+      <Container header={<Header variant="h2">{getTextWithParams('components.assessments.question_number', { number: activeStepIndex + 1 })}</Header>}>
         <Textarea
           onChange={({ detail }) =>
             updateAssessment({ type: ActionTypes.Update, stepIndex: activeStepIndex, key: 'question', content: detail.value })
@@ -29,7 +29,7 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
       </Container>
 
       {(isMultiChoice || isSingleAnswer || isTrueFalse) && (      // CHANGELOG 2025-08-15 by 邱语堂: 修改函数校验逻辑，兼容新题型，判断和单选
-        <Container header={<Header variant="h2">{getText('assessment.edit_answers')}</Header>}>
+        <Container header={<Header variant="h2">{getText('components.assessment.edit_answers')}</Header>}>
           <SpaceBetween size="l" direction="horizontal" alignItems="center">
             {assessment.answerChoices?.map((answerChoice, answerIndex) => (
               <Container
@@ -38,18 +38,57 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
                   <Header
                     variant="h2"
                     actions={
-                      <Button
-                        iconName="close"
-                        variant="icon"
-                        onClick={() =>
-                          updateAssessment({
-                            type: ActionTypes.Update,
-                            stepIndex: activeStepIndex,
-                            key: 'answerChoices',
-                            content: assessment.answerChoices.filter((_a, i) => answerIndex !== i),
-                          })
-                        }
-                      />
+                      assessment.answerChoices && assessment.answerChoices.length > 2 ? (
+                        <Button
+                          iconName="close"
+                          variant="icon"
+                          onClick={() => {
+                            const newAnswerChoices = assessment.answerChoices.filter((_a, i) => answerIndex !== i);
+                            updateAssessment({
+                              type: ActionTypes.Update,
+                              stepIndex: activeStepIndex,
+                              key: 'answerChoices',
+                              content: newAnswerChoices,
+                            });
+                            
+                            // 更新正确答案索引
+                            if (isMultiChoice) {
+                              const correctAnswers = Array.isArray(assessment.correctAnswer) 
+                                ? assessment.correctAnswer 
+                                : [assessment.correctAnswer as number];
+                              const newCorrectAnswers = correctAnswers
+                                .filter(ans => (ans as number) !== (answerIndex + 1))
+                                .map(ans => (ans as number) > (answerIndex + 1) ? (ans as number) - 1 : (ans as number));
+                              
+                              if (newCorrectAnswers.length === 0) {
+                                newCorrectAnswers.push(1);
+                              }
+                              
+                              updateAssessment({
+                                type: ActionTypes.Update,
+                                stepIndex: activeStepIndex,
+                                key: 'correctAnswer',
+                                content: newCorrectAnswers,
+                              });
+                            } else if (isSingleAnswer) {
+                              const currentCorrect = assessment.correctAnswer as number;
+                              let newCorrect = currentCorrect;
+                              if (currentCorrect === (answerIndex + 1)) {
+                                newCorrect = 1; // 重置为第一个选项
+                              } else if (currentCorrect > (answerIndex + 1)) {
+                                newCorrect = currentCorrect - 1;
+                              }
+                              
+                              updateAssessment({
+                                type: ActionTypes.Update,
+                                stepIndex: activeStepIndex,
+                                key: 'correctAnswer',
+                                content: newCorrect,
+                              });
+                            }
+                          }}
+                        />
+                      ) : undefined
                     }
                   />
                 }
@@ -67,26 +106,28 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
                 />
               </Container>
             ))}
-            <Container>
-              <Button
-                iconName="add-plus"
-                variant="icon"
-                onClick={() =>
-                  updateAssessment({
-                    type: ActionTypes.Update,
-                    stepIndex: activeStepIndex,
-                    key: 'answerChoices',
-                    content: [...(assessment.answerChoices || []), ''],
-                  })
-                }
-              />
-            </Container>
+            {!isTrueFalse && (
+              <Container>
+                <Button
+                  iconName="add-plus"
+                  variant="icon"
+                  onClick={() =>
+                    updateAssessment({
+                      type: ActionTypes.Update,
+                      stepIndex: activeStepIndex,
+                      key: 'answerChoices',
+                      content: [...(assessment.answerChoices || []), ''],
+                    })
+                  }
+                />
+              </Container>
+            )}
           </SpaceBetween>
         </Container>
       )}
 
       {isMultiChoice && (
-        <Container header={<Header variant="h2">{getText('assessment.choose_multiple_answers')}</Header>}>
+        <Container header={<Header variant="h2">{getText('components.assessment.choose_multiple_answers')}</Header>}>
           <SpaceBetween size="s">
             {assessment.answerChoices.map((answerChoice, i) => {
               const correctAnswers = Array.isArray(assessment.correctAnswer) 
@@ -131,7 +172,7 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
       )}
 
       {isSingleAnswer && (
-        <Container header={<Header variant="h2">{getText('assessment.choose_answer')}</Header>}>
+        <Container header={<Header variant="h2">{getText('components.assessment.choose_answer')}</Header>}>
           <Tiles
             value={((assessment.correctAnswer as number) - 1).toString()}
             items={assessment.answerChoices.map((answerChoice, i) => ({ label: answerChoice, value: i.toString() }))}
@@ -148,7 +189,7 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
       )}
 
       {isTrueFalse && (
-        <Container header={<Header variant="h2">{getText('assessment.choose_answer')}</Header>}>
+        <Container header={<Header variant="h2">{getText('components.assessment.choose_answer')}</Header>}>
           <Tiles
             value={assessment.correctAnswer as string}
             items={assessment.answerChoices.map((answerChoice) => ({ label: answerChoice, value: answerChoice }))}
@@ -165,7 +206,7 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
       )}
 
       {(isMultiChoice || isSingleAnswer || isTrueFalse) && (
-        <Container header={<Header variant="h2">{getText('assessment.explanation')}</Header>}>
+        <Container header={<Header variant="h2">{getText('components.assessment.explanation')}</Header>}>
           <Textarea
             onChange={({ detail }) =>
               updateAssessment({ type: ActionTypes.Update, stepIndex: activeStepIndex, key: 'explanation', content: detail.value })
@@ -176,7 +217,7 @@ export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAView
       )}
 
       {isFreeText && (
-        <Container header={<Header variant="h2">{getText('assessment.rubric')}</Header>}>
+        <Container header={<Header variant="h2">{getText('components.assessment.rubric')}</Header>}>
           {/* 简答题评分点展示与编辑，可根据实际需求扩展 */}
           {assessment.rubric.map((rubricItem, idx) => (
             <Container key={`rubric-${idx}`}>

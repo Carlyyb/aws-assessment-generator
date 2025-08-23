@@ -26,6 +26,7 @@ import { getText } from '../i18n/lang';
 import { useAdminPermissions } from '../utils/adminPermissions';
 import { ExportModal } from '../components/ExportModal';
 import { exportAssessments, ExportOptions } from '../utils/exportUtils';
+import { formatBeijingTime } from '../utils/timeUtils';
 
 const client = generateClient();
 
@@ -395,23 +396,25 @@ export default () => {
                 {
                   id: 'lectureDate',
                   header: getText('teachers.assessments.find.lecture_date'),
-                  cell: (item) => new Date(item.lectureDate).toLocaleString('zh-CN', {
+                  cell: (item) => formatBeijingTime(item.lectureDate, {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
                     hour: '2-digit',
-                    minute: '2-digit'
+                    minute: '2-digit',
+                    timeZone: 'Asia/Shanghai'
                   }),
                 },
                 {
                   id: 'deadline',
                   header: getText('common.labels.deadline'),
-                  cell: (item) => new Date(item.deadline).toLocaleString('zh-CN', {
+                  cell: (item) => formatBeijingTime(item.deadline, {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
                     hour: '2-digit',
-                    minute: '2-digit'
+                    minute: '2-digit',
+                    timeZone: 'Asia/Shanghai'
                   }),
                 },
                 {

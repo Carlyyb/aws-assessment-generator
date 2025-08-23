@@ -26,6 +26,7 @@ import { batchCreateUsersMutation, createSingleUserMutation, updateUserMutation,
 import { getText } from '../i18n/lang';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { useAdminPermissions } from '../utils/adminPermissions';
+import { formatBeijingTime } from '../utils/timeUtils';
 
 const client = generateClient();
 
@@ -194,7 +195,14 @@ const UserManagement: React.FC = () => {
       id: 'lastLoginAt',
       header: '最后登录',
       cell: (item: User) => item.lastLoginAt 
-        ? new Date(item.lastLoginAt).toLocaleString('zh-CN')
+        ? formatBeijingTime(item.lastLoginAt, {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Asia/Shanghai'
+          })
         : '从未登录'
     },
     {

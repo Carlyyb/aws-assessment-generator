@@ -220,6 +220,21 @@ export const createKnowledgeBase = /* GraphQL */ `
   }
 `;
 
+export const deleteKnowledgeBase = /* GraphQL */ `
+  mutation DeleteKnowledgeBase($courseId: ID!) {
+    deleteKnowledgeBase(courseId: $courseId) {
+      success
+      message
+      details {
+        knowledgeBaseId
+        dataSourceId
+        s3prefix
+        courseId
+      }
+    }
+  }
+`;
+
 export const deleteAssessment = /* GraphQL */ `
   mutation DeleteAssessment($id: ID!) {
     deleteAssessment(id: $id)

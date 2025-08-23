@@ -388,6 +388,19 @@ input IngestionJobInput {
   dataSourceId: ID!
 }
 
+type KnowledgeBaseDeletionResult {
+  success: Boolean!
+  message: String!
+  details: KnowledgeBaseDeletionDetails
+}
+
+type KnowledgeBaseDeletionDetails {
+  knowledgeBaseId: String
+  dataSourceId: String
+  s3prefix: String
+  courseId: String
+}
+
 type Mutation {
   upsertSettings(input: UpsertSettingsInput): Settings
   upsertCourse(input: CourseInput): Course
@@ -400,6 +413,7 @@ type Mutation {
   upsertStudentAssessment(input: StudentAssessmentInput): StudentAssessment
   gradeStudentAssessment(input: StudentAssessmentInput): StudentAssessment
   createKnowledgeBase(courseId: ID, locations: [String]): IngestionJob
+  deleteKnowledgeBase(courseId: ID!): KnowledgeBaseDeletionResult
   
   # 用户管理mutations
   batchCreateUsers(users: [BatchUserInput!]!): BatchUserResult
@@ -434,7 +448,7 @@ type Query {
   getStudentAssessment(parentAssessId: ID!): StudentAssessment
   listStudentAssessments: [StudentAssessment]
   listMyStudentAssessments(studentId: ID!): [StudentAssessment]
-  listPublishedAssessments: [Assessment]  # 学生查看已发布的测试
+  listPublishedAssessments: [Assessment]
   publishAssessment(assessmentId: ID!): Boolean
   generateAssessment(input: GenerateAssessmentInput): ID
   getKnowledgeBase(courseId: ID): KnowledgeBase

@@ -153,7 +153,7 @@ const PasswordChangeMonitor: React.FC<PasswordChangeMonitorProps> = ({ children 
 
   // 如果还在检查用户状态，显示加载中
   if (checkingUser) {
-    return <div>加载中...</div>;
+    return <div>正在验证用户状态...</div>;
   }
 
   // 如果不需要修改密码，直接渲染子组件

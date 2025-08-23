@@ -402,23 +402,31 @@ export default function KnowledgeBaseManager({
 
   // 加载处理任务
   const loadIngestionJobs = async () => {
-    if (!knowledgeBase?.knowledgeBaseId) return;
+    if (!knowledgeBase?.knowledgeBaseId || !knowledgeBase?.kbDataSourceId) return;
     
     try {
+      // 注意：getIngestionJob需要完整的三个参数，包括ingestionJobId
+      // 由于我们没有存储历史的ingestionJobId，这里先注释掉这个调用
+      // 实际场景中，应该在知识库记录中存储最近的ingestionJobId
+      console.log('Knowledge base loaded, skipping ingestion job query due to missing ingestionJobId');
+      
+      /* 
       const response = await client.graphql<{ data?: { getIngestionJob?: { status?: string; id?: string } } }>({
         query: getIngestionJob,
         variables: {
           input: {
             knowledgeBaseId: knowledgeBase.knowledgeBaseId,
-            dataSourceId: knowledgeBase.kbDataSourceId
+            dataSourceId: knowledgeBase.kbDataSourceId,
+            ingestionJobId: 'REQUIRED_BUT_MISSING' // 这个参数是必需的
           }
         }
       });
+      */
       
-      const job = ('data' in response) ? response.data?.getIngestionJob : null;
-      if (job) {
-        setIngestionJobs([job]);
-      }
+      // const job = ('data' in response) ? response.data?.getIngestionJob : null;
+      // if (job) {
+      //   setIngestionJobs([job]);
+      // }
     } catch (error) {
       console.error('Error loading ingestion jobs:', error);
     }
@@ -514,11 +522,70 @@ export default function KnowledgeBaseManager({
       setShowDeleteModal(false);
       setFileToDelete('');
       
+      // 确认是否需要重新处理知识库
+      const shouldReprocess = window.confirm(
+        '文件已删除。是否重新处理知识库以更新内容？\n\n' +
+        '选择"确定"：知识库将重新索引所有剩余文件\n' +
+        '选择"取消"：保持当前知识库内容不变'
+      );
+      
+      if (shouldReprocess && knowledgeBase?.knowledgeBaseId) {
+        await triggerKnowledgeBaseReprocessing();
+      }
+      
     } catch (error) {
       console.error('Delete error:', error);
       dispatchAlert({
         type: AlertType.ERROR,
         content: getText('teachers.settings.knowledge_base_manager.errors.delete_failed')
+      });
+    }
+  };
+
+  // 触发知识库重新处理
+  const triggerKnowledgeBaseReprocessing = async () => {
+    if (!knowledgeBase?.knowledgeBaseId || !knowledgeBase?.kbDataSourceId) {
+      console.error('Knowledge base information missing');
+      return;
+    }
+
+    try {
+      dispatchAlert({
+        type: AlertType.WARNING,
+        content: '正在重新处理知识库，这可能需要几分钟时间...'
+      });
+
+      // 调用后端API重新开始文档处理
+      const response = await client.graphql<{ data?: { createKnowledgeBase?: { ingestionJobId?: string } }, errors?: Array<{ message: string }> }>({
+        query: createKnowledgeBase,
+        variables: {
+          courseId: courseId,
+          locations: [] // 空数组表示处理现有文件
+        },
+      });
+
+      if ('errors' in response && response.errors) {
+        throw new Error(response.errors[0]?.message || 'Failed to trigger reprocessing');
+      }
+
+      const result = ('data' in response) ? response.data?.createKnowledgeBase : null;
+      if (result?.ingestionJobId) {
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: '知识库重新处理已开始，请稍后查看处理状态'
+        });
+        
+        // 等待一段时间后重新加载状态
+        setTimeout(() => {
+          loadKnowledgeBase();
+        }, 10000);
+      }
+
+    } catch (error) {
+      console.error('Error triggering knowledge base reprocessing:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '重新处理知识库失败，请稍后重试'
       });
     }
   };

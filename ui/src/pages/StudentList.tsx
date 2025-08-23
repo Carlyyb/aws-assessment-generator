@@ -22,6 +22,7 @@ import { listStudents, listStudentGroups } from '../graphql/queries';
 import { updateStudentGroup } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { GroupManagement } from '../components/GroupManagementClean';
+import { createTimestamp, formatRelativeTime } from '../utils/timeUtils';
 
 const client = generateClient();
 
@@ -96,7 +97,7 @@ const StudentList = () => {
         createdBy: 'system',
         teachers: [],
         students: processedStudents.map((s: any) => s.id),
-        createdAt: new Date().toISOString()
+        createdAt: createTimestamp()
       };
 
       setStudents(processedStudents);
@@ -107,7 +108,7 @@ const StudentList = () => {
         setInitialized(true);
         dispatchAlert({
           type: AlertType.SUCCESS,
-          content: `成功加载 ${processedStudents.length} 名学生和 ${groupsData.length + 1} 个分组`
+          content: `成功加载 ${processedStudents.length} 名学生和 ${groupsData.length - 1} 个分组`
         });
       }
 
@@ -237,14 +238,7 @@ const StudentList = () => {
   // 格式化最后登录时间
   const formatLastLogin = (lastLoginAt?: string | null) => {
     if (!lastLoginAt) return '从未登录';
-    const date = new Date(lastLoginAt);
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 3600 * 24));
-    
-    if (diffDays === 0) return '今天';
-    if (diffDays === 1) return '昨天';
-    if (diffDays < 7) return `${diffDays}天前`;
-    return date.toLocaleDateString();
+    return formatRelativeTime(lastLoginAt);
   };
 
   // 加入分组
@@ -262,12 +256,18 @@ const StudentList = () => {
         const groupId = group.value;
         const targetGroup = groups.find(g => g.id === groupId);
         if (!targetGroup) continue;
+        
         const newStudentIds = Array.from(new Set([...targetGroup.students, ...selectedStudents.map(s => s.id)]));
+        
         await client.graphql({
           query: updateStudentGroup,
           variables: {
             id: groupId,
             input: {
+              name: targetGroup.name,
+              description: targetGroup.description,
+              color: targetGroup.color,
+              teachers: targetGroup.teachers,
               students: newStudentIds
             }
           }
@@ -529,7 +529,7 @@ const StudentList = () => {
                     createdBy: 'system',
                     teachers: [],
                     students: processedStudents.map((s: any) => s.id),
-                    createdAt: new Date().toISOString()
+                    createdAt: createTimestamp()
                   };
 
                   setStudents(processedStudents);

@@ -10,6 +10,7 @@ import { AppSyncResolverEvent } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
+import { createTimestamp, getBeijingDateString } from '../utils/timeUtils';
 
 // 客户端初始化
 const ddbClient = new DynamoDBClient({});
@@ -72,7 +73,7 @@ export const handler = async (event: AppSyncResolverEvent<{}>): Promise<any> => 
         role: cognitoGroups[0] || 'students',
         needsPasswordChange: false,
         isActive: true,
-        createdAt: new Date().toISOString(),
+        createdAt: createTimestamp(),
         createdBy: 'system'
       };
       
@@ -80,7 +81,7 @@ export const handler = async (event: AppSyncResolverEvent<{}>): Promise<any> => 
     }
 
     // 更新最后登录时间
-    if (user.lastLoginAt !== new Date().toISOString().split('T')[0]) {
+    if (user.lastLoginAt !== getBeijingDateString()) {
       const updateParams = {
         TableName: usersTableName,
         Key: {
@@ -88,7 +89,7 @@ export const handler = async (event: AppSyncResolverEvent<{}>): Promise<any> => 
         },
         UpdateExpression: 'SET lastLoginAt = :lastLogin',
         ExpressionAttributeValues: {
-          ':lastLogin': new Date().toISOString()
+          ':lastLogin': createTimestamp()
         }
       };
       

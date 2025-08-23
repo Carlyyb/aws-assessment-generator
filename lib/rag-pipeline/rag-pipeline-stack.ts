@@ -235,7 +235,13 @@ export class RagPipelineStack extends NestedStack {
       enforceSSL: true,
       cors: [
         {
-          allowedMethods: [aws_s3.HttpMethods.HEAD, aws_s3.HttpMethods.GET, aws_s3.HttpMethods.POST, aws_s3.HttpMethods.PUT],
+          allowedMethods: [
+            aws_s3.HttpMethods.HEAD, 
+            aws_s3.HttpMethods.GET, 
+            aws_s3.HttpMethods.POST, 
+            aws_s3.HttpMethods.PUT,
+            aws_s3.HttpMethods.DELETE  // 添加DELETE方法支持
+          ],
           allowedOrigins: ['*'],
           allowedHeaders: ['*'],
           exposedHeaders: ['ETag'],
