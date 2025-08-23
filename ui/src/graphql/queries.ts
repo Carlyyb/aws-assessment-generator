@@ -154,6 +154,56 @@ export const listAssessments = /* GraphQL */ `
     }
   }
 `;
+export const listAllAssessments = /* GraphQL */ `
+  query ListAllAssessments {
+    listAllAssessments {
+      id
+      name
+      courseId
+      lectureDate
+      deadline
+      updatedAt
+      assessType
+      userId
+      multiChoiceAssessment {
+        title
+        question
+        answerChoices
+        correctAnswer
+        explanation
+      }
+      freeTextAssessment {
+        title
+        question
+        rubric {
+          weight
+          point
+        }
+      }
+      singleAnswerAssessment {
+        title
+        question
+        answerChoices
+        correctAnswer
+        explanation
+      }
+      trueFalseAssessment {
+        title
+        question
+        answerChoices
+        correctAnswer
+        explanation
+      }
+      published
+      status
+      course {
+        id
+        name
+        description
+      }
+    }
+  }
+`;
 export const listAssessTemplates = /* GraphQL */ `
   query ListAssessTemplates {
     listAssessTemplates {

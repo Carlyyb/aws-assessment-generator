@@ -52,16 +52,21 @@ ${
     ? `
   The questions are MULTIPLE choice questions where students can select MULTIPLE correct answers.
   The answer choices must be around the topics covered in the lecture.
-  Ensure that there are AT LEAST 2 correct answers per question (can be 2, 3, or 4 correct answers).
+  
+  MANDATORY REQUIREMENT: EVERY QUESTION MUST have AT LEAST 2 correct answers (minimum 2, maximum 4 correct answers).
+  This is a STRICT requirement - NO single correct answer questions are allowed for multiple choice assessment.
+  You MUST ensure that each question has 2, 3, or 4 correct answers out of the 4 options provided.
+  
   Indicate ALL correct answers by listing their option numbers (e.g., "1,2" for options A and B, or "2,3,4" for options B, C, and D).
   The correctAnswer field should contain multiple numbers representing the correct options.
   Articulate a reasoned and concise defense for your chosen answers without relying on direct references to the text labeled as "explanation".
   CRITICAL: The explanation must NOT contain any S3 URLs, file paths, document references, or technical metadata. Focus only on the educational concept being tested.
   ALL answer choices and explanations must be in the language: ${assessmentTemplate.docLang}.
   
-  Example format for correctAnswer:
+  Example format for correctAnswer (MANDATORY: at least 2 correct answers):
   - If options A and C are correct: correctAnswer should be [1, 3]
   - If options B, C, and D are correct: correctAnswer should be [2, 3, 4]
+  - If options A, B, and D are correct: correctAnswer should be [1, 2, 4]
 `
     : ''
 }
@@ -127,6 +132,7 @@ Use this exact XML format for your response:
             <answerChoices>[Option 4 in ${assessmentTemplate.docLang}]</answerChoices>
             <correctAnswer>[Correct Answer Number 1]</correctAnswer>
             <correctAnswer>[Correct Answer Number 2]</correctAnswer>
+            <!-- Add more <correctAnswer> tags if 3 or 4 answers are correct -->
             <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
     `
         : ''
@@ -159,6 +165,7 @@ Use this exact XML format for your response:
             <answerChoices>[Option 4 in ${assessmentTemplate.docLang}]</answerChoices>
             <correctAnswer>[Correct Answer Number 1]</correctAnswer>
             <correctAnswer>[Correct Answer Number 2]</correctAnswer>
+            <!-- Add more <correctAnswer> tags if 3 or 4 answers are correct -->
             <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
     `
         : ''
@@ -330,6 +337,15 @@ Focus on enhancing the educational content, not the format.
 CRITICAL LANGUAGE REQUIREMENT:
 ${languageInstructions}
 
+${assessmentTemplate.assessType === AssessType.multiChoiceAssessment 
+  ? `
+MANDATORY REQUIREMENT FOR MULTIPLE CHOICE: EVERY QUESTION MUST have AT LEAST 2 correct answers (minimum 2, maximum 4 correct answers).
+This is a STRICT requirement - NO single correct answer questions are allowed for multiple choice assessment.
+You MUST ensure that each question has 2, 3, or 4 correct answers out of the 4 options provided.
+`
+  : ''
+}
+
 If relevant, use the content in the EXTRACTED_DOCUMENTS to improve the QUESTION's academic accuracy and depth.
 Any reference to the EXTRACTED_DOCUMENTS should include the uri of the document.
 CRITICAL: The <question> field must contain ONLY the pure question text, no additional context or explanations.
@@ -364,6 +380,7 @@ Use this exact XML format:
             <answerChoices>[Option 4 in ${assessmentTemplate.docLang}]</answerChoices>
             <correctAnswer>[Correct Answer Number 1]</correctAnswer>
             <correctAnswer>[Correct Answer Number 2]</correctAnswer>
+            <!-- Add more <correctAnswer> tags if 3 or 4 answers are correct -->
         <!-- for multiple choice questions only -->
         <explanation>[Explanation for Correctness in ${assessmentTemplate.docLang}]</explanation>
     `

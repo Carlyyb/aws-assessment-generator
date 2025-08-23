@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import { 
   Table, 
   Header, 
@@ -18,7 +18,7 @@ import {
 } from '@cloudscape-design/components';
 import { useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
-import { listAssessments } from '../graphql/queries';
+import { listAssessments, listAllAssessments } from '../graphql/queries';
 import { deleteAssessment, unpublishAssessment, publishAssessment } from '../graphql/mutations';
 import { Assessment, AssessStatus } from '../graphql/API';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
@@ -30,7 +30,7 @@ import { formatBeijingTime } from '../utils/timeUtils';
 
 const client = generateClient();
 
-export default () => {
+const FindAssessmentsPage = () => {
   const navigate = useNavigate();
   const dispatchAlert = useContext(DispatchAlertContext);
   const { adminInfo } = useAdminPermissions();
@@ -104,11 +104,15 @@ export default () => {
     }
   };
 
-  const getAssessments = () => {
+  const getAssessments = useCallback(() => {
+    // 根据用户权限选择适当的查询
+    const query = adminInfo?.isAdmin ? listAllAssessments : listAssessments;
+    const queryName = adminInfo?.isAdmin ? 'listAllAssessments' : 'listAssessments';
+    
     client
-      .graphql<any>({ query: listAssessments })
+      .graphql<any>({ query })
       .then(({ data }) => {
-        const list = data?.listAssessments || [];
+        const list = data?.[queryName] || [];
         const errors = new Map<string, string>();
         
         list.forEach((assessment: any) => {
@@ -136,7 +140,7 @@ export default () => {
           content: '获取测试列表时发生错误，请稍后重试' 
         });
       });
-  };
+  }, [adminInfo?.isAdmin, dispatchAlert]);
 
   // 批量删除处理函数
   const handleBatchDelete = async () => {
@@ -319,7 +323,9 @@ export default () => {
     return hasDataError || adminInfo?.isAdmin || item.status === AssessStatus.FAILED;
   };
 
-  useEffect(getAssessments, []);
+  useEffect(() => {
+    getAssessments();
+  }, [getAssessments]);
 
   return (
     <>
@@ -327,7 +333,14 @@ export default () => {
         <Container
           header={
             <SpaceBetween size="l">
-              <Header variant="h1">{getText('teachers.assessments.find.title')}</Header>
+              <Header variant="h1">
+                {getText('teachers.assessments.find.title')}
+                {adminInfo?.isAdmin && (
+                  <Box variant="small" color="text-status-info" display="inline" margin={{ left: 's' }}>
+                    (管理员视图 - 显示所有用户的评估)
+                  </Box>
+                )}
+              </Header>
             </SpaceBetween>
           }
         >
@@ -393,6 +406,12 @@ export default () => {
                   header: getText('common.labels.course'),
                   cell: (item) => item.course?.name,
                 },
+                // 只有管理员才显示创建者列
+                ...(adminInfo?.isAdmin ? [{
+                  id: 'creator',
+                  header: '创建者',
+                  cell: (item: any) => item.userId || item.createdBy || '未知',
+                }] : []),
                 {
                   id: 'lectureDate',
                   header: getText('teachers.assessments.find.lecture_date'),
@@ -596,6 +615,8 @@ export default () => {
               columnDisplay={[
                 { id: 'name', visible: true },
                 { id: 'course', visible: true },
+                // 只有管理员才显示创建者列
+                ...(adminInfo?.isAdmin ? [{ id: 'creator', visible: true }] : []),
                 { id: 'lectureDate', visible: true },
                 { id: 'deadline', visible: true },
                 { id: 'updatedAt', visible: true },
@@ -726,3 +747,5 @@ export default () => {
     </>
   );
 };
+
+export default FindAssessmentsPage;

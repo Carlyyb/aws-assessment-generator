@@ -8,6 +8,31 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ## 最新更新记录
 
+### 2025-08-23: 多选题AI生成强化约束
+
+- **功能描述**：强化多选题AI生成的约束条件，确保AI必须为每道多选题生成至少2个正确答案
+- **核心改进**：
+  - **强制要求**：多选题必须有至少2个正确答案（最少2个，最多4个）
+  - **严格约束**：禁止在多选题评估中出现单一正确答案的题目
+  - **明确指导**：在prompt中添加具体示例和要求说明
+- **技术实现**：
+  - **Prompt 增强** (`lib/questions-generation/lambdas/event-handler/services/prompts.ts`)：
+    - 在 `getInitialQuestionsPrompt()` 中添加强制要求说明
+    - 在 `improveQuestionPrompt()` 中添加相同约束
+    - 更新XML格式示例，明确显示多个正确答案
+  - **约束细节**：
+    - 明确标明"MANDATORY REQUIREMENT"和"STRICT requirement"
+    - 提供具体示例：如[1,3]、[2,3,4]、[1,2,4]等格式
+    - 在XML模板中添加注释说明可添加更多correctAnswer标签
+- **影响范围**：
+  - 影响所有新生成的多选题评估
+  - 影响通过知识库改进的多选题
+  - 确保多选题的教学价值和评估质量
+- **教学价值**：
+  - 真正体现多选题的特点，避免伪装的单选题
+  - 提高学生批判性思维和综合分析能力
+  - 更好地评估学生对知识点的全面掌握
+
 ### 2025-08-23: 班级管理权限控制功能
 
 - **功能描述**：为班级管理系统添加细粒度权限控制，允许管理员设置每个班级的可访问老师列表
@@ -912,6 +937,58 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 ---
 
 ### 6. 评估管理系统
+
+#### 功能名称：管理员评估权限管理
+- **功能描述**：管理员可以查看和管理所有用户创建的评估，而普通用户只能查看自己的评估
+- **核心功能**：
+  - **权限区分**：
+    - 普通用户使用 `listAssessments` 查询，只返回用户自己创建的评估
+    - 管理员使用 `listAllAssessments` 查询，返回所有用户的评估
+    - 管理员界面显示创建者信息列
+  - **安全控制**：
+    - `listAllAssessments` resolver 验证用户组权限
+    - 只有 admin 和 super_admin 组可以访问
+    - 前端根据权限动态选择查询类型
+- **技术实现**：
+  - **GraphQL Schema 更新** (`lib/schema.graphql`)：
+    - Query 类型新增 `listAllAssessments: [Assessment]`
+    - Assessment 类型新增 `userId: String` 字段用于显示创建者
+  - **新增 Resolver** (`lib/resolvers/listAllAssessments.ts`)：
+    - 权限验证：检查用户组是否包含 admin 或 super_admin
+    - 无过滤器的 DynamoDB Scan 操作，返回所有评估
+    - 错误处理和权限拒绝响应
+  - **前端更新** (`ui/src/pages/FindAssessments.tsx`)：
+    - 根据 `adminInfo?.isAdmin` 动态选择查询
+    - 管理员视图增加"创建者"列显示 userId 或 createdBy
+    - 页面标题显示管理员视图指示器
+    - 响应式列显示配置
+- **用户体验**：
+  - 管理员界面明确标识为"管理员视图"
+  - 创建者信息列帮助管理员识别评估归属
+  - 无缝的权限切换，自动选择适当的查询
+- **权限逻辑**：
+  - **普通用户**：只能看到和管理自己创建的评估
+  - **管理员**：可以查看所有评估，具有完整管理权限
+  - **数据过滤**：后端 resolver 级别的权限控制
+- **输入**：用户身份认证信息
+- **输出**：根据权限过滤的评估列表
+- **代码位置**：
+  - `lib/resolvers/listAllAssessments.ts` - 管理员评估查询
+  - `ui/src/pages/FindAssessments.tsx` - 前端权限适配
+  - `ui/src/graphql/queries.ts` - GraphQL 查询定义
+- **使用示例**：
+  ```typescript
+  // 根据管理员权限选择查询
+  const query = adminInfo?.isAdmin ? listAllAssessments : listAssessments;
+  const queryName = adminInfo?.isAdmin ? 'listAllAssessments' : 'listAssessments';
+  
+  const { data } = await client.graphql({ query });
+  const assessments = data[queryName];
+  ```
+- **依赖关系**：用户认证、权限管理、GraphQL API
+- **安全性**：后端权限验证，防止权限绕过
+- **版本控制**：v1.2.0 - 管理员功能增强
+- **未来扩展**：按用户筛选、评估转移功能、批量管理操作
 
 #### 功能名称：评估编辑与发布
 - **功能描述**：教师可以编辑生成的评估内容，调整题目，然后发布给学生

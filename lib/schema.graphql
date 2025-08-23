@@ -337,6 +337,7 @@ type Assessment {
   published: Boolean!
   status: AssessStatus!
   course: Course
+  userId: String
   createdBy: String
   # 新增字段
   timeLimited: Boolean  # 是否限制测试用时
@@ -492,6 +493,7 @@ type Query {
   listStudentGroups: [StudentGroup]
   getAssessment(id: ID!): Assessment
   listAssessments: [Assessment]
+  listAllAssessments: [Assessment]
   listAssessTemplates: [AssessTemplate]
   getStudentAssessment(parentAssessId: ID!): StudentAssessment
   listStudentAssessments: [StudentAssessment]
