@@ -50,7 +50,7 @@ export default function ClassManagement() {
   const [isPermissionsModalVisible, setPermissionsModalVisible] = useState(false);
   const [newClassName, setNewClassName] = useState('');
   const [newClassDescription, setNewClassDescription] = useState('');
-  const [newStudentEmail, setNewStudentEmail] = useState('');
+  const [newStudentIdentifier, setNewStudentIdentifier] = useState('');
   const [availableTeachers, setAvailableTeachers] = useState<Teacher[]>([]);
   const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
   const dispatchAlert = useContext(DispatchAlertContext);
@@ -158,7 +158,7 @@ export default function ClassManagement() {
         variables: {
           input: {
             classId: selectedClass.id,
-            studentEmail: newStudentEmail,
+            studentIdentifier: newStudentIdentifier,
           },
         },
       });

@@ -68,7 +68,7 @@ type Student {
   lastLoginAt: AWSDateTime
   assessmentCount: Int
   groups: [StudentGroup!]
-  classes: [Class!]
+  # classes: [Class!]
   needsPasswordChange: Boolean
   phoneNumber: String
   createdAt: AWSDateTime
@@ -192,35 +192,40 @@ input StudentGroupInput {
 }
 
 # 班级管理类型
-type Class @model @auth(rules: [
-  { allow: groups, groups: ["teachers"], operations: [create, update, delete, read] }
-  { allow: groups, groups: ["students"], operations: [read] }
-]) {
-  id: ID!
-  name: String!
-  description: String
-  teacherId: String! @index
-  accessibleTeachers: [String!]! # 可访问此班级的老师用户名列表
-  students: [Student] @hasMany
-  createdAt: AWSDateTime!
-  updatedAt: AWSDateTime!
-}
+# type Class @model @auth(rules: [
+#   { allow: groups, groups: ["teachers"], operations: [create, update, delete, read] }
+#   { allow: groups, groups: ["students"], operations: [read] }
+# ]) {
+#   id: ID!
+#   name: String!
+#   description: String
+#   teacherId: String! @index
+#   accessibleTeachers: [String!]! # 可访问此班级的老师用户名列表
+#   students: [Student] @hasMany
+#   createdAt: AWSDateTime!
+#   updatedAt: AWSDateTime!
+# }
 
-input CreateClassInput {
-  name: String!
-  description: String
-  accessibleTeachers: [String!]
-}
+# input CreateClassInput {
+#   name: String!
+#   description: String
+#   accessibleTeachers: [String!]
+# }
 
-input UpdateClassPermissionsInput {
-  classId: ID!
-  accessibleTeachers: [String!]!
-}
+# input UpdateClassPermissionsInput {
+#   classId: ID!
+#   accessibleTeachers: [String!]!
+# }
 
-input AddStudentToClassInput {
-  classId: ID!
-  studentIdentifier: String!  # 支持姓名或用户名搜索
-}
+# input AddStudentToClassInput {
+#   classId: ID!
+#   studentIdentifier: String!
+# }
+
+# input AddStudentsToClassInput {
+#   classId: ID!
+#   studentIdentifiers: [String!]!
+# }
 
 type AssessTemplate {
   id: ID!
@@ -469,13 +474,14 @@ type Mutation {
   updateStudentGroup(id: ID!, input: StudentGroupInput!): StudentGroup
   deleteStudentGroup(id: ID!): Boolean
   
-  # 班级管理mutations
-  createClass(input: CreateClassInput!): Class
-  updateClass(id: ID!, input: CreateClassInput!): Class
-  updateClassPermissions(input: UpdateClassPermissionsInput!): Class
-  deleteClass(id: ID!): Boolean
-  addStudentToClass(input: AddStudentToClassInput!): Class
-  removeStudentFromClass(classId: ID!, studentId: ID!): Class
+  # 班级管理mutations - 暂时注释
+  # createClass(input: CreateClassInput!): Class
+  # updateClass(id: ID!, input: CreateClassInput!): Class
+  # updateClassPermissions(input: UpdateClassPermissionsInput!): Class
+  # deleteClass(id: ID!): Boolean
+  # addStudentToClass(input: AddStudentToClassInput!): Class
+  # addStudentsToClass(input: AddStudentsToClassInput!): Class
+  # removeStudentFromClass(classId: ID!, studentId: ID!): Class
 }
 
 type Query {
@@ -509,10 +515,10 @@ type Query {
   getUser(username: String!): User
   getCurrentUser: User
   
-  # 班级管理查询
-  listClasses: [Class]
-  listClassesByTeacher: [Class]
-  getClassById(id: ID!): Class
+  # 班级管理查询 - 暂时注释
+  # listClasses: [Class]
+  # listClassesByTeacher: [Class]
+  # getClassById(id: ID!): Class
   
   # 密码管理查询
   checkPasswordResetToken(token: String!): Boolean
