@@ -164,7 +164,7 @@ export default function ClassManagement() {
       });
 
       setAddStudentModalVisible(false);
-      setNewStudentEmail('');
+      setNewStudentIdentifier('');
       loadClasses();
       dispatchAlert({
         type: AlertType.SUCCESS,
@@ -347,7 +347,7 @@ export default function ClassManagement() {
               <Button
                 variant="primary"
                 onClick={handleAddStudent}
-                disabled={!newStudentEmail}
+                disabled={!newStudentIdentifier}
               >
                 {getText('common.actions.add')}
               </Button>
@@ -359,8 +359,8 @@ export default function ClassManagement() {
             description={getText('teachers.class.student_email_description')}
           >
             <Input
-              value={newStudentEmail}
-              onChange={({ detail }) => setNewStudentEmail(detail.value)}
+              value={newStudentIdentifier}
+              onChange={({ detail }) => setNewStudentIdentifier(detail.value)}
               type="email"
             />
           </FormField>
