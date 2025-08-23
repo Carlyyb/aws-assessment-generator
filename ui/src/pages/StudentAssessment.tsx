@@ -759,7 +759,7 @@ export default function StudentAssessment() {
                 {/* 当前题目显示 */}
                 <Container header={
                   <Header variant="h2">
-                    {getTextWithParams('student.assessments.detail.question_title', { number: activeStepIndex + 1 })} / {questions.length}
+                    {getTextWithParams('students.assessments.detail.question_title', { number: activeStepIndex + 1 })} / {questions.length}
                   </Header>
                 }>
                   <Box variant="p">{questions[activeStepIndex]?.question}</Box>
@@ -768,7 +768,7 @@ export default function StudentAssessment() {
                 {/* 答题区域 */}
                 <Container header={<Header variant="h2">{getText('components.assessment.answer')}</Header>}>
                   {assessType === AssessType.freeTextAssessment ? (
-                    <FormField label={getText('student.assessments.detail.provide_answer')}>
+                    <FormField label={getText('students.assessments.detail.provide_answer')}>
                       <Textarea
                         value={answers[activeStepIndex] || ''}
                         onChange={({ detail }) => {
@@ -780,7 +780,7 @@ export default function StudentAssessment() {
                     </FormField>
                   ) : assessType === AssessType.multiChoiceAssessment ? (
                     // 多选题处理
-                    <FormField label={getText('student.assessments.detail.choose_multiple_answers')}>
+                    <FormField label={getText('students.assessments.detail.choose_multiple_answers')}>
                       <SpaceBetween size="s">
                         {((questions[activeStepIndex] as MultiChoice).answerChoices || []).map((answerChoice, i) => {
                           const currentAnswers = answers[activeStepIndex] ? answers[activeStepIndex].split(',') : [];
@@ -812,7 +812,7 @@ export default function StudentAssessment() {
                     </FormField>
                   ) : (
                     // 单选题和判断题处理
-                    <FormField label={getText('student.assessments.detail.choose_answer')}>
+                    <FormField label={getText('students.assessments.detail.choose_answer')}>
                       <Tiles
                         columns={1}
                         value={answers[activeStepIndex] || ''}
@@ -877,7 +877,7 @@ export default function StudentAssessment() {
         navigationHide
       />
       
-      <Modal visible={showSpinner} header={<Header>{getText('student.assessments.detail.grading')}</Header>}>
+      <Modal visible={showSpinner} header={<Header>{getText('students.assessments.detail.grading')}</Header>}>
         <SpaceBetween size="s" alignItems="center">
           <Spinner size="big" />
         </SpaceBetween>

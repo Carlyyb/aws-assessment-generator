@@ -617,7 +617,11 @@
         "provide_answer": "请作答：",
         "choose_answer": "请选择：",
         "choose_multiple_answers": "请选择多个答案（可选择多个选项）：",
-        "grading": "评分中..."
+        "grading": "评分中...",
+        "explanation": "解答",
+        "answer": "你的答案：",
+        "points_with_rate": "得分（{rate}）",
+        "rubric": "评分标准"
       },
       "review": {
         "your_score": "你的分数：",
@@ -630,7 +634,7 @@
         "choose_multiple_answers": "请选择多个答案（可选择多个选项）：",
         "grading": "评分中...",
         "explanation": "解答",
-        "answer": "答案",
+        "answer": "你的答案：",
         "points_with_rate": "得分（{rate}）",
         "rubric": "评分标准"
       }

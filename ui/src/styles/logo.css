@@ -4,17 +4,25 @@
   top: 50%;
   left: 16px;
   transform: translateY(-50%);
-  z-index: 1000;
+  /* 需要高于 TopNavigation（其 z-index 被设置为 ~1200） */
+  z-index: 1401 !important;
   pointer-events: none;
   display: flex;
   align-items: center;
   gap: 8px;
+  /* 移除背景色，保持透明 */
+  background: transparent !important;
 }
 
 .custom-logo {
-  height: 24px;
+  /* 与 Cloudscape TopNavigation 高度保持一致（默认约 56px） */
+  height: 56px; /* 顶部导航默认高度 */
+  max-height: 56px;
   object-fit: contain;
   max-width: 120px;
+  width: auto;
+  /* 确保logo本身无背景 */
+  background: transparent !important;
 }
 
 /* 调整标题位置以为logo留出空间 */
@@ -78,4 +86,11 @@
 [id="h"] {
   z-index: 1300 !important;
   position: relative !important;
+}
+
+/* 进一步确保任何可能包裹logo的身份区域为透明背景 */
+.awsui-top-navigation__identity,
+[class*="top-navigation"] [class*="identity"],
+[data-awsui-context="top-navigation"] [class*="identity"] {
+  background-color: transparent !important;
 }

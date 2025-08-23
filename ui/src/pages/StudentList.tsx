@@ -84,7 +84,7 @@ const StudentList = () => {
         ...student,
         email: student.email || '',
         lastLoginAt: student.lastLoginAt || undefined,
-        assessmentCount: student.assessmentCount || 0,
+        assessmentCount: students.assessmentCount || 0,
         groups: student.groups || []
       }));
 
@@ -517,7 +517,7 @@ const StudentList = () => {
                     ...student,
                     email: student.email || '',
                     lastLoginAt: student.lastLoginAt || undefined,
-                    assessmentCount: student.assessmentCount || 0,
+                    assessmentCount: students.assessmentCount || 0,
                     groups: student.groups || []
                   }));
 

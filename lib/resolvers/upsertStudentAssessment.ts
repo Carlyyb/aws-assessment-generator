@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 // import { Context } from '@aws-appsync/utils';
 import * as ddb from '@aws-appsync/utils/dynamodb';
+import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
   const userId = ctx.identity.sub;

@@ -564,9 +564,17 @@ const FindAssessmentsPage = () => {
                                         onClick={() =>
                                           client
                                             .graphql<any>({ query: publishAssessment, variables: { assessmentId: item.id } })
-                                            .then(() => dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.assessments.find.published_successfully') }))
-                                            .then(getAssessments)
-                                            .catch(() => dispatchAlert({ type: AlertType.ERROR, content: getText('common.status.error') }))
+                                            .then(({ data }) => {
+                                              if (!data || data.publishAssessment !== true) {
+                                                throw new Error('Publish mutation returned falsy result');
+                                              }
+                                              dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.assessments.find.published_successfully') });
+                                              return getAssessments();
+                                            })
+                                            .catch((e) => {
+                                              console.error('publishAssessment failed', e);
+                                              dispatchAlert({ type: AlertType.ERROR, content: getText('common.status.error') });
+                                            })
                                         }
                                       >
                                         {getText('common.actions.publish')}
@@ -591,18 +599,6 @@ const FindAssessmentsPage = () => {
                                   </Button>
                                 )}
                                 
-                                {canDelete(item) && (
-                                  <Button
-                                    variant="normal"
-                                    iconName="remove"
-                                    onClick={() => {
-                                      setAssessmentToDelete(item);
-                                      setShowDeleteModal(true);
-                                    }}
-                                  >
-                                    删除
-                                  </Button>
-                                )}
                               </>
                             )}
                           </>
