@@ -254,7 +254,7 @@ export default function ReviewAssessment() {
           }}>
             答对 {correctCount} / {totalCount} 题
             <div style={{ marginTop: '8px', fontSize: '14px', fontWeight: 'bold', color: scorePercentage >= 60 ? '#28a745' : '#dc3545' }}>
-              得分: {scorePercentage}%
+              得分: {scorePercentage}
             </div>
             <div style={{ marginTop: '8px' }}>
               <div style={{

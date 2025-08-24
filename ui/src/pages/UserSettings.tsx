@@ -5,7 +5,7 @@ import { generateClient } from 'aws-amplify/api';
 import { changePasswordMutation } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { getText } from '../i18n/lang';
-import { ThemeSettings } from '../components/ThemeSettings';
+import { EnhancedThemeSettings } from '../components/EnhancedThemeSettings';
 
 const client = generateClient();
 
@@ -114,7 +114,7 @@ export default () => {
           {
             id: 'theme',
             label: getText('theme.title'),
-            content: <ThemeSettings />
+            content: <EnhancedThemeSettings />
           },
           {
             id: 'password',

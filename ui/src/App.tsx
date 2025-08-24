@@ -29,12 +29,14 @@ import { RoutesContext } from './contexts/routes';
 import { BreadcrumbProvider, useBreadcrumb } from './contexts/breadcrumbs';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { generateBreadcrumbs } from './utils/breadcrumbs';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Notifications } from '@mantine/notifications';
 import { useAdminPermissions } from './utils/adminPermissions';
 import { getAdminLevelDisplayName } from './utils/adminDisplayUtils';
 import { AuthMonitor } from './components/AuthMonitor';
 import PasswordChangeMonitor from './components/PasswordChangeMonitor';
+import { useUserActivityTracker } from './hooks/useUserActivityTracker';
 
 const LOCALE = 'zh';
 
@@ -49,6 +51,38 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
   const { currentTheme, globalLogo } = useTheme();
   const { adminInfo, error: adminError } = useAdminPermissions();
   const { getOverride } = useBreadcrumb();
+  
+  // 启用用户活跃度跟踪
+  useUserActivityTracker();
+
+  // 检查路由是否有效
+  const isValidRoute = (pathname: string): boolean => {
+    // 定义有效的路由模式
+    const validRoutes = [
+      '/assessment',
+      '/assessments',
+      '/assessments/find-assessments',
+      '/assessments/create-assessments',
+      '/edit-assessment/',
+      '/assessment-results/',
+      '/students',
+      '/students/take-assessments',
+      '/students/view-results',
+      '/knowledge-base',
+      '/knowledge-base/manage-knowledge-base',
+      '/admin',
+      '/admin/user-management',
+      '/admin/system-settings'
+    ];
+
+    // 检查是否匹配任何有效路由
+    return validRoutes.some(route => {
+      if (route.endsWith('/')) {
+        return pathname.startsWith(route);
+      }
+      return pathname === route || pathname.startsWith(route + '/');
+    });
+  };
 
   // Debug logging for admin permissions
   useEffect(() => {
@@ -144,20 +178,25 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
               <Notifications />
               {/* 应用现代化Cloudscape主题样式到整个应用框架 */}
               <div 
-                style={{
-                  '--theme-primary-color': currentTheme.primaryColor,
-                  '--theme-secondary-color': currentTheme.secondaryColor,
-                  '--theme-background-color': currentTheme.backgroundColor,
-                  '--theme-text-color': currentTheme.textColor,
-                } as React.CSSProperties}
-                data-theme={currentTheme.id === 'dark' ? 'dark' : 'light'}
+                style={
+                  Object.entries(currentTheme.colors || {}).reduce((acc: Record<string, string>, [token, value]) => {
+                    acc[`--${token}`] = value;
+                    return acc;
+                  }, {})
+                }
+                data-theme={currentTheme.id}
                 className="cloudscape-modern-theme"
               >
                 <div id="h" style={{ position: 'relative' }} data-has-logo={globalLogo ? 'true' : 'false'}>
                   <TopNavigation
                     identity={{
                       href: '#',
-                      title: '', // 删除标题文字，为logo留出空间
+                      title: getText('common.brand'),
+                      // 使用Cloudscape推荐的logo属性
+                      logo: globalLogo ? { 
+                        src: globalLogo, 
+                        alt: getText('common.brand') 
+                      } : undefined,
                     }}
                     utilities={[
                       {
@@ -184,10 +223,6 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
                         className="custom-logo"
                         onLoad={() => console.log('✅ Logo loaded successfully')}
                         onError={(e) => console.error('❌ Logo failed to load:', e)}
-                        style={{ 
-                          border: '2px solid red', // 临时边框用于调试定位
-                          backgroundColor: 'yellow' // 临时背景色用于调试
-                        }}
                       />
                     </div>
                   ) : (
@@ -207,6 +242,18 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
                 breadcrumbs={
                   <BreadcrumbGroup
                     items={generateBreadcrumbs(activeHref, getOverride)}
+                    onFollow={(e) => {
+                      e.preventDefault();
+                      // 验证路径是否有效
+                      const targetPath = e.detail.href;
+                      if (targetPath && isValidRoute(targetPath)) {
+                        router.navigate(targetPath);
+                      } else {
+                        // 如果路径无效，重定向到首页
+                        console.warn('Invalid breadcrumb path:', targetPath, 'redirecting to home');
+                        router.navigate('/');
+                      }
+                    }}
                   />
                 }
                 navigationOpen={true}
@@ -310,7 +357,9 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
   return (
     <ThemeProvider userProfile={userProfile}>
       <BreadcrumbProvider>
-        <AppContent userProfile={userProfile} signOut={signOut} />
+        <ErrorBoundary>
+          <AppContent userProfile={userProfile} signOut={signOut} />
+        </ErrorBoundary>
       </BreadcrumbProvider>
     </ThemeProvider>
   );

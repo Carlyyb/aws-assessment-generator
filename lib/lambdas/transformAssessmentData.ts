@@ -1,4 +1,5 @@
 import { AppSyncResolverEvent, Context } from 'aws-lambda';
+import { fillAssessmentDefaults, fillStudentAssessmentDefaults, fillRequiredFields } from '../utils/nullSafeQuery';
 
 export interface TransformDataPayload {
   operation: 'transformAssessmentData' | 'transformStudentAssessmentData' | 'transformAssessmentListData';
@@ -61,21 +62,24 @@ export const handler = async (
     
     switch (operation) {
       case 'transformAssessmentData':
-        // 单个测试数据转换
-        return transform(data);
+        // 单个测试数据转换，应用默认值以防止null错误
+        const transformedAssessment = transform(data);
+        return fillAssessmentDefaults(transformedAssessment);
         
       case 'transformStudentAssessmentData':
         // 学生测试数据转换，特别处理 assessment 属性
         const transformedResult = transform(data);
         if (transformedResult && transformedResult.assessment) {
-          transformedResult.assessment = transform(transformedResult.assessment);
+          transformedResult.assessment = fillAssessmentDefaults(transform(transformedResult.assessment));
         }
-        return transformedResult;
+        return fillStudentAssessmentDefaults(transformedResult);
         
       case 'transformAssessmentListData':
-        // 测试列表数据转换
+        // 测试列表数据转换，为每个item应用默认值
         if (!data.items) return data;
-        const transformedItems = data.items.map((item: any) => transform(item));
+        const transformedItems = data.items.map((item: any) => 
+          fillAssessmentDefaults(transform(item))
+        );
         return { items: transformedItems };
         
       default:

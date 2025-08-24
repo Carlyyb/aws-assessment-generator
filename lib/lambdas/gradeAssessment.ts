@@ -62,12 +62,12 @@ class Lambda implements LambdaInterface {
       result = gradeSingleAnswer(singleAnswerAssessment, answers);
     }
 
-    // Record grading summary log for easy search: username+timestamp+examName+score%
+    // Record grading summary log for easy search: username+timestamp+examName+score
     try {
       const username = (event as any)?.identity?.username || (event as any)?.identity?.claims?.username || 'unknown-user';
       const examName = event.prev?.result?.name || 'unknown-exam';
       const timestamp = new Date().toISOString();
-      const scoreText = result?.score !== undefined ? `${result.score}%` : 'N/A';
+      const scoreText = (result?.score !== undefined && result?.score !== null) ? `${result.score}分` : 'N/A';
       const composite = `${username}+${timestamp}+${examName}+${scoreText}`;
       // Log exactly the composite string for easy searching
       logger.info(composite);
@@ -135,7 +135,7 @@ function gradeMultiChoice(mulichoiceAssessment: MultiChoice[], answers: any) {
   
   // 计算总分百分比
   const finalScore = Math.round((totalScore / mulichoiceAssessment.length) * 100);
-  logger.info(`Total score: ${totalScore}/${mulichoiceAssessment.length} = ${finalScore}%`);
+  logger.info(`Total score: ${totalScore}/${mulichoiceAssessment.length} = ${finalScore}`);
   
   return { score: finalScore };
 }
@@ -156,7 +156,7 @@ function gradeTrueFalse(trueFalseAssessment: TrueFalse[], answers: any) {
     logger.info(`TF Q${i + 1}: student=${String(studentBool)} correct=${String(correctBool)} score=${isCorrect ? 1 : 0}`);
   }
   const finalScore = Math.round((totalScore / trueFalseAssessment.length) * 100);
-  logger.info(`TF Total score: ${totalScore}/${trueFalseAssessment.length} = ${finalScore}%`);
+  logger.info(`TF Total score: ${totalScore}/${trueFalseAssessment.length} = ${finalScore}`);
   return { score: finalScore };
 }
 
@@ -173,7 +173,7 @@ function gradeSingleAnswer(singleAnswerAssessment: SingleAnswer[], answers: any)
     logger.info(`SA Q${i + 1}: student=${String(studentIndex)} correct=${String(correctIndex)} score=${isCorrect ? 1 : 0}`);
   }
   const finalScore = Math.round((totalScore / singleAnswerAssessment.length) * 100);
-  logger.info(`SA Total score: ${totalScore}/${singleAnswerAssessment.length} = ${finalScore}%`);
+  logger.info(`SA Total score: ${totalScore}/${singleAnswerAssessment.length} = ${finalScore}`);
   return { score: finalScore };
 }
 

@@ -29,11 +29,49 @@ export const addAssessmentDefaults = (
   assessment?: BaseAssessment | null
 ): ExtendedAssessment => {
   // 允许 assessment 为空，返回带有安全默认值的扩展对象
-  const base = (assessment ?? ({} as BaseAssessment)) as BaseAssessment;
+  if (!assessment) {
+    return {
+      id: '',
+      name: '',
+      courseId: '',
+      assessType: 'multiChoiceAssessment',
+      lectureDate: null,
+      deadline: null, 
+      updatedAt: null,
+      status: null,
+      timeLimited: false,
+      timeLimit: 120,
+      allowAnswerChange: true,
+      studentGroups: ['ALL'],
+      courses: [],
+      attemptLimit: 1,
+      scoreMethod: 'highest',
+      published: false,
+      multiChoiceAssessment: [],
+      freeTextAssessment: [],
+      trueFalseAssessment: [],
+      singleAnswerAssessment: []
+    } as unknown as ExtendedAssessment;
+  }
+
+  const base = assessment as BaseAssessment;
   const extended = (assessment as unknown as (BaseAssessment & AssessmentExtra)) ?? ({} as AssessmentExtra);
 
   return {
-    ...(assessment ? base : ({} as BaseAssessment)),
+    ...base,
+    // 为可能为null的字段提供默认值
+    name: base.name || '未命名测试',
+    updatedAt: base.updatedAt || null,
+    lectureDate: base.lectureDate || null,
+    deadline: base.deadline || null,
+    course: base.course || null,
+    published: base.published ?? false,
+    status: base.status || null,
+    multiChoiceAssessment: base.multiChoiceAssessment || [],
+    freeTextAssessment: base.freeTextAssessment || [],
+    trueFalseAssessment: base.trueFalseAssessment || [],
+    singleAnswerAssessment: base.singleAnswerAssessment || [],
+    // 扩展字段
     timeLimited: extended?.timeLimited ?? false,
     timeLimit: extended?.timeLimit ?? 120,
     allowAnswerChange: extended?.allowAnswerChange ?? true,
@@ -48,15 +86,38 @@ export const addAssessmentDefaults = (
 type StudentAssessmentExtra = Partial<{ attemptCount: number; duration: number; scores: number[] }>;
 
 export const addStudentAssessmentDefaults = (
-  studentAssessment: BaseStudentAssessment,
+  studentAssessment?: BaseStudentAssessment | null,
   assessment?: ExtendedAssessment | null
 ): ExtendedStudentAssessment => {
+  if (!studentAssessment) {
+    return {
+      userId: '',
+      parentAssessId: '',
+      answers: null,
+      completed: false,
+      score: null,
+      report: null,
+      updatedAt: null,
+      attemptCount: 0,
+      duration: undefined,
+      scores: [],
+      remainingAttempts: assessment?.attemptLimit ?? 1
+    } as unknown as ExtendedStudentAssessment;
+  }
+
   const extended = (studentAssessment as unknown as (BaseStudentAssessment & StudentAssessmentExtra)) || {};
   const attemptCount = extended?.attemptCount ?? 0;
   const attemptLimit = assessment?.attemptLimit ?? 1;
 
   return {
     ...studentAssessment,
+    // 为可能为null的字段提供默认值
+    answers: studentAssessment.answers || null,
+    completed: studentAssessment.completed ?? false,
+    score: studentAssessment.score ?? null,
+    report: studentAssessment.report || null,
+    updatedAt: studentAssessment.updatedAt || null,
+    // 扩展字段
     attemptCount,
     duration: extended?.duration,
     scores: extended?.scores ?? [],

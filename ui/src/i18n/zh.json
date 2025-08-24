@@ -41,6 +41,12 @@
       "home": "首页",
       "service": "服务"
     },
+    "error": {
+      "title": "页面出错了",
+      "description": "抱歉，您访问的页面不存在或已被移动。",
+      "redirect": "正在为您重定向到首页...",
+      "goHome": "返回首页"
+    },
     "role": {
       "teachers": "教师",
       "students": "学生",
@@ -272,7 +278,35 @@
         "created_at": "创建时间",
         "name": "测试模板名称",
         "doc_lang": "文档语言",
-        "assess_type": "测试类型"
+        "assess_type": "测试类型",
+        "taxonomy_help": {
+          "title": "分类法说明",
+          "description": "基于布鲁姆教育分类法，用于指导题目生成的认知层次：",
+          "knowledge": {
+            "name": "知识层次",
+            "description": "测试学生对基本事实、概念和术语的记忆和回忆能力。题目侧重于'什么'、'何时'、'在哪里'等信息。"
+          },
+          "comprehension": {
+            "name": "理解层次", 
+            "description": "测试学生对概念的理解和解释能力。题目要求学生用自己的话解释、总结或转述学习内容。"
+          },
+          "application": {
+            "name": "应用层次",
+            "description": "测试学生在新情境中运用已学知识和技能的能力。题目要求学生将理论应用到实际问题中。"
+          },
+          "analysis": {
+            "name": "分析层次",
+            "description": "测试学生分解复杂信息、识别模式和关系的能力。题目要求学生比较、对比、分类或推理。"
+          },
+          "synthesis": {
+            "name": "综合层次",
+            "description": "测试学生整合不同元素创造新想法的能力。题目要求学生设计、规划、组织或创新解决方案。"
+          },
+          "evaluation": {
+            "name": "评价层次",
+            "description": "测试学生基于标准或准则进行判断和评价的能力。题目要求学生证明、评估、批判或论证。"
+          }
+        }
       },
       "courses": {
         "title": "课程列表",
@@ -539,7 +573,7 @@
       "score": "分数",
       "chart_label": "单一数据系列折线图",
       "time_utc": "时间 (UTC)",
-      "score_percent": "分数 %",
+      "score_percent": "分数",
       "no_data": {
         "title": "暂无数据",
         "message": "当前没有可用的数据"

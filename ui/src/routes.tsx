@@ -16,6 +16,7 @@ import StudentList from './pages/StudentList';
 import AssessmentResults from './pages/AssessmentResults';
 import AssessmentSettings from './pages/AssessmentSettings';
 import UserManagement from './pages/UserManagement';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 export const routes = {
   teachers: [
@@ -69,6 +70,8 @@ export const routes = {
     { path: 'assessment-results/:id', element: <AssessmentResults />, children: [] },
     { path: 'assessment-settings/:id', element: <AssessmentSettings />, children: [] },
     // { path: 'class-management/:id', element: <ClassDetails />, children: [] },
+    // 404 处理 - 必须放在最后
+    { path: '*', element: <NotFoundPage />, children: [] },
   ],
   students: [
     {
@@ -89,8 +92,10 @@ export const routes = {
         },
       ],
     },
-    { path: 'assessment/:id', element: <StudentAssessment />, children: [] },
+    { path: 'assessments/:id', element: <StudentAssessment />, children: [] },
     { path: 'review/:id', element: <ReviewAssessment />, children: [] },
+    // 404 处理 - 必须放在最后
+    { path: '*', element: <NotFoundPage />, children: [] },
   ],
   // 管理员路由配置（继承教师所有功能 + 额外管理功能）
   admin: [
@@ -152,6 +157,8 @@ export const routes = {
     { path: 'assessment-results/:id', element: <AssessmentResults />, children: [] },
     { path: 'assessment-settings/:id', element: <AssessmentSettings />, children: [] },
     //{ path: 'class-management/:id', element: <ClassDetails />, children: [] },
+    // 404 处理 - 必须放在最后
+    { path: '*', element: <NotFoundPage />, children: [] },
   ],
   // 超级管理员路由配置（继承管理员所有功能，但不包括日志管理）
   super_admin: [
@@ -213,5 +220,7 @@ export const routes = {
     { path: 'assessment-results/:id', element: <AssessmentResults />, children: [] },
     { path: 'assessment-settings/:id', element: <AssessmentSettings />, children: [] },
     //{ path: 'class-management/:id', element: <ClassDetails />, children: [] },
+    // 404 处理 - 必须放在最后
+    { path: '*', element: <NotFoundPage />, children: [] },
   ],
 };

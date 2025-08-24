@@ -95,6 +95,62 @@ export const upsertAssessment = /* GraphQL */ `
     }
   }
 `;
+export const updateAssessment = /* GraphQL */ `
+  mutation UpdateAssessment($input: UpdateAssessmentInput!) {
+    updateAssessment(input: $input) {
+      id
+      name
+      courseId
+      lectureDate
+      deadline
+      updatedAt
+      assessType
+      multiChoiceAssessment {
+        title
+        question
+        answerChoices
+        correctAnswer
+        explanation
+      }
+      freeTextAssessment {
+        title
+        question
+        rubric {
+          weight
+          point
+        }
+      }
+      singleAnswerAssessment {
+        title
+        question
+        answerChoices
+        correctAnswer
+        explanation
+      }
+      trueFalseAssessment {
+        title
+        question
+        answerChoices
+        correctAnswer
+        explanation
+      }
+      published
+      status
+      timeLimited
+      timeLimit
+      allowAnswerChange
+      studentGroups
+      courses
+      attemptLimit
+      scoreMethod
+      course {
+        id
+        name
+        description
+      }
+    }
+  }
+`;
 export const upsertStudentAssessment = /* GraphQL */ `
   mutation UpsertStudentAssessment($input: StudentAssessmentInput) {
     upsertStudentAssessment(input: $input) {
@@ -353,6 +409,16 @@ export const resetUserPasswordMutation = /* GraphQL */ `
       username
       newPassword
       isDefaultPassword
+    }
+  }
+`;
+export const updateUserActivityMutation = /* GraphQL */ `
+  mutation UpdateUserActivity($username: String!, $role: String) {
+    updateUserActivity(username: $username, role: $role) {
+      success
+      username
+      lastLoginAt
+      message
     }
   }
 `;

@@ -7,6 +7,7 @@ import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, ScanComm
 import { logger } from '../../../../rag-pipeline/lambdas/event-handler/utils/pt';
 import { Assessment, AssessStatus, GenerateAssessmentInput, MultiChoice, FreeText, AssessType, TrueFalse, SingleAnswer } from '../../../../../ui/src/graphql/API';
 import { AssessmentTemplate } from '../models/assessmentTemplate';
+import { time } from 'console';
 
 const ASSESSMENT_TABLE = process.env.ASSESSMENTS_TABLE;
 const KB_TABLE = process.env.KB_TABLE;
@@ -62,7 +63,7 @@ export class DataService {
       const assessmentId = uuidv4();
       logger.info(`Storing empty assessment assessmentId: ${assessmentId}`, { userId, assessmentInput });
 
-      let assessType = AssessType.multiChoiceAssessment;
+      let assessType = AssessType.trueFalseAssessment;
       
       if (assessmentInput.assessTemplateId) {
         try {
@@ -91,6 +92,14 @@ export class DataService {
           status: AssessStatus.IN_PROGRESS,
           published: false,
           updatedAt: new Date().toISOString(),
+          // 默认设置值
+          timeLimited: false,           // 时间限制: 无限制
+          timeLimit: '120',             // 时间限制: 120秒
+          allowAnswerChange: true,      // 答案修改: 允许
+          attemptLimit: 1,              // 测试次数: 1次
+          studentGroups: ['ALL'],       // 学生分组: ALL
+          courses: [],                  // 关联课程: []
+          scoreMethod: 'highest',       // 计分方法: highest
         },
       });
 

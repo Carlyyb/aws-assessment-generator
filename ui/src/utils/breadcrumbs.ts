@@ -32,13 +32,23 @@ export function generateBreadcrumbs(pathname: string, getOverride?: (path: strin
       href: pathname
     });
     return breadcrumbs;
-  }
-
-   if (pathname.startsWith('/assessment-results/')) {
+  }else if (pathname.startsWith('/assessment-results/')) {
     // 添加查找测试页面到面包屑
     breadcrumbs.push({
       text: getText('common.nav.find-assessments'),
       href: '/assessments/find-assessments'
+    });
+    const testName = getText('teachers.assessments.edit.current');
+    breadcrumbs.push({
+      text: testName,
+      href: pathname
+    });
+    return breadcrumbs;
+  }else if (pathname.startsWith('/review/')) {
+    // 添加查找测试页面到面包屑
+    breadcrumbs.push({
+      text: getText('common.nav.assessments'),
+      href: '/assessments'
     });
     const testName = getText('teachers.assessments.edit.current');
     breadcrumbs.push({

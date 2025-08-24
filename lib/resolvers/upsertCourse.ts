@@ -6,7 +6,7 @@ import * as ddb from '@aws-appsync/utils/dynamodb';
 
 export function request(ctx) {
   const userId = ctx.identity.sub;
-  const userEmail = ctx.identity?.claims?.email || ctx.identity?.username;
+  const userName = ctx.identity?.username;
   const { id, ...item } = ctx.args.input;
   
   const courseId = id || util.autoId();
@@ -16,7 +16,7 @@ export function request(ctx) {
     item: { 
       id: courseId,
       ...item,
-      createdBy: userEmail,
+      createdBy: userName,
       createdAt: util.time.nowISO8601() 
     } 
   });

@@ -1,0 +1,40 @@
+# 版本控制相关的GraphQL Schema扩展
+
+type DocumentVersion {
+  versionKey: String!
+  lastModified: String!
+  size: Int!
+  timestamp: String!
+}
+
+type DocumentVersionHistory {
+  documentKey: String!
+  courseId: String!
+  versions: [DocumentVersion!]!
+}
+
+type VersionRestoreResult {
+  success: Boolean!
+  message: String!
+  documentKey: String!
+  restoredFromVersion: String!
+}
+
+# 查询
+extend type Query {
+  # 获取文档版本历史
+  getDocumentVersionHistory(
+    courseId: String!
+    documentKey: String!
+  ): DocumentVersionHistory
+}
+
+# 变更
+extend type Mutation {
+  # 恢复文档到指定版本
+  restoreDocumentVersion(
+    courseId: String!
+    documentKey: String!
+    versionKey: String!
+  ): VersionRestoreResult
+}

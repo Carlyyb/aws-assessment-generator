@@ -8,15 +8,18 @@ export function request(ctx) {
   const userId = ctx.identity.sub;
   const userEmail = ctx.identity?.claims?.email || ctx.identity?.username;
   const { id, published, ...args } = ctx.args.input;
+  const newId = id || util.autoUlid();
+  const now = util.time.nowISO8601();
   
   return ddb.put({ 
-    key: { userId, id: id || util.autoUlid() }, 
+    key: { userId, id: newId }, 
     item: { 
       ...args, 
-      id: id || util.autoUlid(),
+      id: newId,
       published: !!published, 
       createdBy: userEmail,
-      updatedAt: util.time.nowISO8601() 
+      createdAt: now,
+      updatedAt: now
     } 
   });
 }

@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useContext } from 'react';
-import { Container, SpaceBetween, Button, Form, FormField, Box, Input, Select, SelectProps } from '@cloudscape-design/components';
+import { Container, SpaceBetween, Button, Form, FormField, Box, Input, Select, SelectProps, Alert, ExpandableSection, ColumnLayout } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
 import { createAssessTemplate } from '../graphql/mutations';
 import { Lang, AssessType, Taxonomy } from '../graphql/API';
@@ -137,6 +137,65 @@ export default (props: CreateTemplateProps) => {
                 <FormField label={getText('teachers.settings.templates.taxonomy')}>
                   <Select options={taxonomies} selectedOption={taxonomy} onChange={({ detail }) => setTaxonomy(detail.selectedOption)} />
                 </FormField>
+                
+                {/* 分类法说明 */}
+                <ExpandableSection
+                  headerText={getText('teachers.settings.templates.taxonomy_help.title')}
+                  variant="container"
+                >
+                  <SpaceBetween size="m">
+                    <Alert
+                      statusIconAriaLabel="Info"
+                      header={getText('teachers.settings.templates.taxonomy_help.title')}
+                    >
+                      {getText('teachers.settings.templates.taxonomy_help.description')}
+                    </Alert>
+                    
+                    <ColumnLayout columns={2}>
+                      <Box>
+                        <SpaceBetween size="s">
+                          <Box><strong>{getText('teachers.settings.templates.taxonomy_help.knowledge.name')}</strong></Box>
+                          <Box fontSize="body-s">{getText('teachers.settings.templates.taxonomy_help.knowledge.description')}</Box>
+                        </SpaceBetween>
+                      </Box>
+                      
+                      <Box>
+                        <SpaceBetween size="s">
+                          <Box><strong>{getText('teachers.settings.templates.taxonomy_help.comprehension.name')}</strong></Box>
+                          <Box fontSize="body-s">{getText('teachers.settings.templates.taxonomy_help.comprehension.description')}</Box>
+                        </SpaceBetween>
+                      </Box>
+                      
+                      <Box>
+                        <SpaceBetween size="s">
+                          <Box><strong>{getText('teachers.settings.templates.taxonomy_help.application.name')}</strong></Box>
+                          <Box fontSize="body-s">{getText('teachers.settings.templates.taxonomy_help.application.description')}</Box>
+                        </SpaceBetween>
+                      </Box>
+                      
+                      <Box>
+                        <SpaceBetween size="s">
+                          <Box><strong>{getText('teachers.settings.templates.taxonomy_help.analysis.name')}</strong></Box>
+                          <Box fontSize="body-s">{getText('teachers.settings.templates.taxonomy_help.analysis.description')}</Box>
+                        </SpaceBetween>
+                      </Box>
+                      
+                      <Box>
+                        <SpaceBetween size="s">
+                          <Box><strong>{getText('teachers.settings.templates.taxonomy_help.synthesis.name')}</strong></Box>
+                          <Box fontSize="body-s">{getText('teachers.settings.templates.taxonomy_help.synthesis.description')}</Box>
+                        </SpaceBetween>
+                      </Box>
+                      
+                      <Box>
+                        <SpaceBetween size="s">
+                          <Box><strong>{getText('teachers.settings.templates.taxonomy_help.evaluation.name')}</strong></Box>
+                          <Box fontSize="body-s">{getText('teachers.settings.templates.taxonomy_help.evaluation.description')}</Box>
+                        </SpaceBetween>
+                      </Box>
+                    </ColumnLayout>
+                  </SpaceBetween>
+                </ExpandableSection>
                 <FormField label={getText('teachers.settings.templates.questions.total')}>
                   <Input value={totalQuestions} onChange={({ detail }) => setTotalQuestions(detail.value)} />
                 </FormField>

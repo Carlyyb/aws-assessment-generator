@@ -17,7 +17,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { ExtendedAssessment, ExtendedStudentAssessment, addAssessmentDefaults, addStudentAssessmentDefaults } from '../types/ExtendedTypes';
-import { getAssessment } from '../graphql/queries';
+import { getAssessment, listStudents, listStudentGroups } from '../graphql/queries';
 
 const client = generateClient();
 
@@ -27,6 +27,18 @@ interface StudentResult extends ExtendedStudentAssessment {
   userEmail: string;
   submittedAt?: string;
   startedAt?: string;
+}
+
+interface Student {
+  id: string;
+  name: string;
+  email?: string;
+}
+
+interface StudentGroup {
+  id: string;
+  name: string;
+  students: string[];
 }
 
 export default function AssessmentResults() {
@@ -49,14 +61,26 @@ export default function AssessmentResults() {
     setLoading(true);
     try {
       // 获取测试信息
-  const assessmentResponse = await client.graphql<any>({
+      const assessmentResponse = await client.graphql<any>({
         query: getAssessment,
         variables: { id: params.id! }
       });
-      
+
       const assessment = assessmentResponse.data.getAssessment;
+      // 判空处理，防止 assessment 为 null 时访问属性报错
+      if (!assessment) {
+        console.error(`Assessment with id ${params.id} not found.`);
+        dispatchAlert({
+          type: AlertType.ERROR,
+          content: '未找到指定的测试，请检查链接是否正确。'
+        });
+        setStudentResults([]);
+        setAssessmentInfo(null);
+        setLoading(false);
+        return;
+      }
       setAssessmentInfo(addAssessmentDefaults(assessment));
-      
+
       // 通过后端提供的按parentAssessId查询接口获取真实作答结果
       const query = /* GraphQL */ `
         query ListStudentAssessmentsByParentAssessId($parentAssessId: ID!) {
@@ -68,36 +92,92 @@ export default function AssessmentResults() {
             report
             updatedAt
             answers
+            attemptCount
+            duration
+            scores
+            remainingAttempts
           }
         }
       `;
 
-  const studentAssessmentsResponse = await client.graphql<any>({
+      const studentAssessmentsResponse = await client.graphql<any>({
         query,
         variables: { parentAssessId: params.id! }
       });
 
-  const currentAssessmentResults = (studentAssessmentsResponse as any)?.data?.listStudentAssessmentsByParentAssessId?.map((sa: any) => {
-        const extendedSA = addStudentAssessmentDefaults(sa, assessment);
+      const currentResults = (studentAssessmentsResponse as any)?.data?.listStudentAssessmentsByParentAssessId || [];
+
+      // 获取所有学生列表
+      const studentsResponse = await client.graphql({
+        query: listStudents
+      });
+
+      const allStudents: Student[] = (studentsResponse as any)?.data?.listStudents || [];
+
+      // 获取测试发布的目标学生分组
+      const targetGroups = assessment.studentGroups || ['ALL'];
+      let targetStudents: Student[] = [];
+
+      if (targetGroups.includes('ALL')) {
+        // 如果包含ALL分组，显示所有学生
+        targetStudents = allStudents;
+      } else {
+        // 获取分组信息
+        const groupsResponse = await client.graphql({
+          query: listStudentGroups
+        });
+
+        const groups: StudentGroup[] = (groupsResponse as any)?.data?.listStudentGroups || [];
+        const targetStudentIds = new Set<string>();
+
+        // 收集所有目标分组的学生ID
+        targetGroups.forEach((groupId: string) => {
+          const group = groups.find((g: StudentGroup) => g.id === groupId);
+          if (group && group.students) {
+            group.students.forEach((studentId: string) => targetStudentIds.add(studentId));
+          }
+        });
+
+        // 过滤出目标学生
+        targetStudents = allStudents.filter((student: Student) => targetStudentIds.has(student.id));
+      }
+
+      // 合并学生信息和测试结果
+      const studentResults = targetStudents.map((student: Student) => {
+        const result = currentResults.find((r: any) => r.userId === student.id);
+        const extendedResult = result ? addStudentAssessmentDefaults(result, assessment) : {
+          userId: student.id,
+          parentAssessId: params.id!,
+          completed: false,
+          score: null,
+          report: null,
+          updatedAt: null,
+          answers: '{}',
+          attemptCount: 0,
+          duration: null,
+          scores: [],
+          remainingAttempts: assessment.attemptLimit || 1
+        };
+
         return {
-          ...extendedSA,
-          userId: sa.userId || 'unknown',
-          userName: sa.userName || sa.userId || '未知用户',
-          userEmail: sa.userEmail || '',
-          submittedAt: sa.completed ? sa.updatedAt : undefined,
-          startedAt: sa.createdAt || sa.updatedAt
+          ...extendedResult,
+          userId: student.id,
+          userName: student.name || student.id,
+          userEmail: student.email || '',
+          submittedAt: extendedResult.completed ? extendedResult.updatedAt : undefined,
+          startedAt: result ? (result.createdAt || result.updatedAt) : undefined
         } as StudentResult;
-      }) || [];
-      
-      setStudentResults(currentAssessmentResults);
-      
+      });
+
+      setStudentResults(studentResults);
+
     } catch (error) {
       console.error('Failed to load assessment results:', error);
-      dispatchAlert({ 
+      dispatchAlert({
         type: AlertType.ERROR,
         content: '加载测试结果失败，请稍后重试。'
       });
-      
+
       // 如果加载失败，显示空状态而不是模拟数据
       setStudentResults([]);
       setAssessmentInfo(null);
@@ -119,6 +199,47 @@ export default function AssessmentResults() {
   const formatDateTime = (dateString?: string) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleString('zh-CN');
+  };
+
+  const exportToCSV = () => {
+    try {
+      // 准备CSV数据
+      const headers = ['学生姓名', '完成状态', '分数', '测试次数', '提交时间'];
+      const rows = studentResults.map(student => [
+        student.userName,
+        student.completed ? '已完成' : (student.startedAt ? '进行中' : '未开始'),
+        student.score !== null && student.score !== undefined ? student.score.toString() : '-',
+        `${student.attemptCount || 0} / ${student.remainingAttempts === -1 ? '∞' : (student.attemptCount || 0) + (student.remainingAttempts || 0)}`,
+        formatDateTime(student.submittedAt)
+      ]);
+
+      // 转换为CSV格式
+      const csvContent = [headers, ...rows]
+        .map(row => row.map(field => `"${field}"`).join(','))
+        .join('\n');
+
+      // 创建并下载文件
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${assessmentInfo?.name || '测试'}_结果_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      dispatchAlert({
+        type: AlertType.SUCCESS,
+        content: '测试结果已成功导出'
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '导出失败，请稍后重试'
+      });
+    }
   };
 
   const getCompletionStatus = (student: StudentResult) => {
@@ -297,13 +418,7 @@ export default function AssessmentResults() {
                     <SpaceBetween size="xs" direction="horizontal">
                       <Button
                         variant="normal"
-                        onClick={() => {
-                          // 这里可以实现导出功能
-                          dispatchAlert({
-                            type: AlertType.SUCCESS,
-                            content: '导出功能开发中...'
-                          });
-                        }}
+                        onClick={exportToCSV}
                       >
                         导出结果
                       </Button>

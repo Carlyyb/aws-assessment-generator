@@ -23,8 +23,14 @@ import { CopyObjectCommand, CopyObjectOutput, S3Client } from '@aws-sdk/client-s
 import { logger, tracer } from './utils/pt';
 import { BedrockKnowledgeBase } from './kb/bedrockKnowledgeBase';
 import { AppSyncIdentityCognito } from 'aws-lambda/trigger/appsync-resolver';
+import { DocumentVersionControl } from './utils/versionControl';
 
 const s3Client = new S3Client();
+const versionControl = new DocumentVersionControl({
+  enableVersioning: process.env.ENABLE_VERSION_CONTROL === 'true',
+  maxVersions: parseInt(process.env.MAX_VERSIONS || '5'),
+  archivePrefix: process.env.ARCHIVE_PREFIX || 'archive/versions/'
+});
 
 class Lambda implements LambdaInterface {
   /**
@@ -45,11 +51,11 @@ class Lambda implements LambdaInterface {
       }
 
       logger.info('Copying objects to KB bucket');
-      await this.copyObjects(kbCreationRequest.locations);
-      
       const identity = event.identity as AppSyncIdentityCognito;
       const userId = identity.sub;
       const courseId = kbCreationRequest.courseId;
+      
+      await this.copyObjects(kbCreationRequest.locations, userId, courseId);
       
       logger.info('Getting knowledge base', { userId, courseId });
       const knowledgeBase = await BedrockKnowledgeBase.getKnowledgeBase(userId, courseId);
@@ -97,29 +103,50 @@ class Lambda implements LambdaInterface {
     }
   }
 
-  private async copyObjects(objectKeys: Array<string | null>) {
+  private async copyObjects(objectKeys: Array<string | null>, userId: string, courseId: string) {
     for (let i = 0; i < objectKeys.length; i++) {
       const objectKey = objectKeys[i];
       //TODO change the Type so that value can't be null
       if (objectKey) {
-        await this.copyObject(objectKey);
+        await this.copyObject(objectKey, userId, courseId);
       }
     }
   }
 
-  private async copyObject(objectKey: string) {
+  private async copyObject(objectKey: string, userId: string, courseId: string) {
     const newObjectKey = objectKey.replace('KnowledgeBases/', '');
     logger.info({ objectKey, newObjectKey } as any);
+    
+    // 在复制之前处理版本控制
+    const targetBucket = process.env.KB_STAGING_BUCKET!;
+    await versionControl.handleDocumentUpdate(targetBucket, newObjectKey, userId, courseId);
+    
+    // URL encode the object key to handle special characters, spaces, and unicode characters
+    const encodedObjectKey = encodeURIComponent(objectKey).replace(/%2F/g, '/');
+    const copySource = `${process.env.ARTIFACTS_UPLOAD_BUCKET}/public/${encodedObjectKey}`;
+    
     //Upload file to destination S3 bucket
     const copyObjectRequest = {
-      CopySource: `${process.env.ARTIFACTS_UPLOAD_BUCKET}/public/${objectKey}`,
-      Bucket: process.env.KB_STAGING_BUCKET,
+      CopySource: copySource,
+      Bucket: targetBucket,
       Key: newObjectKey,
     };
     logger.info('Copy object to target bucket', copyObjectRequest as any);
-    const copyObjectCommand = new CopyObjectCommand(copyObjectRequest);
-    const copyObjectOutput = await s3Client.send(copyObjectCommand);
-    logger.info('CopyObject result', { data: copyObjectOutput } as any);
+    
+    try {
+      const copyObjectCommand = new CopyObjectCommand(copyObjectRequest);
+      const copyObjectOutput = await s3Client.send(copyObjectCommand);
+      logger.info('CopyObject result', { data: copyObjectOutput } as any);
+    } catch (error) {
+      logger.error('Failed to copy object', { 
+        error: error.message, 
+        objectKey, 
+        newObjectKey, 
+        copySource,
+        stack: error.stack 
+      });
+      throw error;
+    }
   }
 }
 

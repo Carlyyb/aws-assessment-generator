@@ -32,6 +32,13 @@ IMPORTANT INSTRUCTIONS:
 - CRITICAL: The <question> field must contain ONLY the question text itself, no additional context or explanations
 - ALL content (questions, answers, explanations) must be in the specified language: ${assessmentTemplate.docLang}
 
+ANSWER OPTION BALANCE AND RANDOMIZATION (BIAS AVOIDANCE):
+- Goal: minimize positional bias and keep correct/incorrect distribution balanced.
+- True/False assessment: ensure about 50% of questions have "True" as the correct answer and about 50% have "False" as the correct answer (difference at most 1 when the total is odd).
+- Single-answer assessment (4 options): distribute the correct answer position approximately evenly among options 1–4 across all questions; aim for near-uniform usage (difference at most 1 between any two positions).
+- Multiple-choice assessment (4 options): by default, produce exactly 2 correct and 2 incorrect options to maintain a 50% correctness ratio per question. Only use 3 or 4 correct options when the learning content strictly requires it; if used, keep the overall quiz still close to a 50% correct/incorrect option ratio. Also vary which option numbers are correct so that correct options are not concentrated on the same positions across questions.
+- For all choice-based assessments, avoid patterns like always choosing option 1 or always selecting adjacent options; shuffle and diversify positions while keeping clarity.
+
 ${customPrompt ? `
 CUSTOM REQUIREMENTS (HIGHEST PRIORITY - MUST FOLLOW):
 ${customPrompt}
@@ -55,7 +62,8 @@ ${
   
   MANDATORY REQUIREMENT: EVERY QUESTION MUST have AT LEAST 2 correct answers (minimum 2, maximum 4 correct answers).
   This is a STRICT requirement - NO single correct answer questions are allowed for multiple choice assessment.
-  You MUST ensure that each question has 2, 3, or 4 correct answers out of the 4 options provided.
+  Prefer exactly 2 correct and 2 incorrect answers (50% correctness ratio) unless the content strongly requires more; if using 3 or 4 correct answers, ensure overall balance across the entire quiz remains close to 50%.
+  You MUST ensure that each question has 2, 3, or 4 correct answers out of the 4 options provided, and distribute which option numbers are correct evenly across the set to avoid positional bias.
   
   Indicate ALL correct answers by listing their option numbers (e.g., "1,2" for options A and B, or "2,3,4" for options B, C, and D).
   The correctAnswer field should contain multiple numbers representing the correct options.
@@ -72,18 +80,14 @@ ${
 }
 
 ${
-  assessmentTemplate.assessType === AssessType.freeTextAssessment
-    ? `
-  The questions are free text questions. for every question create a rubric weight grading guidance in a <rubric> tag. In <rubric> there should be a list (minimum 2) of expected points to be covered in the answer and the weight associated with this point, only use single digit integer values for weights.
-  ALL rubric points must be in the language: ${assessmentTemplate.docLang}.
-`
-    : ''
+  false ? `placeholder` : ''
 }
 
 ${
   assessmentTemplate.assessType === AssessType.trueFalseAssessment
     ? `
   The questions are true/false questions. Provide two options: True and False, and indicate the correct answer.
+  Maintain near 50/50 distribution of True vs False as the correct answer across all questions (difference at most 1 when odd).
   Articulate a reasoned and concise defense for your chosen answer without relying on direct references to the text labeled as "explanation".
   CRITICAL: The explanation must NOT contain any S3 URLs, file paths, document references, or technical metadata. Focus only on the educational concept being tested.
   ALL answer choices and explanations must be in the language: ${assessmentTemplate.docLang}.
@@ -97,6 +101,7 @@ ${
   The questions are single answer questions. Provide four options, and indicate the correct answer.
   The answer choices must be around the topics covered in the lecture.
   Ensure that only one answer is correct.
+  Distribute the correct answer position approximately evenly among options 1–4 across all questions to avoid positional bias.
   Articulate a reasoned and concise defense for your chosen answer without relying on direct references
   to the text labeled as "explanation".
   CRITICAL: The explanation must NOT contain any S3 URLs, file paths, document references, or technical metadata. Focus only on the educational concept being tested.
@@ -138,19 +143,7 @@ Use this exact XML format for your response:
         : ''
     }
     ${
-      assessmentTemplate.assessType === AssessType.freeTextAssessment
-        ? `
-          <rubric>
-            <weight>[weight_value]</weight>
-            <point>[Point 1 in ${assessmentTemplate.docLang}]</point>
-          </rubric>
-          <rubric>
-            <weight>[weight_value]</weight>
-            <point>[Point 2 in ${assessmentTemplate.docLang}]</point>
-          </rubric>
-          <!-- all other rubric points below   -->
-    `
-        : ''
+  false ? `placeholder` : ''
     }
     </questions>
     <questions>
@@ -171,19 +164,7 @@ Use this exact XML format for your response:
         : ''
     }
     ${
-      assessmentTemplate.assessType === AssessType.freeTextAssessment
-        ? `
-          <rubric>
-            <weight>[weight_value]</weight>
-            <point>[Point 1 in ${assessmentTemplate.docLang}]</point>
-          </rubric>
-          <rubric>
-            <weight>[weight_value]</weight>
-            <point>[Point 2 in ${assessmentTemplate.docLang}]</point>
-          </rubric>
-          <!-- all other rubric points below   -->
-    `
-        : ''
+  false ? `placeholder` : ''
     }
     </questions>
     <!-- repeat questions structure for each additional question -->
@@ -341,10 +322,16 @@ ${assessmentTemplate.assessType === AssessType.multiChoiceAssessment
   ? `
 MANDATORY REQUIREMENT FOR MULTIPLE CHOICE: EVERY QUESTION MUST have AT LEAST 2 correct answers (minimum 2, maximum 4 correct answers).
 This is a STRICT requirement - NO single correct answer questions are allowed for multiple choice assessment.
-You MUST ensure that each question has 2, 3, or 4 correct answers out of the 4 options provided.
+Prefer exactly 2 correct and 2 incorrect answers (50% correctness ratio) unless the content strongly requires 3 or 4 correct answers. If using 3 or 4, still keep overall balance across the quiz close to 50%.
+You MUST ensure that each question has 2, 3, or 4 correct answers out of the 4 options provided, and avoid positional bias by varying which option numbers are correct across questions.
 `
   : ''
 }
+
+BALANCE AND RANDOMIZATION (BIAS AVOIDANCE):
+- True/False assessment: aim to keep the proportion of True vs False as the correct answer near 50/50 across the set.
+- Single-answer assessment: avoid repeatedly choosing the same correct option number; vary positions to approximate an even spread among options 1–4.
+- Multiple-choice assessment: prefer 2 correct + 2 distractors and diversify which option indices are correct; avoid predictable patterns (e.g., always 1 and 2).
 
 If relevant, use the content in the EXTRACTED_DOCUMENTS to improve the QUESTION's academic accuracy and depth.
 Any reference to the EXTRACTED_DOCUMENTS should include the uri of the document.
@@ -387,19 +374,7 @@ Use this exact XML format:
         : ''
     }
     ${
-      assessmentTemplate.assessType === AssessType.freeTextAssessment
-        ? `
-          <rubric>
-            <weight>[weight_value]</weight>
-            <point>[Point 1 in ${assessmentTemplate.docLang}]</point>
-          </rubric>
-          <rubric>
-            <weight>[weight_value]</weight>
-            <point>[Point 2 in ${assessmentTemplate.docLang}]</point>
-          </rubric>
-          <!-- all other rubric points below   -->
-    `
-        : ''
+  false ? `placeholder` : ''
     }
     ${
       assessmentTemplate.assessType === AssessType.trueFalseAssessment

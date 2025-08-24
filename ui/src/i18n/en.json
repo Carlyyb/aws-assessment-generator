@@ -41,6 +41,12 @@
       "home": "Home",
       "service": "Service"
     },
+    "error": {
+      "title": "Page Error",
+      "description": "Sorry, the page you are looking for does not exist or has been moved.",
+      "redirect": "Redirecting you to the homepage...",
+      "goHome": "Go to Homepage"
+    },
     "role": {
       "teachers": "Teachers",
       "students": "Students"

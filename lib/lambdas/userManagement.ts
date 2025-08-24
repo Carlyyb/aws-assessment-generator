@@ -498,6 +498,62 @@ async function createSingleUser(userInput: UserInput, userPoolId: string, usersT
 }
 
 /**
+ * 更新学生表的最后活跃时间
+ */
+async function updateStudentActivity(userId: string, lastActivityAt: string) {
+  try {
+    const studentsTableName = await getSystemParameter('/gen-assess/student-table-name');
+    
+    const updateCommand = new UpdateCommand({
+      TableName: studentsTableName,
+      Key: { id: userId },
+      UpdateExpression: 'SET lastLoginAt = :lastLoginAt',
+      ExpressionAttributeValues: {
+        ':lastLoginAt': lastActivityAt
+      },
+      // 如果记录不存在，不创建新记录
+      ConditionExpression: 'attribute_exists(id)'
+    });
+
+    await docClient.send(updateCommand);
+    console.log('Updated student activity', { userId, lastLoginAt: lastActivityAt });
+  } catch (error) {
+    if ((error as any).name === 'ConditionalCheckFailedException') {
+      console.warn('Student record not found, skipping activity update', { userId });
+    } else {
+      throw error;
+    }
+  }
+}
+
+/**
+ * 更新用户表的最后活跃时间
+ */
+async function updateUserActivity(userId: string, lastActivityAt: string) {
+  try {
+    const updateCommand = new UpdateCommand({
+      TableName: USERS_TABLE_NAME,
+      Key: { id: userId },
+      UpdateExpression: 'SET lastLoginAt = :lastLoginAt',
+      ExpressionAttributeValues: {
+        ':lastLoginAt': lastActivityAt
+      },
+      // 如果记录不存在，不创建新记录
+      ConditionExpression: 'attribute_exists(id)'
+    });
+
+    await docClient.send(updateCommand);
+    console.log('Updated user activity', { userId, lastLoginAt: lastActivityAt });
+  } catch (error) {
+    if ((error as any).name === 'ConditionalCheckFailedException') {
+      console.warn('User record not found, skipping activity update', { userId });
+    } else {
+      throw error;
+    }
+  }
+}
+
+/**
  * Lambda 主函数
  */
 export const handler = async (event: any): Promise<any> => {
@@ -964,6 +1020,37 @@ export const handler = async (event: any): Promise<any> => {
         } catch (error: any) {
           console.error('重置用户密码失败:', error);
           throw new Error(`重置密码失败: ${error.message}`);
+        }
+      }
+
+      case 'updateUserActivity': {
+        const { username, role } = args;
+        
+        if (!username) {
+          throw new Error('用户名不能为空');
+        }
+        
+        try {
+          const currentTime = createTimestamp();
+          
+          // 根据用户角色更新相应的表
+          if (role === 'students') {
+            await updateStudentActivity(username, currentTime);
+          } else {
+            await updateUserActivity(username, currentTime);
+          }
+          
+          console.log(`用户 ${username} 活跃状态更新成功`, { lastLoginAt: currentTime });
+          
+          return {
+            success: true,
+            username,
+            lastLoginAt: currentTime,
+            message: '用户活跃状态更新成功'
+          };
+        } catch (error: any) {
+          console.error('更新用户活跃状态失败:', error);
+          throw new Error(`更新活跃状态失败: ${error.message}`);
         }
       }
 

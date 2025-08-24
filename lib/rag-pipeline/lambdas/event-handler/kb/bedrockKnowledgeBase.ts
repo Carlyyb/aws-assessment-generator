@@ -18,6 +18,7 @@ import {
 } from '@aws-sdk/client-bedrock-agent';
 import { logger } from '../utils/pt';
 import { VectorStore } from './vectorStore';
+import { defaultRetryHandler } from '../utils/retryHandler';
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
@@ -191,12 +192,15 @@ export class BedrockKnowledgeBase {
     };
     logger.info('Start document ingestion', ingestionInput as any);
 
-    const startIngestionJobCommand = new StartIngestionJobCommand(ingestionInput);
-
-    // noinspection TypeScriptValidateTypes
-    const startIngestionResponse: StartIngestionJobCommandOutput = await bedrockAgentClient.send(
-      startIngestionJobCommand
+    const startIngestionResponse: StartIngestionJobCommandOutput = await defaultRetryHandler.executeWithRetry(
+      async () => {
+        const startIngestionJobCommand = new StartIngestionJobCommand(ingestionInput);
+        return await bedrockAgentClient.send(startIngestionJobCommand);
+      },
+      'startIngestionJob',
+      ingestionInput
     );
+
     logger.info(startIngestionResponse as any);
     
     // 验证响应结构

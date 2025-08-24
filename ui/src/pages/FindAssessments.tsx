@@ -433,7 +433,7 @@ const FindAssessmentsPage = () => {
                 ...(adminInfo?.isAdmin ? [{
                   id: 'creator',
                   header: '创建者',
-                  cell: (item: any) => item.userId || item.createdBy || '未知',
+                  cell: (item: any) => item.createdBy || '未知',
                 }] : []),
                 {
                   id: 'lectureDate',
@@ -563,7 +563,7 @@ const FindAssessmentsPage = () => {
                                   <Button
                                     variant="normal"
                                     iconName="external"
-                                    onClick={() => navigate(`/assessment/${item.id}?preview=true`)}
+                                    onClick={() => navigate(`/assessments/${item.id}?preview=true`)}
                                   >
                                     模拟测试
                                   </Button>

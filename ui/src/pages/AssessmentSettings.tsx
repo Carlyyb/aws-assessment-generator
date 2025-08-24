@@ -18,7 +18,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import { getAssessment, listCourses, listStudentGroups } from '../graphql/queries';
-import { upsertAssessment } from '../graphql/mutations';
+import { updateAssessment } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { ExtendedAssessment, addAssessmentDefaults } from '../types/ExtendedTypes';
 
@@ -57,6 +57,20 @@ const AssessmentSettings = () => {
   const [attemptLimit, setAttemptLimit] = useState('1');
   const [scoreMethod, setScoreMethod] = useState('highest');
 
+  // 追踪哪些字段被修改过
+  const [modifiedFields, setModifiedFields] = useState<Set<string>>(new Set());
+
+  // 原始值（用于比较是否修改）
+  const [originalValues, setOriginalValues] = useState<{
+    timeLimited: boolean;
+    timeLimit: string;
+    allowAnswerChange: boolean;
+    selectedGroups: readonly string[];
+    selectedCourses: readonly string[];
+    attemptLimit: string;
+    scoreMethod: string;
+  } | null>(null);
+
   // 分数计算方法选项
   const scoreMethodOptions = [
     { label: '最高分', value: 'highest' },
@@ -78,13 +92,36 @@ const AssessmentSettings = () => {
       setAssessment(extendedAssessment);
       
       // 设置表单默认值，使用安全的默认值
-      setTimeLimited(extendedAssessment.timeLimited ?? false);
-      setTimeLimit((extendedAssessment.timeLimit ?? 120).toString());
-      setAllowAnswerChange(extendedAssessment.allowAnswerChange ?? true);
-      setSelectedGroups(extendedAssessment.studentGroups ?? ['ALL']);
-      setSelectedCourses(extendedAssessment.courses ?? []);
-      setAttemptLimit((extendedAssessment.attemptLimit ?? 1) === -1 ? '-1' : (extendedAssessment.attemptLimit ?? 1).toString());
-      setScoreMethod(extendedAssessment.scoreMethod ?? 'highest');
+      const timeLimitedValue = extendedAssessment.timeLimited ?? false;
+      const timeLimitValue = (extendedAssessment.timeLimit ?? 120).toString();
+      const allowAnswerChangeValue = extendedAssessment.allowAnswerChange ?? true;
+      const selectedGroupsValue = extendedAssessment.studentGroups ?? ['ALL'];
+      const selectedCoursesValue = extendedAssessment.courses ?? [];
+      const attemptLimitValue = (extendedAssessment.attemptLimit ?? 1) === -1 ? '-1' : (extendedAssessment.attemptLimit ?? 1).toString();
+      const scoreMethodValue = extendedAssessment.scoreMethod ?? 'highest';
+
+      // 设置表单状态
+      setTimeLimited(timeLimitedValue);
+      setTimeLimit(timeLimitValue);
+      setAllowAnswerChange(allowAnswerChangeValue);
+      setSelectedGroups(selectedGroupsValue);
+      setSelectedCourses(selectedCoursesValue);
+      setAttemptLimit(attemptLimitValue);
+      setScoreMethod(scoreMethodValue);
+
+      // 保存原始值用于比较
+      setOriginalValues({
+        timeLimited: timeLimitedValue,
+        timeLimit: timeLimitValue,
+        allowAnswerChange: allowAnswerChangeValue,
+        selectedGroups: selectedGroupsValue,
+        selectedCourses: selectedCoursesValue,
+        attemptLimit: attemptLimitValue,
+        scoreMethod: scoreMethodValue,
+      });
+
+      // 重置修改标记
+      setModifiedFields(new Set());
 
       // 加载课程列表
       const coursesResponse = await client.graphql({
@@ -122,38 +159,117 @@ const AssessmentSettings = () => {
     loadData();
   }, [loadData]);
 
+  // 字段修改追踪函数
+  const markFieldAsModified = (fieldName: string) => {
+    setModifiedFields(prev => new Set(prev).add(fieldName));
+  };
+
+  // 包装的setter函数，用于追踪修改
+  const setTimeLimitedWithTracking = (value: boolean) => {
+    setTimeLimited(value);
+    if (originalValues && value !== originalValues.timeLimited) {
+      markFieldAsModified('timeLimited');
+    }
+  };
+
+  const setTimeLimitWithTracking = (value: string) => {
+    setTimeLimit(value);
+    if (originalValues && value !== originalValues.timeLimit) {
+      markFieldAsModified('timeLimit');
+    }
+  };
+
+  const setAllowAnswerChangeWithTracking = (value: boolean) => {
+    setAllowAnswerChange(value);
+    if (originalValues && value !== originalValues.allowAnswerChange) {
+      markFieldAsModified('allowAnswerChange');
+    }
+  };
+
+  const setSelectedGroupsWithTracking = (value: readonly string[]) => {
+    setSelectedGroups(value);
+    if (originalValues && JSON.stringify(value) !== JSON.stringify(originalValues.selectedGroups)) {
+      markFieldAsModified('studentGroups');
+    }
+  };
+
+  const setSelectedCoursesWithTracking = (value: readonly string[]) => {
+    setSelectedCourses(value);
+    if (originalValues && JSON.stringify(value) !== JSON.stringify(originalValues.selectedCourses)) {
+      markFieldAsModified('courses');
+    }
+  };
+
+  const setAttemptLimitWithTracking = (value: string) => {
+    setAttemptLimit(value);
+    if (originalValues && value !== originalValues.attemptLimit) {
+      markFieldAsModified('attemptLimit');
+    }
+  };
+
+  const setScoreMethodWithTracking = (value: string) => {
+    setScoreMethod(value);
+    if (originalValues && value !== originalValues.scoreMethod) {
+      markFieldAsModified('scoreMethod');
+    }
+  };
+
   const handleSave = async () => {
     if (!assessment) return;
     
     setSaving(true);
     try {
-      // 仅构造 GraphQL AssessmentInput 允许的字段
-      const baseAssessment = {
+      // 创建一个只包含修改字段的更新对象
+      const settingsUpdate: Partial<ExtendedAssessment> & { id: string } = {
         id: assessment.id,
-        name: assessment.name,
-        courseId: assessment.courseId,
-        lectureDate: assessment.lectureDate,
-        deadline: assessment.deadline,
-        assessType: assessment.assessType,
-        multiChoiceAssessment: assessment.multiChoiceAssessment,
-        freeTextAssessment: assessment.freeTextAssessment,
-        trueFalseAssessment: assessment.trueFalseAssessment,
-        singleAnswerAssessment: assessment.singleAnswerAssessment,
-        published: assessment.published,
-        status: assessment.status,
-        // 扩展设置字段（schema 已支持）
-        timeLimited,
-        timeLimit: parseInt(timeLimit, 10),
-        allowAnswerChange,
-        studentGroups: Array.from(selectedGroups),
-        courses: Array.from(selectedCourses),
-        attemptLimit: parseInt(attemptLimit, 10),
-        scoreMethod
-  };
+      };
+
+      // 只包含非空且有意义的字段（保持核心字段）
+      if (assessment.name) settingsUpdate.name = assessment.name;
+      if (assessment.courseId) settingsUpdate.courseId = assessment.courseId;
+      if (assessment.lectureDate) settingsUpdate.lectureDate = assessment.lectureDate;
+      if (assessment.deadline) settingsUpdate.deadline = assessment.deadline;
+      if (assessment.assessType) settingsUpdate.assessType = assessment.assessType;
+      if (assessment.published !== undefined && assessment.published !== null) settingsUpdate.published = assessment.published;
+      if (assessment.status) settingsUpdate.status = assessment.status;
+
+      // 保留题目内容（如果存在）
+      if (assessment.multiChoiceAssessment) settingsUpdate.multiChoiceAssessment = assessment.multiChoiceAssessment;
+      if (assessment.freeTextAssessment) settingsUpdate.freeTextAssessment = assessment.freeTextAssessment;
+      if (assessment.trueFalseAssessment) settingsUpdate.trueFalseAssessment = assessment.trueFalseAssessment;
+      if (assessment.singleAnswerAssessment) settingsUpdate.singleAnswerAssessment = assessment.singleAnswerAssessment;
+
+      // 只更新被修改过的设置字段
+      if (modifiedFields.has('timeLimited')) {
+        settingsUpdate.timeLimited = timeLimited;
+        if (timeLimited && modifiedFields.has('timeLimit')) {
+          settingsUpdate.timeLimit = parseInt(timeLimit, 10);
+        }
+      }
+      if (modifiedFields.has('allowAnswerChange')) {
+        settingsUpdate.allowAnswerChange = allowAnswerChange;
+      }
+      if (modifiedFields.has('studentGroups')) {
+        settingsUpdate.studentGroups = Array.from(selectedGroups);
+      }
+      if (modifiedFields.has('courses')) {
+        settingsUpdate.courses = Array.from(selectedCourses);
+      }
+      if (modifiedFields.has('attemptLimit')) {
+        settingsUpdate.attemptLimit = parseInt(attemptLimit, 10);
+      }
+      if (modifiedFields.has('scoreMethod')) {
+        settingsUpdate.scoreMethod = scoreMethod as 'highest' | 'average' | 'lowest';
+      }
+      
+      console.log('Saving assessment settings (only modified fields):', {
+        modifiedFields: Array.from(modifiedFields),
+        settingsUpdate
+      });
       
       await client.graphql({
-        query: upsertAssessment,
-        variables: { input: baseAssessment }
+        query: updateAssessment,
+        variables: { input: settingsUpdate }
       });
 
       dispatchAlert({
@@ -252,7 +368,7 @@ const AssessmentSettings = () => {
                 <FormField label="是否限制测试用时">
                   <Toggle
                     checked={timeLimited}
-                    onChange={({ detail }) => setTimeLimited(detail.checked)}
+                    onChange={({ detail }) => setTimeLimitedWithTracking(detail.checked)}
                   >
                     {timeLimited ? '启用时间限制' : '不限制时间'}
                   </Toggle>
@@ -266,7 +382,7 @@ const AssessmentSettings = () => {
                   >
                     <Input
                       value={timeLimit}
-                      onChange={({ detail }) => setTimeLimit(detail.value)}
+                      onChange={({ detail }) => setTimeLimitWithTracking(detail.value)}
                       type="number"
                       placeholder="120"
                     />
@@ -276,7 +392,7 @@ const AssessmentSettings = () => {
                 <FormField label="提交答案后是否允许修改">
                   <Toggle
                     checked={allowAnswerChange}
-                    onChange={({ detail }) => setAllowAnswerChange(detail.checked)}
+                    onChange={({ detail }) => setAllowAnswerChangeWithTracking(detail.checked)}
                   >
                     {allowAnswerChange ? '允许修改答案' : '提交后不可修改'}
                   </Toggle>
@@ -301,7 +417,7 @@ const AssessmentSettings = () => {
                       };
                     })}
                     onChange={({ detail }) => 
-                      setSelectedGroups(detail.selectedOptions.map(option => option.value!))
+                      setSelectedGroupsWithTracking(detail.selectedOptions.map(option => option.value!))
                     }
                     options={availableGroups.map(group => ({
                       label: group.name,
@@ -327,7 +443,7 @@ const AssessmentSettings = () => {
                       };
                     })}
                     onChange={({ detail }) => 
-                      setSelectedCourses(detail.selectedOptions.map(option => option.value!))
+                      setSelectedCoursesWithTracking(detail.selectedOptions.map(option => option.value!))
                     }
                     options={courses.map(course => ({
                       label: course.name,
@@ -355,7 +471,7 @@ const AssessmentSettings = () => {
                         ? { label: '无限次数', value: '-1' }
                         : { label: `${attemptLimit} 次`, value: attemptLimit }
                     }
-                    onChange={({ detail }) => setAttemptLimit(detail.selectedOption.value!)}
+                    onChange={({ detail }) => setAttemptLimitWithTracking(detail.selectedOption.value!)}
                     options={[
                       { label: '无限次数', value: '-1' },
                       { label: '1 次', value: '1' },
@@ -374,7 +490,7 @@ const AssessmentSettings = () => {
                 >
                   <Select
                     selectedOption={scoreMethodOptions.find(option => option.value === scoreMethod) || null}
-                    onChange={({ detail }) => setScoreMethod(detail.selectedOption.value!)}
+                    onChange={({ detail }) => setScoreMethodWithTracking(detail.selectedOption.value!)}
                     options={scoreMethodOptions}
                     placeholder="选择计分方法"
                   />
