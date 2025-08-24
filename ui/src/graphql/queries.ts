@@ -97,6 +97,13 @@ export const getAssessment = /* GraphQL */ `
       }
       published
       status
+      timeLimited
+      timeLimit
+      allowAnswerChange
+      studentGroups
+      courses
+      attemptLimit
+      scoreMethod
       course {
         id
         name
@@ -498,6 +505,7 @@ export const getCurrentUser = /* GraphQL */ `
       createdAt
       createdBy
       isActive
+      studentGroups
     }
   }
 `;
@@ -523,5 +531,15 @@ export const previewExcelImport = /* GraphQL */ `
 export const checkPasswordResetToken = /* GraphQL */ `
   query CheckPasswordResetToken($token: String!) {
     checkPasswordResetToken(token: $token)
+  }
+`;
+export const getGlobalLogo = /* GraphQL */ `
+  query GetGlobalLogo {
+    getGlobalLogo {
+      id
+      logoUrl
+      uploadedBy
+      uploadedAt
+    }
   }
 `;

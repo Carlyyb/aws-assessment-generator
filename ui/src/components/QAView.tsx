@@ -13,13 +13,13 @@ type QAViewProps = {
 export const QAView = ({ activeStepIndex, assessment, updateAssessment }: QAViewProps) => {
   // 判断题型
   const isMultiChoice = 'answerChoices' in assessment && Array.isArray(assessment.correctAnswer);  
-  const isSingleAnswer = 'answerChoices' in assessment && typeof assessment.correctAnswer === 'number' && assessment.answerChoices.length === 4;  // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断（单选默认四个选项）
+  const isSingleAnswer = 'answerChoices' in assessment && typeof assessment.correctAnswer === 'number' && assessment.answerChoices.length >= 3;  // CHANGELOG 2025-08-15 by 邱语堂: 增加问题类型单选/判断（单选默认四个选项）
   const isTrueFalse = 'answerChoices' in assessment && typeof assessment.correctAnswer === 'string' && assessment.answerChoices.length === 2;     //  单选默认四个选项，判断默认两个选项
   const isFreeText = 'rubric' in assessment;  
 
   return (
     <SpaceBetween size="l">
-      <Container header={<Header variant="h2">{getTextWithParams('components.assessments.question_number', { number: activeStepIndex + 1 })}</Header>}>
+      <Container header={<Header variant="h2">{getTextWithParams('components.assessment.question_number', { number: activeStepIndex + 1 })}</Header>}>
         <Textarea
           onChange={({ detail }) =>
             updateAssessment({ type: ActionTypes.Update, stepIndex: activeStepIndex, key: 'question', content: detail.value })

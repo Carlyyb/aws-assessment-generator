@@ -224,27 +224,13 @@ const AssessmentSettings = () => {
         id: assessment.id,
       };
 
-      // 只包含非空且有意义的字段（保持核心字段）
-      if (assessment.name) settingsUpdate.name = assessment.name;
-      if (assessment.courseId) settingsUpdate.courseId = assessment.courseId;
-      if (assessment.lectureDate) settingsUpdate.lectureDate = assessment.lectureDate;
-      if (assessment.deadline) settingsUpdate.deadline = assessment.deadline;
-      if (assessment.assessType) settingsUpdate.assessType = assessment.assessType;
-      if (assessment.published !== undefined && assessment.published !== null) settingsUpdate.published = assessment.published;
-      if (assessment.status) settingsUpdate.status = assessment.status;
-
-      // 保留题目内容（如果存在）
-      if (assessment.multiChoiceAssessment) settingsUpdate.multiChoiceAssessment = assessment.multiChoiceAssessment;
-      if (assessment.freeTextAssessment) settingsUpdate.freeTextAssessment = assessment.freeTextAssessment;
-      if (assessment.trueFalseAssessment) settingsUpdate.trueFalseAssessment = assessment.trueFalseAssessment;
-      if (assessment.singleAnswerAssessment) settingsUpdate.singleAnswerAssessment = assessment.singleAnswerAssessment;
-
       // 只更新被修改过的设置字段
       if (modifiedFields.has('timeLimited')) {
         settingsUpdate.timeLimited = timeLimited;
-        if (timeLimited && modifiedFields.has('timeLimit')) {
-          settingsUpdate.timeLimit = parseInt(timeLimit, 10);
-        }
+      }
+      // 只有当 timeLimited 为 true 时，才更新 timeLimit
+      if (timeLimited && modifiedFields.has('timeLimit')) {
+        settingsUpdate.timeLimit = parseInt(timeLimit, 10);
       }
       if (modifiedFields.has('allowAnswerChange')) {
         settingsUpdate.allowAnswerChange = allowAnswerChange;
@@ -262,6 +248,16 @@ const AssessmentSettings = () => {
         settingsUpdate.scoreMethod = scoreMethod as 'highest' | 'average' | 'lowest';
       }
       
+      // 如果没有任何字段被修改，则不执行任何操作
+      if (Object.keys(settingsUpdate).length <= 1) {
+        dispatchAlert({
+          type: AlertType.INFO,
+          content: '没有检测到任何更改'
+        });
+        setSaving(false);
+        return;
+      }
+      
       console.log('Saving assessment settings (only modified fields):', {
         modifiedFields: Array.from(modifiedFields),
         settingsUpdate
@@ -277,7 +273,9 @@ const AssessmentSettings = () => {
         content: '测验设置保存成功'
       });
       
-      navigate('/assessments/find-assessments');
+      // 重新加载数据以更新原始值
+      await loadData();
+      
     } catch (error) {
       console.error('Failed to save assessment settings:', error);
       dispatchAlert({

@@ -8,6 +8,7 @@ export enum AlertType {
   SUCCESS = 'success',
   ERROR = 'error',
   WARNING = 'warning',
+  INFO = 'info',
 }
 
 export const DispatchAlertContext = createContext<(newAlert: FlashbarProps.MessageDefinition) => void>(() => {});

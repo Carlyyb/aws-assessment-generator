@@ -285,8 +285,6 @@ export default () => {
             <Box>
               <strong>题目类型：</strong>
               <Box variant="span">
-                {assessment.assessType === AssessType.multiChoiceAssessment && '多选题'}
-                {assessment.assessType === AssessType.freeTextAssessment && '问答题'}
                 {assessment.assessType === AssessType.singleAnswerAssessment && '单选题'}
                 {assessment.assessType === AssessType.trueFalseAssessment && '判断题'}
               </Box>

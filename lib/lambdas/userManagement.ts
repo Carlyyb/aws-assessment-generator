@@ -24,6 +24,7 @@ const USER_POOL_ID = process.env.USER_POOL_ID!;
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME!;
 const STUDENTS_TABLE_NAME = process.env.STUDENTS_TABLE_NAME!;
 const STUDENT_GROUPS_TABLE_NAME = process.env.STUDENT_GROUPS_TABLE_NAME!;
+const STUDENT_ASSESSMENTS_TABLE = process.env.STUDENT_ASSESSMENTS_TABLE!;
 
 // 接口定义
 interface UserInput {
@@ -743,7 +744,13 @@ export const handler = async (event: any): Promise<any> => {
             }
           }));
 
-          const existingUsers = new Set((dbResponse.Items || []).map(item => item.username));
+          const existingUsers = new Map((dbResponse.Items || []).map(item => [item.username, item]));
+
+          // 获取学生分组信息
+          const groupsResponse = await docClient.send(new ScanCommand({
+            TableName: STUDENT_GROUPS_TABLE_NAME
+          }));
+          const allGroups = groupsResponse.Items || [];
 
           const students = [];
           const usersToSync = [];
@@ -755,15 +762,54 @@ export const handler = async (event: any): Promise<any> => {
               return attr?.Value || null;
             };
 
+            const dbUser = existingUsers.get(user.Username);
+            
+            // 获取该学生的分组信息
+            const userGroups = allGroups.filter(group => 
+              Array.isArray(group.students) && group.students.includes(user.Username)
+            );
+
+            // 获取该学生的测试完成数 - 查询StudentAssessment表
+            let assessmentCount = 0;
+            try {
+              const assessmentResponse = await docClient.send(new QueryCommand({
+                TableName: STUDENT_ASSESSMENTS_TABLE,
+                IndexName: 'StudentIdIndex', // 假设有这个索引
+                KeyConditionExpression: 'studentId = :studentId',
+                ExpressionAttributeValues: {
+                  ':studentId': user.Username
+                },
+                Select: 'COUNT'
+              }));
+              assessmentCount = assessmentResponse.Count || 0;
+            } catch (error) {
+              console.warn(`获取学生 ${user.Username} 的测试数量失败:`, error);
+              // 如果查询失败，使用备用方案 - 直接扫描
+              try {
+                const scanResponse = await docClient.send(new ScanCommand({
+                  TableName: STUDENT_ASSESSMENTS_TABLE,
+                  FilterExpression: 'studentId = :studentId',
+                  ExpressionAttributeValues: {
+                    ':studentId': user.Username
+                  },
+                  Select: 'COUNT'
+                }));
+                assessmentCount = scanResponse.Count || 0;
+              } catch (scanError) {
+                console.error(`获取学生 ${user.Username} 的测试数量失败（扫描方案也失败）:`, scanError);
+                assessmentCount = 0;
+              }
+            }
+
             const studentData = {
               id: user.Username,
               name: getAttributeValue('preferred_username') || getAttributeValue('name') || user.Username,
               email: getAttributeValue('email'),
               username: user.Username,
               role: 'students',
-              lastLoginAt: null,
-              assessmentCount: 0,
-              groups: [],
+              lastLoginAt: dbUser?.lastLoginAt || null,
+              assessmentCount: assessmentCount,
+              groups: userGroups,
               needsPasswordChange: user.UserStatus === 'FORCE_CHANGE_PASSWORD',
               phoneNumber: getAttributeValue('phone_number'),
               createdAt: user.UserCreateDate?.toISOString() || createTimestamp(),
@@ -824,21 +870,52 @@ export const handler = async (event: any): Promise<any> => {
             }
           }));
 
-          // 将User类型转换为Student类型
-          const students = (response.Items || []).map(user => ({
-            id: user.username,
-            name: user.name,
-            email: user.email || null,
-            username: user.username,
-            role: user.role,
-            lastLoginAt: user.lastLoginAt || null,
-            assessmentCount: 0,
-            groups: [],
-            needsPasswordChange: user.needsPasswordChange || false,
-            phoneNumber: user.phoneNumber || null,
-            createdAt: user.createdAt,
-            createdBy: user.createdBy
+          // 获取学生分组信息
+          const groupsResponse = await docClient.send(new ScanCommand({
+            TableName: STUDENT_GROUPS_TABLE_NAME
           }));
+          const allGroups = groupsResponse.Items || [];
+
+          // 将User类型转换为Student类型，并获取完整的数据
+          const students = [];
+          for (const user of response.Items || []) {
+            // 获取该学生的分组信息
+            const userGroups = allGroups.filter(group => 
+              Array.isArray(group.students) && group.students.includes(user.username)
+            );
+
+            // 获取该学生的测试完成数
+            let assessmentCount = 0;
+            try {
+              const scanResponse = await docClient.send(new ScanCommand({
+                TableName: STUDENT_ASSESSMENTS_TABLE,
+                FilterExpression: 'studentId = :studentId',
+                ExpressionAttributeValues: {
+                  ':studentId': user.username
+                },
+                Select: 'COUNT'
+              }));
+              assessmentCount = scanResponse.Count || 0;
+            } catch (assessmentError) {
+              console.error(`获取学生 ${user.username} 的测试数量失败:`, assessmentError);
+              assessmentCount = 0;
+            }
+
+            students.push({
+              id: user.username,
+              name: user.name,
+              email: user.email || null,
+              username: user.username,
+              role: user.role,
+              lastLoginAt: user.lastLoginAt || null,
+              assessmentCount: assessmentCount,
+              groups: userGroups,
+              needsPasswordChange: user.needsPasswordChange || false,
+              phoneNumber: user.phoneNumber || null,
+              createdAt: user.createdAt,
+              createdBy: user.createdBy
+            });
+          }
 
           return students;
         }

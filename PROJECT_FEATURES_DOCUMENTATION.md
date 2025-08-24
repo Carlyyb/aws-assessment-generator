@@ -8,22 +8,229 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ## 最新更新记录
 
-### 2025-08-23: 评分分数返回修复、日志记录与评审界面增强
+### 2025-08-25: S3-based全局Logo管理系统
 
-- 功能名称：成绩评分修复与审阅增强
+- **功能名称**：实现基于AWS S3的全局Logo管理系统，解决多个logo同时加载的跳动问题
+- **问题背景**：
+  - 原有logo系统使用base64和URL存储在localStorage和云端设置中
+  - 出现多个logo同时加载并且不停跳动的状况
+  - Logo文件缺乏统一管理，存在重复上传和存储混乱问题
+- **解决方案**：
+  1. **新建LogoManager S3管理器**：
+     - 创建 `ui/src/utils/logoManager.ts` 单例模式管理器
+     - 实现固定目录结构：`global-logos/current-logo.{ext}`
+     - 自动清理旧logo文件，确保只保留一个当前logo
+     - 支持文件上传、URL上传、删除等完整操作
+  2. **ThemeContext集成S3服务**：
+     - 更新 `setGlobalLogo()` 函数集成LogoManager
+     - 新增 `uploadGlobalLogoFile()` 直接文件上传功能
+     - 新增 `deleteGlobalLogo()` logo删除功能
+     - 优先从S3加载logo，localStorage作为备份
+  3. **增强设置页面UI**：
+     - 在 `EnhancedThemeSettings.tsx` 中添加文件上传控件
+     - 支持拖拽上传和点击选择文件
+     - 文件类型验证（仅支持图片格式）和大小限制（5MB）
+     - 保留URL输入方式用于向后兼容
+- **技术实现**：
+  - **LogoManager类**：单例模式，封装所有S3 logo操作
+  - **S3存储策略**：固定路径 `global-logos/current-logo.{ext}`，自动清理机制
+  - **错误处理**：完整的异常捕获和用户友好的错误提示
+  - **向后兼容**：支持base64和URL方式的旧logo数据
+- **用户体验提升**：
+  - 消除logo跳动和重复加载问题
+  - 支持直接文件上传，无需手动转换URL
+  - 文件验证和大小限制提升安全性
+  - 直观的上传进度和状态反馈
+- **文件变更**：
+  - 新增：`ui/src/utils/logoManager.ts`
+  - 修改：`ui/src/contexts/ThemeContext.tsx`, `ui/src/components/EnhancedThemeSettings.tsx`
+- **构建状态**：✅ TypeScript编译通过，无错误
+- **部署兼容性**：完全向后兼容现有logo数据，自动迁移到S3存储
+
+### 2025-08-25: Assessment Update 系统重构与错误修复
+
+- **功能名称**：新增 updateAssessment mutation 并重构 Assessment 更新逻辑
+- **问题背景**：
+  - `upsertAssessment` 使用 `ddb.put` 操作会覆盖整个项目
+  - 在更新时如果缺少 `name`、`courseId` 等非空字段会导致 GraphQL 错误
+  - AssessmentSettings 页面更新设置时出现 "Cannot return null for non-nullable type" 错误
+- **解决方案**：
+  1. **新增 updateAssessment mutation**：
+     - 创建专用的 `UpdateAssessmentInput` 类型，所有字段为可选（除 id）
+     - 实现 `updateAssessment` resolver 使用 `ddb.update` 操作
+     - 只更新传入的字段，不影响其他字段
+  2. **重构 upsertAssessment**：
+     - 明确用于创建新 Assessment 的场景
+     - 确保在创建时正确设置 `createdAt` 和 `updatedAt` 字段
+  3. **前端逻辑分离**：
+     - AssessmentSettings.tsx 使用 `updateAssessment` 进行设置更新
+     - EditAssessments.tsx 保持使用 `upsertAssessment` 进行创建/完整更新
+- **技术实现**：
+  - **GraphQL Schema**: 添加 `UpdateAssessmentInput` 和 `updateAssessment` mutation
+  - **Resolver**: 创建 `lib/resolvers/updateAssessment.ts` 使用 `ddb.update`
+  - **CDK**: 在 `data-stack.ts` 中注册新的 resolver
+  - **前端**: 在 `mutations.ts` 中添加 `updateAssessment` GraphQL 查询
+- **文件变更**：
+  - 新增：`lib/resolvers/updateAssessment.ts`
+  - 修改：`lib/schema.graphql`, `lib/data-stack.ts`, `ui/src/graphql/mutations.ts`, `ui/src/pages/AssessmentSettings.tsx`
+- **影响范围**：修复 AssessmentSettings 更新失败问题，提升数据操作安全性
+- **构建状态**：✅ TypeScript 编译通过
+- **版本控制**：2025-08-25 Assessment Update 重构完成
+
+### 2025-08-25: 主题系统与Logo系统全面升级
+
+- **功能名称**：主题系统从基础4色升级到详细设计令牌系统 + Logo显示优化
+- **升级范围**：完整的主题架构重构，从 `CustomTheme` 升级到 `DetailedTheme`
+- **技术实现**：
+  1. **DetailedTheme 接口**：
+     - 从4个基本颜色扩展到26个精细设计令牌
+     - 覆盖全局、按钮、导航、输入框、状态等所有UI元素
+     - 基于Cloudscape设计系统标准
+  2. **EnhancedThemeSettings 组件**：
+     - 可视化主题编辑器，支持Tab式分类设置
+     - 实时颜色选择器和主题预览
+     - 自定义主题创建、编辑、删除功能
+  3. **CSS变量动态注入**：
+     - App.tsx 中实现所有设计令牌的CSS变量自动注入
+     - 实时主题切换无需页面刷新
+  4. **Logo系统重构**：
+     - 移除所有自定义CSS定位方案
+     - 采用Cloudscape TopNavigation identity.logo 官方属性
+     - 消除logo显示冲突和布局问题
+- **用户体验提升**：
+  - 6个内置主题（YAS Blue、Cloudscape Light/Dark、Education Blue等）
+  - 细粒度颜色控制（26个设计令牌）
+  - 稳定的Logo显示效果
+  - 专业的主题编辑界面
+- **技术债务清理**：
+  - 移除旧的Mantine依赖组件
+  - 清理冲突的CSS样式
+  - 向后兼容旧主题数据格式
+- **文件影响**：
+  - 核心：`ThemeContext.tsx`, `App.tsx`, `EnhancedThemeSettings.tsx`
+  - 样式：`theme.css`, `logo.css` (清理)
+  - 移除：`ThemeCustomizer-old.tsx`, `ThemeSettings-old.tsx` 等旧组件
+- **构建状态**：✅ 成功构建，无TypeScript错误
+- **部署兼容性**：完全向后兼容，现有用户数据无损升级
+
+### 2025-08-24: GraphQL Null 安全性增强与查表错误防护
+
+- **功能名称**：系统性解决 "Cannot return null for non-nullable type" GraphQL 错误
+- **问题背景**：
+  - 项目中频繁出现 GraphQL 查询错误：`Cannot return null for non-nullable type: 'AWSDateTime'/'Assessment'` 等
+  - 这些错误主要由数据库记录缺少 Schema 中定义的非空字段，或字段值为 `null` 导致
+  - 错误会导致整个查询失败，影响用户体验和系统稳定性
+- **解决方案**：
+  1. **放宽 GraphQL Schema 约束**：
+     - 将 `Assessment` 类型中的 `updatedAt` 字段从必需 (`!`) 改为可选
+     - 将 `StudentAssessment` 类型中的 `answers` 字段从必需改为可选
+     - 将所有题型 Input 中的 `explanation` 字段从必需改为可选
+  2. **前端默认值增强**：
+     - 增强 `addAssessmentDefaults()` 函数，处理 null/undefined 情况
+     - 增强 `addStudentAssessmentDefaults()` 函数，支持空值参数
+     - 为所有可能为空的字段提供合理的默认值
+  3. **后端空值安全查询**：
+     - 创建 `lib/utils/nullSafeQuery.ts` 工具库
+     - 提供 `NullSafeQueryResult` 包装器类，支持错误处理和默认值
+     - 实现 `fillAssessmentDefaults()` 和 `fillStudentAssessmentDefaults()` 函数
+     - 在数据转换 Lambda 中应用空值安全处理
+- **技术实现**：
+  - **Schema 修改** (`lib/schema.graphql`)：移除关键字段的 `!` 约束
+  - **前端类型增强** (`ui/src/types/ExtendedTypes.ts`)：完善默认值处理逻辑
+  - **后端工具库** (`lib/utils/nullSafeQuery.ts`)：提供统一的空值安全查询方法
+  - **Lambda 增强** (`lib/lambdas/transformAssessmentData.ts`, `lib/lambdas/listStudentAssessmentsByParentAssessId.ts`)：应用空值安全处理
+- **影响范围**：
+  - 所有 Assessment 和 StudentAssessment 查询操作
+  - 前端 AssessmentResults 页面不再因缺少字段而崩溃
+  - 后端 API 返回数据更加健壮和一致
+- **默认值策略**：
+  - `updatedAt`: null（如果缺失）
+  - `answers`: null（如果缺失）
+  - `explanation`: null（如果缺失）
+  - `timeLimited`: false
+  - `timeLimit`: 120
+  - `allowAnswerChange`: true
+  - `studentGroups`: ['ALL']
+  - `attemptLimit`: 1
+  - `scoreMethod`: 'highest'
+- **版本控制**：v1.11.0
+- **已知问题与限制**：
+  - 需要定期检查生产环境中的数据完整性
+  - 建议在数据写入时就确保字段完整性
+- **未来扩展**：
+  - 可以考虑在数据写入时添加 Schema 验证
+  - 建立监控机制，追踪字段缺失情况
+
+### 2025-08-24: 取消发布测试修复（避免字段丢失）
+
+- **功能名称**：修复取消发布测试时导致字段全部消失的问题
+- **问题背景**：
+  - 取消发布操作后，Assessment 记录只剩下 `published` 和 `status` 两个字段
+  - 其他所有字段（如 `name`、`courseId`、`deadline` 等）都被清空
+  - 同时会删除所有学生的历史测试数据，造成数据丢失
+- **根本原因**：
+  - `unpublishAssessment` Lambda 使用错误的 `userId`（调用者ID）作为主键
+  - 当 `userId` 不匹配时，DynamoDB UpdateItem 会创建新记录而不是更新现有记录
+  - 新记录只包含 UpdateExpression 中指定的字段
+- **解决方案**：
+  1. **使用 GSI 查找真实 ownerUserId**：
+     - 通过 `id-only` GSI 根据 `assessmentId` 查找原始记录
+     - 获取真实的 `ownerUserId` 作为主键进行更新
+  2. **添加存在性条件**：
+     - 使用 `ConditionExpression: 'attribute_exists(id) AND attribute_exists(userId)'`
+     - 确保只更新现有记录，避免创建新记录
+  3. **保留学生历史数据**：
+     - 移除删除 StudentAssessments 表记录的逻辑
+     - 保留学生的答题历史和分数记录
+  4. **权限校验增强**：
+     - 非管理员只能操作自己创建的测试
+     - 管理员可以操作任何测试
+- **技术实现**：
+  - **修改文件**：`lib/lambdas/unpublishAssessment.ts`
+  - **移除依赖**：不再需要 `studentAssessmentsTable` 环境变量
+  - **查询优化**：使用 QueryCommand 替代直接的 UpdateItem
+  - **错误处理**：明确的日志记录和错误返回
+- **影响范围**：
+  - 取消发布操作不再清空测试数据
+  - 学生的历史答题记录得到保护
+  - 管理员和教师的权限控制更加精确
+- **版本控制**：v1.11.1
+- **已知问题与限制**：
+  - 需要 AssessmentsTable 存在 `id-only` GSI
+  - 依赖 GSI 的数据一致性
+- **未来扩展**：
+  - 可以考虑添加"软删除"功能，标记测试为不可见而不是真正删除
+  - 增加操作审计日志
+
+### 2025-08-24: 停用 FreeText 题型生成 Prompt（后端提示精简）
+
+- 功能名称：关闭 FreeText 题型生成相关提示文本
+- 功能描述：
+  - 由于前端暂不再发起 FreeText 题目生成请求，后端生成 Prompt 中移除了与 FreeText（简答题）相关的说明与 XML rubric 示例片段，以减少大模型上下文长度和推理成本。
+- 修改位置：
+  - `lib/questions-generation/lambdas/event-handler/services/prompts.ts`
+    - `getInitialQuestionsPrompt()`：删除 FreeText 题型说明与 `<rubric>` 模板插入逻辑。
+    - `improveQuestionPrompt()`：删除 FreeText 题型 `<rubric>` 模板片段。
+- 输入/输出：
+  - 输入类型未变更；GraphQL Schema 未变更。
+  - 当 `assessType` 为 `freeTextAssessment` 时，不再插入 FreeText 专属说明与 XML 模板（当前前端不会发送此类型的生成请求）。
+- 依赖关系：
+  - 无 Schema 变更；不需要更新 `ui/src/graphql/queries.ts` / `mutations.ts`。
+- 已知问题与限制：
+  - 如未来重新启用 FreeText 题型，需要恢复相应 Prompt 片段与模板。
+- 版本控制：v1.10.1
+- 未来扩展：
+  - 可将各题型 Prompt 片段组件化，按需组装，进一步缩短无关上下文。
+
+### 2025-08-23: 评分分数返回修复、日志记录与评审界面增强
 - 功能描述：
   - 修复 gradeStudentAssessment 在判断题/单选题时返回分数为 null 的问题，确保始终返回百分制 `score`。
-  - 新增 CloudWatch 打分日志，单条日志内容为“学生姓名+时间戳+考试名+分数%”，便于检索。
   - 审阅页新增解析区域展示：对错符号（√/×）、“你的答案”与“正确答案”。
-- 输入/输出：
   - 输入：`StudentAssessmentInput`（不变）。
   - 输出：`StudentAssessment`，其中 `score` 保障非空（按题型计算的百分比）。
-- 使用示例：
   - 后端：`lib/lambdas/gradeAssessment.ts` 增加 `gradeTrueFalse`、`gradeSingleAnswer` 并统一返回 `{ score }`；日志示例：`student1003+2025-08-23T10:10:34.506Z+期末测试+80%`。
-  - 前端：`ui/src/pages/ReviewAssessment.tsx` 在解析区显示判题符号与答案对比；多选题判定逻辑与后端一致（只要选错则 0 分，必须全对才判正确）。
 - 依赖关系：前端 GraphQL 类型 `ui/src/graphql/API.ts`（已存在）；不涉及 schema 变更。
 - 已知问题与限制：
-  - 自由文本题“正确/错误”以阈值 0.7 判定，仅用于 UI 提示，不影响后端分数算法。
   - CloudWatch 日志搜索可以直接用完整复合字符串或其中任意片段。
 - 版本控制：v1.10.0
 - 未来扩展：

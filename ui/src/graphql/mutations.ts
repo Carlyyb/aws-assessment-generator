@@ -455,3 +455,23 @@ export const deleteStudentGroup = /* GraphQL */ `
     deleteStudentGroup(id: $id)
   }
 `;
+export const createGlobalLogo = /* GraphQL */ `
+  mutation CreateGlobalLogo($input: GlobalLogoInput!) {
+    createGlobalLogo(input: $input) {
+      id
+      logoUrl
+      uploadedBy
+      uploadedAt
+    }
+  }
+`;
+export const updateGlobalLogo = /* GraphQL */ `
+  mutation UpdateGlobalLogo($input: GlobalLogoInput!) {
+    updateGlobalLogo(input: $input) {
+      id
+      logoUrl
+      uploadedBy
+      uploadedAt
+    }
+  }
+`;

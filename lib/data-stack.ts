@@ -148,6 +148,26 @@ export class DataStack extends NestedStack {
       description: 'Users table name for GenAssess application'
     });
 
+    // 将学生分组表名保存到SSM参数
+    new StringParameter(this, 'StudentGroupsTableNameParameter', {
+      parameterName: '/gen-assess/student-groups-table-name',
+      stringValue: studentGroupsTable.tableName,
+      description: 'Student groups table name for GenAssess application'
+    });
+
+    // 为新的路径也添加参数
+    new StringParameter(this, 'AssessmentAppUsersTableNameParameter', {
+      parameterName: '/assessment-app/table-names/users',
+      stringValue: usersTable.tableName,
+      description: 'Users table name for assessment app'
+    });
+
+    new StringParameter(this, 'AssessmentAppStudentGroupsTableNameParameter', {
+      parameterName: '/assessment-app/table-names/student-groups',
+      stringValue: studentGroupsTable.tableName,
+      description: 'Student groups table name for assessment app'
+    });
+
     // 创建用户管理 Lambda 函数
     const userManagementFunction = new NodejsFunction(this, 'UserManagementFunction', {
       entry: path.join(__dirname, 'lambdas', 'userManagement.ts'),
@@ -279,6 +299,13 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    userManagementDs.createResolver('MutationUpdateUserActivityResolver', {
+      typeName: 'Mutation',
+      fieldName: 'updateUserActivity',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/updateUserActivity.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     // 密码修改解析器
     changePasswordDs.createResolver('MutationChangePasswordResolver', {
       typeName: 'Mutation',
@@ -313,6 +340,48 @@ export class DataStack extends NestedStack {
       typeName: 'Mutation',
       fieldName: 'deleteStudentGroup',
       code: aws_appsync.Code.fromAsset('lib/resolvers/deleteStudentGroup.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    /////////// getCurrentUser Lambda 函数和 resolver
+
+    // 创建 getCurrentUser Lambda 函数
+    const getCurrentUserFunction = new NodejsFunction(this, 'GetCurrentUserFunction', {
+      entry: path.join(__dirname, 'lambdas', 'getCurrentUser.ts'),
+      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      timeout: Duration.seconds(30),
+      memorySize: 256,
+      environment: {
+        USERS_TABLE_NAME: usersTable.tableName,
+        STUDENT_GROUPS_TABLE_NAME: studentGroupsTable.tableName,
+        REGION: Stack.of(this).region
+      },
+      bundling: {
+        minify: true,
+        externalModules: ['@aws-sdk/client-dynamodb', '@aws-sdk/lib-dynamodb', '@aws-sdk/client-ssm'],
+      }
+    });
+
+    // 给getCurrentUser函数权限
+    usersTable.grantReadWriteData(getCurrentUserFunction);
+    studentGroupsTable.grantReadData(getCurrentUserFunction);
+    getCurrentUserFunction.addToRolePolicy(new aws_iam.PolicyStatement({
+      effect: aws_iam.Effect.ALLOW,
+      actions: [
+        'ssm:GetParameter',
+        'ssm:GetParameters'
+      ],
+      resources: [`arn:aws:ssm:${Stack.of(this).region}:${Stack.of(this).account}:parameter/assessment-app/*`]
+    }));
+
+    // 创建getCurrentUser Lambda数据源
+    const getCurrentUserDs = api.addLambdaDataSource('GetCurrentUserDataSource', getCurrentUserFunction);
+
+    // 创建getCurrentUser resolver
+    getCurrentUserDs.createResolver('QueryGetCurrentUserResolver', {
+      typeName: 'Query',
+      fieldName: 'getCurrentUser',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/getCurrentUser.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
@@ -606,6 +675,13 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    assessmentsDs.createResolver('MutationUpdateAssessmentResolver', {
+      typeName: 'Mutation',
+      fieldName: 'updateAssessment',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/updateAssessment.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
     // 创建 listAssessments 解析器 - 直接使用 DynamoDB 数据源
     assessmentsDs.createResolver('QueryListAssessmentsResolver', {
       typeName: 'Query',
@@ -637,6 +713,13 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    // 添加assessments表的参数
+    new StringParameter(this, 'AssessmentAppAssessmentsTableNameParameter', {
+      parameterName: '/assessment-app/table-names/assessments',
+      stringValue: assessmentsTable.tableName,
+      description: 'Assessments table name for assessment app'
+    });
+
     /////////// StudentAssessments
 
     const studentAssessmentsTable = new aws_dynamodb.TableV2(this, 'StudentAssessmentsTable', {
@@ -651,12 +734,94 @@ export class DataStack extends NestedStack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    // 添加student-assessments表的参数
+    new StringParameter(this, 'AssessmentAppStudentAssessmentsTableNameParameter', {
+      parameterName: '/assessment-app/table-names/student-assessments',
+      stringValue: studentAssessmentsTable.tableName,
+      description: 'Student assessments table name for assessment app'
+    });
+
     const studentAssessmentsDs = api.addDynamoDbDataSource('StudentAssessmentsDataSource', studentAssessmentsTable);
 
-    studentAssessmentsDs.createResolver('MutationUpsertStudentAssessmentResolver', {
+    // 为 userManagementFunction 添加 STUDENT_ASSESSMENTS_TABLE 环境变量
+    userManagementFunction.addEnvironment('STUDENT_ASSESSMENTS_TABLE', studentAssessmentsTable.tableName);
+    
+    // 给 userManagementFunction 访问 studentAssessmentsTable 的权限
+    studentAssessmentsTable.grantReadData(userManagementFunction);
+
+    /////////// GlobalLogo Table
+    
+    const globalLogoTable = new aws_dynamodb.TableV2(this, 'GlobalLogoTable', {
+      partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    // 添加global-logo表的参数
+    new StringParameter(this, 'AssessmentAppGlobalLogoTableNameParameter', {
+      parameterName: '/assessment-app/table-names/global-logo',
+      stringValue: globalLogoTable.tableName,
+      description: 'Global logo table name for assessment app'
+    });
+
+    const globalLogoDs = api.addDynamoDbDataSource('GlobalLogoDataSource', globalLogoTable);
+
+    // GlobalLogo管理resolvers
+    globalLogoDs.createResolver('QueryGetGlobalLogoResolver', {
+      typeName: 'Query',
+      fieldName: 'getGlobalLogo',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/getGlobalLogo.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    globalLogoDs.createResolver('MutationCreateGlobalLogoResolver', {
+      typeName: 'Mutation',
+      fieldName: 'createGlobalLogo',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/createGlobalLogo.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    globalLogoDs.createResolver('MutationUpdateGlobalLogoResolver', {
+      typeName: 'Mutation',
+      fieldName: 'updateGlobalLogo',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/updateGlobalLogo.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 创建新的提交学生测试Lambda函数，支持多次尝试
+    const submitStudentAssessmentFunction = new NodejsFunction(this, 'SubmitStudentAssessmentFunction', {
+      entry: path.join(__dirname, 'lambdas', 'submitStudentAssessment.ts'),
+      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      timeout: Duration.seconds(30),
+      memorySize: 512,
+      environment: {
+        REGION: Stack.of(this).region
+      },
+      bundling: {
+        minify: true,
+        externalModules: ['@aws-sdk/client-dynamodb', '@aws-sdk/lib-dynamodb', '@aws-sdk/client-ssm'],
+      }
+    });
+
+    // 给提交函数权限
+    assessmentsTable.grantReadData(submitStudentAssessmentFunction);
+    studentAssessmentsTable.grantReadWriteData(submitStudentAssessmentFunction);
+    submitStudentAssessmentFunction.addToRolePolicy(new aws_iam.PolicyStatement({
+      effect: aws_iam.Effect.ALLOW,
+      actions: [
+        'ssm:GetParameter',
+        'ssm:GetParameters'
+      ],
+      resources: [`arn:aws:ssm:${Stack.of(this).region}:${Stack.of(this).account}:parameter/assessment-app/*`]
+    }));
+
+    // 创建新的Lambda数据源
+    const submitStudentAssessmentDs = api.addLambdaDataSource('SubmitStudentAssessmentDataSource', submitStudentAssessmentFunction);
+
+    // 使用新的Lambda函数替换原有的resolver
+    submitStudentAssessmentDs.createResolver('MutationUpsertStudentAssessmentResolver', {
       typeName: 'Mutation',
       fieldName: 'upsertStudentAssessment',
-      code: aws_appsync.Code.fromAsset('lib/resolvers/upsertStudentAssessment.ts'),
+      code: aws_appsync.Code.fromAsset('lib/resolvers/getCurrentUser.ts'), // 使用简单的Lambda调用resolver
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
@@ -667,11 +832,26 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
-    // 按 parentAssessId 查询所有学生作答结果（基于 GSI）
-    studentAssessmentsDs.createResolver('QueryListStudentAssessmentsByParentAssessIdResolver', {
+    // 按 parentAssessId 查询所有学生作答结果（改为 Lambda 以避免 JS resolver 引发的 400 部署问题）
+    const listByParentAssessIdFn = new aws_lambda_nodejs.NodejsFunction(this, 'ListStudentAssessmentsByParentAssessIdFn', {
+      entry: 'lib/lambdas/listStudentAssessmentsByParentAssessId.ts',
+      runtime: Runtime.NODEJS_20_X,
+      environment: {
+        region: this.region,
+        studentAssessmentsTable: studentAssessmentsTable.tableName,
+      },
+      bundling: {
+        minify: true,
+        externalModules: ['@aws-sdk/client-dynamodb', '@aws-sdk/util-dynamodb'],
+      },
+    });
+    studentAssessmentsTable.grantReadData(listByParentAssessIdFn);
+    const listByParentAssessIdDs = api.addLambdaDataSource('ListStudentAssessmentsByParentAssessIdDs', listByParentAssessIdFn);
+
+    listByParentAssessIdDs.createResolver('QueryListStudentAssessmentsByParentAssessIdResolver', {
       typeName: 'Query',
       fieldName: 'listStudentAssessmentsByParentAssessId',
-      code: aws_appsync.Code.fromAsset('lib/resolvers/listStudentAssessmentsByParentAssessId.ts'),
+      code: aws_appsync.Code.fromAsset('lib/resolvers/invokeLambda.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 

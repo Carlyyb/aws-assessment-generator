@@ -382,6 +382,7 @@ const FindAssessmentsPage = () => {
                   onChange={({ detail }) => setNameFilter(detail.filteringText)}
                 />
                 <Button
+                  variant="normal"
                   iconName="refresh"
                   onClick={() => setLoaded(false)}
                   disabled={!loaded}
@@ -397,6 +398,7 @@ const FindAssessmentsPage = () => {
                 <SpaceBetween size="s" direction="horizontal">
                   <Box variant="awsui-key-label">已选择 {selectedAssessments.length} 项:</Box>
                   <Button
+                    variant="normal"
                     onClick={() => setShowExportModal(true)}
                     iconName="download"
                   >
@@ -583,6 +585,7 @@ const FindAssessmentsPage = () => {
                                 {!hasDataError && item.status === AssessStatus.CREATED && (
                                   item.published ? (
                                     <Button
+                                      variant="normal"
                                       iconName="status-negative"
                                       onClick={() => handleUnpublish(item)}
                                     >
@@ -624,6 +627,7 @@ const FindAssessmentsPage = () => {
 
                                 {!hasDataError && item.status === AssessStatus.PUBLISHED && (
                                   <Button
+                                    variant="normal"
                                     iconName="status-negative"
                                     onClick={() => handleUnpublish(item)}
                                   >

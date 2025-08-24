@@ -12,7 +12,6 @@ import '@cloudscape-design/global-styles/index.css';
 import './styles/high-contrast.css';
 import './styles/cross-browser.css';
 import './styles/theme.css';
-import './styles/logo.css';
 import { I18nProvider } from '@cloudscape-design/components/i18n';
 import messages from '@cloudscape-design/components/i18n/messages/all.en';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -187,7 +186,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
                 data-theme={currentTheme.id}
                 className="cloudscape-modern-theme"
               >
-                <div id="h" style={{ position: 'relative' }} data-has-logo={globalLogo ? 'true' : 'false'}>
+                <div id="h" style={{ position: 'relative' }}>
                   <TopNavigation
                     identity={{
                       href: '#',
@@ -211,34 +210,12 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
                       },
                     ]}
                   />
-                  {/* 自定义Logo显示区域 */}
-                  {(() => {
-                    if (!globalLogo) return null;
-                  })()}
-                  {globalLogo ? (
-                    <div className="custom-logo-container">
-                      <img 
-                        src={globalLogo} 
-                        alt={getText('common.brand')} 
-                        className="custom-logo"
-                        onLoad={() => console.log('✅ Logo loaded successfully')}
-                        onError={(e) => console.error('❌ Logo failed to load:', e)}
-                      />
-                    </div>
-                  ) : (
-                    <div style={{ 
-                      position: 'absolute', 
-                      left: '16px', 
-                      top: '10px', 
-                      color: 'red', 
-                      fontSize: '12px' 
-                    }}>
-                      No Logo
-                    </div>
-                  )}
                 </div>
                 <AppLayout
                 headerSelector="#h"
+                // 应用主题色到AppLayout
+                contentType="default"
+                splitPanelOpen={false}
                 breadcrumbs={
                   <BreadcrumbGroup
                     items={generateBreadcrumbs(activeHref, getOverride)}
@@ -289,11 +266,37 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
                 notifications={<Flashbar items={alerts}/>}
                 toolsOpen={false}
                 tools={
-                  <HelpPanel header={<h2>{getText('common.help.overview')}</h2>}>
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+                  <HelpPanel 
+                    header={<h2>{getText('common.help.overview')}</h2>}
+                    footer={
+                      <div style={{ 
+                        padding: '12px 0', 
+                        borderTop: '1px solid var(--border-color)',
+                        marginTop: '16px' 
+                      }}>
+                        <small style={{ color: 'var(--text-secondary)' }}>
+                          {getText('common.brand')} v1.0
+                        </small>
+                      </div>
+                    }
+                  >
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: '10px', 
+                      marginBottom: '16px',
+                      padding: '12px',
+                      backgroundColor: 'var(--surface-color)',
+                      borderRadius: 'var(--border-radius-medium)',
+                      border: '1px solid var(--border-color)'
+                    }}>
                       <ThemeButton />
                     </div>
-                    {getText('common.help.content')}
+                    <div style={{ 
+                      color: 'var(--text-primary)',
+                      lineHeight: '1.5'
+                    }}>
+                      {getText('common.help.content')}
+                    </div>
                   </HelpPanel>
                 }
                 content={<RouterProvider router={router}/>}
@@ -314,7 +317,7 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
   useEffect(() => {
     fetchAuthSession()
       .then((session) => {
-        const cognitoGroups = (session.tokens?.idToken?.payload as any)['cognito:groups'];
+        const cognitoGroups = (session.tokens?.idToken?.payload as Record<string, unknown>)['cognito:groups'];
         const userGroup = Array.isArray(cognitoGroups) && cognitoGroups.length > 0 
           ? cognitoGroups[0] 
           : 'students'; // 默认为学生组

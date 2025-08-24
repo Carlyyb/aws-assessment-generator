@@ -661,6 +661,7 @@ export default function KnowledgeBaseManager({
               header={getText('teachers.settings.knowledge_base_manager.alerts.not_created')}
               action={
                 <Button
+                  variant="primary"
                   onClick={() => {
                     if (files.length === 0) {
                       dispatchAlert({

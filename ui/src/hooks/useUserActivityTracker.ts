@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { generateClient } from 'aws-amplify/api';
 import { updateUserActivityMutation } from '../graphql/mutations';
 import { useAuthenticator } from '@aws-amplify/ui-react';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 const client = generateClient();
 
@@ -22,9 +23,14 @@ export const useUserActivityTracker = () => {
     }
 
     try {
-      // 简化角色获取，使用默认角色或从用户名推断
-      // 这里可以根据实际需求调整角色判断逻辑
-      const role = 'students'; // 临时使用默认角色，后续可以优化
+      // 从 Cognito session 中获取用户分组信息
+      const session = await fetchAuthSession();
+      const idTokenPayload = session.tokens?.idToken?.payload as Record<string, unknown>;
+      const cognitoGroups = idTokenPayload?.['cognito:groups'];
+      // 假设用户只有一个角色，取第一个，如果没有分组则默认为学生
+      const role = Array.isArray(cognitoGroups) && cognitoGroups.length > 0 
+        ? cognitoGroups[0] 
+        : 'students';
 
       const response = await client.graphql({
         query: updateUserActivityMutation,

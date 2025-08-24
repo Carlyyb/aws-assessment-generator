@@ -1,18 +1,18 @@
 import { useContext } from 'react';
 import { useOutlet, useNavigate } from 'react-router-dom';
-import { ContentLayout, Container, Header, Box, SpaceBetween, Button } from '@cloudscape-design/components';
+import { ContentLayout, Container, Header, Box, SpaceBetween, Button, ColumnLayout } from '@cloudscape-design/components';
 import { titlise } from '../helpers';
 import { RoutesContext } from '../contexts/routes';
 import { getText } from '../i18n/lang';
 
 type SectionProps = { id: number };
 
-export default (props: SectionProps) => {
+const Section = (props: SectionProps) => {
   const outlet = useOutlet();
-  if (outlet) return outlet;
-
   const navigate = useNavigate();
   const routes = useContext(RoutesContext);
+  
+  if (outlet) return outlet;
 
   // 添加安全检查
   if (!routes || !routes[0] || !routes[0].children || !routes[0].children[props.id]) {
@@ -70,18 +70,32 @@ export default (props: SectionProps) => {
       >
         <Box padding="xxxl">
           <SpaceBetween size="l" alignItems="center">
-            <SpaceBetween size="l" direction="horizontal">
+            <ColumnLayout columns={3} variant="text-grid">
               {paths?.map((path: any) => (
-                <Button key={`button-${path}`} onClick={() => navigate(path)}>
-                  <Box variant="h2" padding="m">
-                    {getText(`teachers.section.buttons.${path}`) || titlise(path)}
+                <Container key={`button-${path}`}>
+                  <Box padding="l" textAlign="center">
+                    <SpaceBetween size="m">
+                      <Box variant="h4" color="text-label">
+                        {getText(`teachers.section.buttons.${path}`) || titlise(path)}
+                      </Box>
+                      <Button 
+                        variant="primary"
+                        onClick={() => navigate(path)}
+                        iconName="arrow-right"
+                        fullWidth
+                      >
+                        进入
+                      </Button>
+                    </SpaceBetween>
                   </Box>
-                </Button>
+                </Container>
               ))}
-            </SpaceBetween>
+            </ColumnLayout>
           </SpaceBetween>
         </Box>
       </Container>
     </ContentLayout>
   );
 };
+
+export default Section;

@@ -55,6 +55,7 @@ export const FreeTextView = ({ activeStepIndex, freetextAssessment, updateAssess
               width: 30,
               cell: (item) => (
                 <Button
+                  variant="icon"
                   iconName="close"
                   onClick={() =>
                     updateAssessment({

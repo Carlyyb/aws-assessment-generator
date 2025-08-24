@@ -21,9 +21,10 @@ import { useParams } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import { MultiChoice, FreeText, TrueFalse, SingleAnswer, AssessType, type StudentAssessment } from '../graphql/API';
 import { getStudentAssessment, getAssessment } from '../graphql/queries';
-import { gradeStudentAssessment } from '../graphql/mutations';
+import { upsertStudentAssessment } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { getText, getTextWithParams } from '../i18n/lang';
+import { addAssessmentDefaults, addStudentAssessmentDefaults } from '../types/ExtendedTypes';
 
 const client = generateClient();
 
@@ -46,9 +47,9 @@ export default function StudentAssessment() {
   const [toolsOpen, setToolsOpen] = useState(true); // 右侧工具栏开关状态
 
   // 计时器相关状态
-  const [isTimeLimited] = useState(false);
-  const [timeLimit] = useState(0); // 时间限制（分钟）
-  const [remainingTime, setRemainingTime] = useState(0); // 剩余时间（秒）
+  const [isTimeLimited, setIsTimeLimited] = useState(false);
+  const [timeLimit, setTimeLimit] = useState(0); // 时间限制（分钟）
+  const [timeLeft, setTimeLeft] = useState(0); // 剩余时间（秒）
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [showStartDialog, setShowStartDialog] = useState(false);
@@ -67,13 +68,14 @@ export default function StudentAssessment() {
           setAssessmentId(assessment.id);
           setAssessType(assessment.assessType);
           
-          // 检查是否有时间限制 (注意：Assessment 类型可能没有 timeLimited 属性)
-          // if (assessment?.timeLimited && assessment?.timeLimit) {
-          //   setIsTimeLimited(true);
-          //   setTimeLimit(assessment.timeLimit);
-          //   setRemainingTime(assessment.timeLimit * 60); // 转换为秒
-          //   setShowStartDialog(true); // 显示开始确认对话框
-          // }
+          // 检查是否有时间限制并获取扩展类型
+          const extendedAssessment = addAssessmentDefaults(assessment);
+          if (extendedAssessment?.timeLimited && extendedAssessment?.timeLimit) {
+            setIsTimeLimited(true);
+            setTimeLimit(extendedAssessment.timeLimit);
+            setTimeLeft(extendedAssessment.timeLimit * 60); // 转换为秒
+            setShowStartDialog(true); // 显示开始确认对话框
+          }
           
           // 根据测试类型获取正确的问题数组
           let questionArray: (MultiChoice | FreeText | TrueFalse | SingleAnswer)[] = [];
@@ -108,17 +110,27 @@ export default function StudentAssessment() {
           
           const data = (result as { data: any }).data;
           const studentAssessment: StudentAssessment = data.getStudentAssessment;
+          const extendedStudentAssessment = addStudentAssessmentDefaults(studentAssessment);
+          
           setAssessmentId(studentAssessment.parentAssessId);
           setAssessType(studentAssessment.assessment?.assessType);
           
           // 检查是否有时间限制
-          // const assessment = studentAssessment.assessment;
-          // if (assessment?.timeLimited && assessment?.timeLimit) {
-          //   setIsTimeLimited(true);
-          //   setTimeLimit(assessment.timeLimit);
-          //   setRemainingTime(assessment.timeLimit * 60); // 转换为秒
-          //   setShowStartDialog(true); // 显示开始确认对话框
-          // }
+          const assessment = studentAssessment.assessment;
+          if (assessment) {
+            const extendedAssessment = addAssessmentDefaults(assessment);
+            if (extendedAssessment?.timeLimited && extendedAssessment?.timeLimit) {
+              setIsTimeLimited(true);
+              setTimeLimit(extendedAssessment.timeLimit);
+              // 假设 extendedStudentAssessment.duration 存储的是已用时（分钟）
+              const usedTimeInMinutes = extendedStudentAssessment.duration ?? 0;
+              const totalTimeInSeconds = extendedAssessment.timeLimit * 60;
+              const usedTimeInSeconds = usedTimeInMinutes * 60;
+              const remainingTime = totalTimeInSeconds - usedTimeInSeconds;
+              setTimeLeft(remainingTime > 0 ? remainingTime : 0);
+              setShowStartDialog(true); // 显示开始确认对话框
+            }
+          }
           
           // 根据测试类型获取正确的问题数组
           let questionArray: (MultiChoice | FreeText | TrueFalse | SingleAnswer)[] = [];
@@ -142,32 +154,6 @@ export default function StudentAssessment() {
       loadStudentAssessment();
     }
   }, [isPreviewMode, params.id, dispatchAlert]);
-
-  // 开始计时器
-  const startTimer = useCallback(() => {
-    setHasStarted(true);
-    setStartTime(new Date());
-    setShowStartDialog(false);
-    
-    if (isTimeLimited) {
-      timerRef.current = setInterval(() => {
-        setRemainingTime((prev) => {
-          if (prev <= 1) {
-            // 时间到，自动提交
-            handleAutoSubmit();
-            return 0;
-          }
-          
-          // 剩余5分钟时显示警告
-          if (prev === 300) {
-            setShowTimeWarning(true);
-          }
-          
-          return prev - 1;
-        });
-      }, 1000);
-    }
-  }, [isTimeLimited]);
 
   // 自动提交（时间到期）
   const handleAutoSubmit = useCallback(async () => {
@@ -197,27 +183,69 @@ export default function StudentAssessment() {
       // 正常学生模式：真实提交
       setShowSpinner(true);
       try {
+        // 计算测试用时（分钟）
+        const endTime = new Date();
+        const durationInMinutes = startTime ? Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)) : 0;
+        
         const result = await client
-          .graphql<{ gradeStudentAssessment: StudentAssessment }>({
-            query: gradeStudentAssessment,
+          .graphql<{ upsertStudentAssessment: StudentAssessment }>({
+            query: upsertStudentAssessment,
             variables: {
               input: {
                 parentAssessId: params.id!,
                 answers: JSON.stringify(answers.map((answer) => (isNaN(+answer) ? answer : +answer + 1))),
+                completed: true,
+                duration: durationInMinutes,
+                submittedAt: endTime.toISOString()
               },
             },
           });
           
-        const data = (result as { data: any }).data;
-        const { score } = data.gradeStudentAssessment;
+        const data = (result as any).data;
+        const { score } = data.upsertStudentAssessment;
         setScore(score);
+        
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: `时间到！测试已自动提交。您的得分是: ${score}分`
+        });
       } catch (error) {
-        dispatchAlert({ type: AlertType.ERROR });
+        console.error('Auto submit error:', error);
+        dispatchAlert({ 
+          type: AlertType.ERROR, 
+          content: '自动提交失败，请手动提交' 
+        });
       } finally {
         setShowSpinner(false);
       }
     }
-  }, [answers, params.id, dispatchAlert, isPreviewMode, questions.length]);
+  }, [answers, params.id, dispatchAlert, isPreviewMode, questions.length, startTime]);
+
+  // 开始计时器
+  const startTimer = useCallback(() => {
+    setHasStarted(true);
+    setStartTime(new Date());
+    setShowStartDialog(false);
+    
+    if (isTimeLimited) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            // 时间到，自动提交
+            handleAutoSubmit();
+            return 0;
+          }
+          
+          // 剩余5分钟时显示警告
+          if (prev === 300) {
+            setShowTimeWarning(true);
+          }
+          
+          return prev - 1;
+        });
+      }, 1000);
+    }
+  }, [isTimeLimited, handleAutoSubmit]);
 
   // 格式化时间显示
   const formatTime = (seconds: number): string => {
@@ -287,27 +315,43 @@ export default function StudentAssessment() {
       setShowSpinner(true);
       
       try {
+        // 计算测试用时（分钟）
+        const endTime = new Date();
+        const durationInMinutes = startTime ? Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)) : 0;
+        
         const result = await client
-          .graphql<{ gradeStudentAssessment: StudentAssessment }>({
-            query: gradeStudentAssessment,
+          .graphql<{ upsertStudentAssessment: StudentAssessment }>({
+            query: upsertStudentAssessment,
             variables: {
               input: {
                 parentAssessId: params.id!,
                 answers: JSON.stringify(answers.map((answer) => (isNaN(+answer) ? answer : +answer + 1))),
+                completed: true,
+                duration: durationInMinutes,
+                submittedAt: endTime.toISOString()
               },
             },
           });
           
         const data = (result as any).data;
-        const { score } = data.gradeStudentAssessment;
+        const { score } = data.upsertStudentAssessment;
         setScore(score);
+        
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: `测试提交成功！您的得分是: ${score}分`
+        });
       } catch (error) {
-        dispatchAlert({ type: AlertType.ERROR });
+        console.error('Submit error:', error);
+        dispatchAlert({ 
+          type: AlertType.ERROR, 
+          content: '提交失败，请稍后重试' 
+        });
       } finally {
         setShowSpinner(false);
       }
     }
-  }, [answers, params.id, dispatchAlert, isPreviewMode, questions.length]);
+  }, [answers, params.id, dispatchAlert, isPreviewMode, questions.length, startTime]);
 
   // 验证提交前的条件
   const validateSubmission = () => {
@@ -390,7 +434,7 @@ export default function StudentAssessment() {
             <strong>答题用时：</strong>{getElapsedTime()}
             {isTimeLimited && (
               <div style={{ marginTop: '4px', color: '#666' }}>
-                剩余时间：{formatTime(remainingTime)}
+                剩余时间：{formatTime(timeLeft)}
               </div>
             )}
           </div>
@@ -578,14 +622,14 @@ export default function StudentAssessment() {
                       fontSize: '24px', 
                       fontWeight: 'bold', 
                       textAlign: 'center',
-                      color: remainingTime <= 300 ? '#d13212' : '#0073bb' // 5分钟内显示红色
+                      color: timeLeft <= 300 ? '#d13212' : '#0073bb' // 5分钟内显示红色
                     }}
                   >
-                    {formatTime(remainingTime)}
+                    {formatTime(timeLeft)}
                   </div>
                   <ProgressBar
-                    value={(remainingTime / (timeLimit * 60)) * 100}
-                    status={remainingTime <= 300 ? 'error' : 'success'}
+                    value={(timeLeft / (timeLimit * 60)) * 100}
+                    status={timeLeft <= 300 ? 'error' : 'success'}
                   />
                 </div>
               ) : (

@@ -183,7 +183,7 @@
 
 .awsui-top-navigation {
   border-bottom: 1px solid var(--border-color);
-  background-color: var(--elevated-surface) !important;
+  background-color: var(--primary-color) !important;
   box-shadow: var(--shadow-small);
 }
 
@@ -204,11 +204,54 @@
   color: #ffffff !important;
 }
 
+/* 顶部导航栏utilities（用户菜单区域） */
+[data-awsui-context="top-navigation"] [class*="utilities"],
+.awsui-context-top-navigation [class*="utilities"],
+[class*="awsui_utilities"],
+.awsui-top-navigation [class*="utilities"] {
+  color: #ffffff !important;
+}
+
+/* 顶部导航栏utilities内的按钮和文本 */
+[data-awsui-context="top-navigation"] [class*="utilities"] button,
+[data-awsui-context="top-navigation"] [class*="utilities"] span,
+[data-awsui-context="top-navigation"] [class*="utilities"] [class*="trigger"],
+.awsui-context-top-navigation [class*="utilities"] button,
+.awsui-context-top-navigation [class*="utilities"] span,
+.awsui-context-top-navigation [class*="utilities"] [class*="trigger"],
+[class*="awsui_utilities"] button,
+[class*="awsui_utilities"] span,
+[class*="awsui_utilities"] [class*="trigger"] {
+  color: #ffffff !important;
+}
+
 /* 顶部导航栏下拉菜单 */
 [data-awsui-context="top-navigation"] [class*="dropdown"],
 .awsui-context-top-navigation [class*="dropdown"] {
   background-color: #ffffff !important;
   border: 1px solid var(--primary-color) !important;
+}
+
+/* 强制TopNavigation utilities颜色 - 更具体的选择器 */
+.awsui-top-navigation [class*="k5dlb"] {
+  color: #ffffff !important;
+}
+
+.awsui-top-navigation [class*="k5dlb"] * {
+  color: #ffffff !important;
+}
+
+/* 确保下拉菜单触发器可见 */
+.awsui-top-navigation [class*="dropdown-trigger"],
+.awsui-top-navigation [class*="menu-trigger"],
+.awsui-top-navigation [class*="utility"] {
+  color: #ffffff !important;
+}
+
+.awsui-top-navigation [class*="dropdown-trigger"] *,
+.awsui-top-navigation [class*="menu-trigger"] *,
+.awsui-top-navigation [class*="utility"] * {
+  color: #ffffff !important;
 }
 
 .awsui-side-navigation {
@@ -222,6 +265,23 @@
   border-radius: var(--border-radius-small);
   font-weight: 500;
   transition: all 0.15s ease-in-out;
+}
+
+/* 默认按钮样式（无variant或variant为default） */
+.awsui-button:not([class*="variant"]),
+.awsui-button[data-variant="default"],
+button:not([class*="variant"]):not([class*="primary"]):not([class*="normal"]):not([class*="link"]) {
+  background-color: #ffffff !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.awsui-button:not([class*="variant"]):hover,
+.awsui-button[data-variant="default"]:hover,
+button:not([class*="variant"]):not([class*="primary"]):not([class*="normal"]):not([class*="link"]):hover {
+  background-color: var(--surface-color) !important;
+  border-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
 }
 
 /* 主要按钮样式 */
@@ -254,6 +314,13 @@ button[class*="secondary"] {
   background-color: transparent !important;
   border: 2px solid var(--secondary-color) !important;
   color: var(--secondary-color) !important;
+}
+
+/* 强制所有按钮都有可见的文字颜色 */
+.awsui-button,
+button[class*="awsui"],
+[class*="awsui-button"] {
+  color: var(--text-primary) !important;
 }
 
 .awsui-button-variant-normal:hover,
@@ -513,26 +580,6 @@ input[class*="awsui"]:focus,
   display: none; /* 隐藏默认标题 */
 }
 
-/* 自定义Logo容器样式 */
-.custom-logo-container {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1000;
-}
-
-.custom-logo {
-  height: 32px;
-  width: auto;
-  object-fit: contain;
-}
-
-/* 为Logo预留空间 */
-[data-has-logo="true"] .awsui-top-navigation .awsui-top-navigation-identity {
-  margin-left: 60px;
-}
-
 /* 卡片主题适配 */
 .awsui-cards .awsui-cards-card {
   border-color: var(--primary-color);
@@ -605,18 +652,19 @@ input[class*="awsui"]:focus,
   z-index: 1300 !important; /* 提高z-index确保顶部导航栏在最上层 */
   background-color: var(--background-color);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 56px; /* 明确设置TopNavigation高度 */
 }
 
 .awsui-app-layout {
-  padding-top: 48px; /* TopNavigation的高度，防止内容被遮挡 */
+  padding-top: 72px; /* 增加padding-top，为TopNavigation和面包屑导航留出足够空间 */
 }
 
 /* 确保SideNavigation也固定 */
 .awsui-app-layout .awsui-app-layout-navigation {
   position: fixed !important;
-  top: 48px; /* TopNavigation高度之下 */
+  top: 56px; /* 使用明确的TopNavigation高度 */
   left: 0;
-  height: calc(100vh - 48px);
+  height: calc(100vh - 56px);
   z-index: 1000 !important; /* 降低z-index确保不会覆盖顶部导航栏 */
   background-color: var(--background-color);
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
@@ -625,7 +673,50 @@ input[class*="awsui"]:focus,
 /* 调整主内容区域，为固定的SideNavigation让出空间 */
 .awsui-app-layout .awsui-app-layout-main {
   margin-left: 280px; /* SideNavigation的默认宽度 */
-  min-height: calc(100vh - 48px);
+  min-height: calc(100vh - 56px); /* 使用更新后的TopNavigation高度 */
+}
+
+/* 确保面包屑导航有足够的顶部空间 */
+.awsui-app-layout .awsui-app-layout-breadcrumbs,
+[class*="awsui-app-layout-breadcrumbs"] {
+  padding-top: 8px !important; /* 为面包屑导航添加额外的顶部间距 */
+  margin-top: 0 !important;
+}
+
+/* 确保内容区域不被遮挡 */
+.awsui-app-layout-content,
+.awsui-app-layout-content-wrapper,
+[class*="awsui-app-layout-content"] {
+  padding-top: 16px !important; /* 为主内容添加顶部间距 */
+}
+
+/* === 整个AWS UI Layout背景色应用 === */
+
+/* 应用到整个应用容器 */
+.awsui-app-layout,
+[data-awsui-context="app-layout"],
+.awsui-app-layout__content {
+  background-color: var(--background-color) !important;
+}
+
+/* 主内容区域 */
+.awsui-app-layout__content-main,
+[class*="awsui_content-main"],
+.awsui-content-layout {
+  background-color: var(--background-color) !important;
+}
+
+/* 侧边导航 */
+.awsui-app-layout__navigation,
+[class*="awsui_navigation"],
+.awsui-side-navigation {
+  background-color: var(--surface-color) !important;
+}
+
+/* 面包屑区域 */
+.awsui-app-layout__breadcrumbs,
+[class*="awsui_breadcrumbs"] {
+  background-color: var(--background-color) !important;
 }
 
 /* === 主题色应用增强 - 让primary-color在更多地方显示 === */
@@ -766,4 +857,718 @@ a[class*="awsui"]:hover,
 /* 面包屑导航 */
 [class*="awsui-breadcrumb"] [class*="anchor"]:hover {
   color: var(--primary-color) !important;
+}
+
+/* === 增强组件主题应用 === */
+
+/* Wizard 组件主题 */
+.awsui-wizard,
+[class*="awsui-wizard"] {
+  background-color: var(--surface-color) !important;
+}
+
+.awsui-wizard-step-active,
+[class*="awsui-wizard-step-active"] {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+.awsui-wizard-step-active [class*="number"] {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+/* Modal 和 Dialog 组件 */
+.awsui-modal,
+.awsui-modal-container,
+[class*="awsui-modal"] {
+  background-color: var(--elevated-surface) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.awsui-modal-header,
+[class*="awsui-modal-header"] {
+  border-bottom: 1px solid var(--border-color) !important;
+  background-color: var(--surface-color) !important;
+}
+
+/* Popover 组件 */
+.awsui-popover,
+.awsui-popover-content,
+[class*="awsui-popover"] {
+  background-color: var(--elevated-surface) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-medium) !important;
+}
+
+/* Toggle 开关组件 */
+.awsui-toggle,
+[class*="awsui-toggle"] {
+  background-color: var(--border-color) !important;
+}
+
+.awsui-toggle[aria-checked="true"],
+[class*="awsui-toggle"][aria-checked="true"] {
+  background-color: var(--primary-color) !important;
+}
+
+.awsui-toggle:focus,
+[class*="awsui-toggle"]:focus {
+  box-shadow: 0 0 0 2px var(--primary-color) !important;
+}
+
+/* File Upload 组件 */
+.awsui-file-upload,
+[class*="awsui-file-upload"] {
+  border: 2px dashed var(--border-color) !important;
+  background-color: var(--surface-color) !important;
+}
+
+.awsui-file-upload:hover,
+[class*="awsui-file-upload"]:hover {
+  border-color: var(--primary-color) !important;
+  background-color: rgba(var(--primary-color-rgb), 0.05) !important;
+}
+
+/* Calendar 和 Date Picker */
+.awsui-calendar,
+.awsui-date-picker,
+[class*="awsui-calendar"],
+[class*="awsui-date-picker"] {
+  background-color: var(--elevated-surface) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.awsui-calendar-date-selected,
+[class*="awsui-calendar-date-selected"] {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+.awsui-calendar-date:hover,
+[class*="awsui-calendar-date"]:hover {
+  background-color: var(--primary-hover) !important;
+  color: #ffffff !important;
+}
+
+/* Pagination 分页组件 */
+.awsui-pagination,
+[class*="awsui-pagination"] {
+  background-color: var(--surface-color) !important;
+}
+
+.awsui-pagination-page-current,
+[class*="awsui-pagination-page-current"] {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  border-color: var(--primary-color) !important;
+}
+
+.awsui-pagination-page:hover,
+[class*="awsui-pagination-page"]:hover {
+  background-color: var(--primary-hover) !important;
+  color: #ffffff !important;
+}
+
+/* ExpandableSection 折叠组件 */
+.awsui-expandable-section,
+[class*="awsui-expandable-section"] {
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--surface-color) !important;
+}
+
+.awsui-expandable-section-header,
+[class*="awsui-expandable-section-header"] {
+  background-color: var(--elevated-surface) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.awsui-expandable-section-header:hover,
+[class*="awsui-expandable-section-header"]:hover {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+/* StatusIndicator 状态指示器 */
+.awsui-status-indicator[data-status="success"],
+[class*="awsui-status-indicator"][data-status="success"] {
+  color: var(--success-color) !important;
+}
+
+.awsui-status-indicator[data-status="error"],
+[class*="awsui-status-indicator"][data-status="error"] {
+  color: var(--error-color) !important;
+}
+
+.awsui-status-indicator[data-status="warning"],
+[class*="awsui-status-indicator"][data-status="warning"] {
+  color: var(--warning-color) !important;
+}
+
+.awsui-status-indicator[data-status="info"],
+[class*="awsui-status-indicator"][data-status="info"] {
+  color: var(--primary-color) !important;
+}
+
+/* Spinner 加载指示器 */
+.awsui-spinner,
+[class*="awsui-spinner"] {
+  color: var(--primary-color) !important;
+}
+
+.awsui-spinner svg circle {
+  stroke: var(--primary-color) !important;
+}
+
+/* ColumnLayout 列布局 */
+.awsui-column-layout,
+[class*="awsui-column-layout"] {
+  background-color: var(--surface-color) !important;
+}
+
+/* Grid 网格布局 */
+.awsui-grid,
+[class*="awsui-grid"] {
+  background-color: var(--surface-color) !important;
+}
+
+/* Cards 卡片容器增强 */
+.awsui-cards-card-header,
+[class*="awsui-cards-card-header"] {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid var(--primary-hover) !important;
+}
+
+.awsui-cards-card:hover,
+[class*="awsui-cards-card"]:hover {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.15) !important;
+}
+
+/* Table 表格增强 */
+.awsui-table-header-cell-sorted,
+[class*="awsui-table-header-cell-sorted"] {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+.awsui-table-row-selected,
+[class*="awsui-table-row-selected"] {
+  background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+.awsui-table-selection-control:checked,
+[class*="awsui-table-selection-control"]:checked {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* Form 表单增强 */
+.awsui-form-field,
+[class*="awsui-form-field"] {
+  background-color: var(--surface-color) !important;
+}
+
+.awsui-form-field-label,
+[class*="awsui-form-field-label"] {
+  color: var(--text-primary) !important;
+}
+
+.awsui-form-field-error,
+[class*="awsui-form-field-error"] {
+  color: var(--error-color) !important;
+}
+
+/* Textarea 文本域 */
+.awsui-textarea,
+[class*="awsui-textarea"] {
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--elevated-surface) !important;
+  color: var(--text-primary) !important;
+}
+
+.awsui-textarea:focus,
+[class*="awsui-textarea"]:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2) !important;
+}
+
+/* Multiselect 多选组件 */
+.awsui-multiselect,
+[class*="awsui-multiselect"] {
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--elevated-surface) !important;
+}
+
+.awsui-multiselect:focus-within,
+[class*="awsui-multiselect"]:focus-within {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2) !important;
+}
+
+.awsui-multiselect-token,
+[class*="awsui-multiselect-token"] {
+  background-color: var(--secondary-color) !important;
+  color: #ffffff !important;
+}
+
+/* DateInput 日期输入 */
+.awsui-date-input,
+[class*="awsui-date-input"] {
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--elevated-surface) !important;
+}
+
+.awsui-date-input:focus,
+[class*="awsui-date-input"]:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2) !important;
+}
+
+/* TimeInput 时间输入 */
+.awsui-time-input,
+[class*="awsui-time-input"] {
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--elevated-surface) !important;
+}
+
+.awsui-time-input:focus,
+[class*="awsui-time-input"]:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2) !important;
+}
+
+/* PropertyFilter 属性过滤器 */
+.awsui-property-filter,
+[class*="awsui-property-filter"] {
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--elevated-surface) !important;
+}
+
+.awsui-property-filter:focus-within,
+[class*="awsui-property-filter"]:focus-within {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2) !important;
+}
+
+/* CodeEditor 代码编辑器 */
+.awsui-code-editor,
+[class*="awsui-code-editor"] {
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--elevated-surface) !important;
+}
+
+/* KeyValuePairs 键值对 */
+.awsui-key-value-pairs,
+[class*="awsui-key-value-pairs"] {
+  background-color: var(--surface-color) !important;
+}
+
+.awsui-key-value-pairs-key,
+[class*="awsui-key-value-pairs-key"] {
+  color: var(--text-secondary) !important;
+}
+
+.awsui-key-value-pairs-value,
+[class*="awsui-key-value-pairs-value"] {
+  color: var(--text-primary) !important;
+}
+
+/* === 扩展主题覆盖 - 更多组件 === */
+
+/* Alert 和 Flashbar 组件增强 */
+.awsui-alert,
+.awsui-flashbar-item,
+[class*="awsui-alert"],
+[class*="awsui-flashbar"] {
+  border-radius: var(--border-radius-medium) !important;
+  box-shadow: var(--shadow-small) !important;
+}
+
+.awsui-alert[data-type="info"],
+.awsui-flashbar-item[data-type="info"],
+[class*="alert-info"] {
+  background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+  border-left: 4px solid var(--primary-color) !important;
+}
+
+.awsui-alert[data-type="success"],
+.awsui-flashbar-item[data-type="success"] {
+  background-color: rgba(3, 127, 12, 0.1) !important;
+  border-left: 4px solid var(--success-color) !important;
+}
+
+.awsui-alert[data-type="warning"],
+.awsui-flashbar-item[data-type="warning"] {
+  background-color: rgba(183, 101, 27, 0.1) !important;
+  border-left: 4px solid var(--warning-color) !important;
+}
+
+.awsui-alert[data-type="error"],
+.awsui-flashbar-item[data-type="error"] {
+  background-color: rgba(209, 50, 18, 0.1) !important;
+  border-left: 4px solid var(--error-color) !important;
+}
+
+/* Collection 组件（Table, Cards）增强 */
+.awsui-table-header-cell,
+.awsui-cards-card-header,
+[class*="awsui-table-header"],
+[class*="awsui-cards-header"] {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid var(--primary-hover) !important;
+}
+
+.awsui-table-row:hover,
+.awsui-cards-card:hover,
+[class*="awsui-table-row"]:hover,
+[class*="awsui-cards-card"]:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.05) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.awsui-table-row-selected,
+[class*="awsui-table-row-selected"] {
+  background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+/* Header 组件增强 */
+.awsui-header,
+[class*="awsui-header"] {
+  border-bottom: 1px solid var(--border-color) !important;
+  background-color: var(--elevated-surface) !important;
+}
+
+.awsui-header h1,
+.awsui-header h2,
+.awsui-header h3,
+[class*="awsui-header"] h1,
+[class*="awsui-header"] h2,
+[class*="awsui-header"] h3 {
+  color: var(--primary-color) !important;
+}
+
+/* Loading 和 Spinner 组件 */
+.awsui-spinner,
+.awsui-loader,
+[class*="awsui-spinner"],
+[class*="awsui-loader"] {
+  color: var(--primary-color) !important;
+}
+
+.awsui-spinner svg,
+.awsui-spinner circle,
+[class*="awsui-spinner"] svg,
+[class*="awsui-spinner"] circle {
+  stroke: var(--primary-color) !important;
+  fill: var(--primary-color) !important;
+}
+
+/* Badge 和 Tag 组件 */
+.awsui-badge,
+.awsui-tag,
+[class*="awsui-badge"],
+[class*="awsui-tag"] {
+  background-color: var(--secondary-color) !important;
+  color: #ffffff !important;
+  border-radius: var(--border-radius-small) !important;
+}
+
+/* ContentLayout 和 Container 组件 */
+.awsui-content-layout,
+.awsui-container,
+[class*="awsui-content-layout"],
+[class*="awsui-container"] {
+  background-color: var(--elevated-surface) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--border-radius-medium) !important;
+}
+
+/* Form 相关组件增强 */
+.awsui-form-field-label,
+[class*="awsui-form-field-label"] {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.awsui-form-field-error,
+[class*="awsui-form-field-error"] {
+  color: var(--error-color) !important;
+}
+
+.awsui-form-field-description,
+[class*="awsui-form-field-description"] {
+  color: var(--text-secondary) !important;
+}
+
+/* BreadcrumbGroup 增强 */
+.awsui-breadcrumb-group,
+[class*="awsui-breadcrumb"] {
+  background-color: var(--surface-color) !important;
+  padding: 8px 16px !important;
+  border-radius: var(--border-radius-small) !important;
+}
+
+.awsui-breadcrumb-link,
+[class*="awsui-breadcrumb-link"] {
+  color: var(--primary-color) !important;
+}
+
+.awsui-breadcrumb-link:hover,
+[class*="awsui-breadcrumb-link"]:hover {
+  color: var(--primary-hover) !important;
+  text-decoration: underline !important;
+}
+
+/* Modal 和 Dialog 增强 */
+.awsui-modal,
+.awsui-modal-content,
+[class*="awsui-modal"] {
+  background-color: var(--elevated-surface) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--border-radius-large) !important;
+  box-shadow: var(--shadow-large) !important;
+}
+
+.awsui-modal-header,
+[class*="awsui-modal-header"] {
+  border-bottom: 1px solid var(--border-color) !important;
+  background-color: var(--surface-color) !important;
+}
+
+/* Tabs 组件增强 */
+.awsui-tabs,
+[class*="awsui-tabs"] {
+  background-color: var(--elevated-surface) !important;
+}
+
+.awsui-tabs-tab-active,
+[class*="awsui-tabs-tab-active"] {
+  border-bottom-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+  background-color: var(--surface-color) !important;
+}
+
+.awsui-tabs-tab:hover,
+[class*="awsui-tabs-tab"]:hover {
+  color: var(--primary-hover) !important;
+}
+
+/* 强制应用按钮样式修复 */
+button,
+.awsui-button,
+[class*="awsui-button"] {
+  font-family: inherit !important;
+  border-radius: var(--border-radius-small) !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+/* 特殊修复：确保没有白色文字在白色背景上 */
+button:not([class*="primary"]):not([style*="background"]),
+.awsui-button:not([class*="primary"]):not([style*="background"]) {
+  color: var(--text-primary) !important;
+  background-color: var(--elevated-surface) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+button:not([class*="primary"]):hover,
+.awsui-button:not([class*="primary"]):hover {
+  background-color: var(--surface-color) !important;
+  border-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+}
+
+/* 确保主题色RGB变量可用 */
+:root {
+  --primary-color-rgb: 53, 117, 201;
+  --secondary-color-rgb: 255, 153, 0;
+}
+
+/* === AppLayout 专门的主题样式 === */
+.awsui-app-layout,
+[class*="awsui-app-layout"] {
+  background-color: var(--surface-color) !important;
+}
+
+/* AppLayout 导航区域 */
+.awsui-app-layout-navigation,
+[class*="awsui-app-layout-navigation"] {
+  background-color: var(--elevated-surface) !important;
+  border-right: 1px solid var(--border-color) !important;
+}
+
+/* AppLayout 内容区域 */
+.awsui-app-layout-content,
+[class*="awsui-app-layout-content"] {
+  background-color: var(--surface-color) !important;
+}
+
+/* AppLayout 面包屑区域 */
+.awsui-app-layout-breadcrumbs,
+[class*="awsui-app-layout-breadcrumbs"] {
+  background-color: var(--elevated-surface) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 12px 20px !important;
+}
+
+/* AppLayout 通知区域 */
+.awsui-app-layout-notifications,
+[class*="awsui-app-layout-notifications"] {
+  background-color: var(--surface-color) !important;
+}
+
+/* AppLayout 工具面板 */
+.awsui-app-layout-tools,
+[class*="awsui-app-layout-tools"] {
+  background-color: var(--elevated-surface) !important;
+  border-left: 1px solid var(--border-color) !important;
+}
+
+/* === TopNavigation 主题样式 === */
+.awsui-top-navigation,
+[class*="awsui-top-navigation"] {
+  background-color: var(--primary-color) !important;
+  border-bottom: 2px solid var(--primary-hover) !important;
+  box-shadow: var(--shadow-small) !important;
+}
+
+/* TopNavigation 标题样式 */
+.awsui-top-navigation-identity,
+[class*="awsui-top-navigation-identity"] {
+  color: #ffffff !important;
+}
+
+.awsui-top-navigation-identity h1,
+.awsui-top-navigation-identity .awsui-top-navigation-title,
+[class*="awsui-top-navigation-title"] {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* TopNavigation 工具菜单 */
+.awsui-top-navigation-utilities,
+[class*="awsui-top-navigation-utilities"] {
+  color: #ffffff !important;
+}
+
+.awsui-top-navigation-utility,
+[class*="awsui-top-navigation-utility"] {
+  color: #ffffff !important;
+}
+
+.awsui-top-navigation-utility:hover,
+[class*="awsui-top-navigation-utility"]:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+/* === SideNavigation 主题样式 === */
+.awsui-side-navigation,
+[class*="awsui-side-navigation"] {
+  background-color: var(--elevated-surface) !important;
+  border-right: 1px solid var(--border-color) !important;
+}
+
+/* SideNavigation 头部 */
+.awsui-side-navigation-header,
+[class*="awsui-side-navigation-header"] {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid var(--primary-hover) !important;
+  padding: 16px !important;
+}
+
+.awsui-side-navigation-header-title,
+[class*="awsui-side-navigation-header"] a {
+  color: #ffffff !important;
+  text-decoration: none !important;
+  font-weight: 700 !important;
+}
+
+/* SideNavigation 链接样式 */
+.awsui-side-navigation-item,
+[class*="awsui-side-navigation-item"] {
+  border-radius: var(--border-radius-small) !important;
+  margin: 2px 8px !important;
+}
+
+.awsui-side-navigation-item:hover,
+[class*="awsui-side-navigation-item"]:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+  color: var(--primary-color) !important;
+}
+
+.awsui-side-navigation-item-active,
+[class*="awsui-side-navigation-item-active"] {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* SideNavigation 展开组链接 */
+.awsui-side-navigation-group-header,
+[class*="awsui-side-navigation-group-header"] {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.awsui-side-navigation-group-header:hover,
+[class*="awsui-side-navigation-group-header"]:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.05) !important;
+}
+
+/* === HelpPanel 主题样式 === */
+.awsui-help-panel,
+[class*="awsui-help-panel"] {
+  background-color: var(--elevated-surface) !important;
+  border-left: 1px solid var(--border-color) !important;
+}
+
+.awsui-help-panel-header,
+[class*="awsui-help-panel-header"] {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid var(--primary-hover) !important;
+  padding: 16px !important;
+}
+
+.awsui-help-panel-header h2,
+[class*="awsui-help-panel-header"] h2 {
+  color: #ffffff !important;
+  margin: 0 !important;
+}
+
+.awsui-help-panel-content,
+[class*="awsui-help-panel-content"] {
+  padding: 20px !important;
+  color: var(--text-primary) !important;
+}
+
+/* === Flashbar 增强主题样式 === */
+.awsui-flashbar,
+[class*="awsui-flashbar"] {
+  background-color: transparent !important;
+}
+
+.awsui-flashbar-item,
+[class*="awsui-flashbar-item"] {
+  background-color: var(--elevated-surface) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--border-radius-medium) !important;
+  box-shadow: var(--shadow-medium) !important;
+  margin-bottom: 8px !important;
+}
+
+/* === AppLayout 响应式优化 === */
+@media (max-width: 768px) {
+  .awsui-app-layout-breadcrumbs,
+  [class*="awsui-app-layout-breadcrumbs"] {
+    padding: 8px 12px !important;
+  }
+  
+  .awsui-side-navigation-header,
+  [class*="awsui-side-navigation-header"] {
+    padding: 12px !important;
+  }
 }

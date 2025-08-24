@@ -45,6 +45,21 @@ input UpsertSettingsInput {
   themeSettings: AWSJSON
 }
 
+# 全局Logo管理
+type GlobalLogo {
+  id: ID!
+  logoUrl: String!
+  uploadedBy: String!
+  uploadedAt: AWSDateTime!
+}
+
+input GlobalLogoInput {
+  id: ID!
+  logoUrl: String!
+  uploadedBy: String!
+  uploadedAt: AWSDateTime!
+}
+
 type Course {
   id: ID!
   name: String
@@ -67,8 +82,8 @@ type Student {
   role: UserRole!
   lastLoginAt: AWSDateTime
   assessmentCount: Int
-  groups: [StudentGroup!]
-  # classes: [Class!]
+  groups: [StudentGroup]
+  # classes: [Class]
   needsPasswordChange: Boolean
   phoneNumber: String
   createdAt: AWSDateTime
@@ -88,6 +103,7 @@ type User {
   createdAt: AWSDateTime!
   createdBy: String!
   isActive: Boolean!
+  studentGroups: [String]  # 用户所属的学生分组
 }
 
 # 批量用户创建输入
@@ -110,8 +126,8 @@ type BatchUserOutput {
 
 # 批量用户创建结果
 type BatchUserResult {
-  success: [User!]!
-  failures: [UserCreationFailure!]!
+  success: [User]!
+  failures: [UserCreationFailure]!
   totalCount: Int!
   successCount: Int!
   failureCount: Int!
@@ -152,22 +168,30 @@ type ResetPasswordResult {
   isDefaultPassword: Boolean!
 }
 
+# 用户活跃度更新结果
+type UserActivityResult {
+  success: Boolean!
+  username: String!
+  lastLoginAt: AWSDateTime!
+  message: String
+}
+
 # 账号迁移结果
 type AccountMigrationResult {
   totalUsers: Int!
   migratedUsers: Int!
   skippedUsers: Int!
   failedUsers: Int!
-  errors: [String!]!
+  errors: [String]!
 }
 
 # Excel导入结果
 type ExcelImportResult {
-  previewData: [BatchUserOutput!]!
+  previewData: [BatchUserOutput]!
   totalRows: Int!
   validRows: Int!
   invalidRows: Int!
-  errors: [String!]!
+  errors: [String]!
 }
 
 # 学生分组类型（用于教学管理，如按能力分组、临时学习小组等）
@@ -177,8 +201,8 @@ type StudentGroup {
   description: String
   color: String!
   createdBy: String!
-  teachers: [String!]! # 管理该分组的教师列表
-  students: [String!]! # 分组内的学生ID列表
+  teachers: [String]! # 管理该分组的教师列表
+  students: [String]! # 分组内的学生ID列表
   createdAt: AWSDateTime!
 }
 
@@ -187,8 +211,8 @@ input StudentGroupInput {
   name: String!
   description: String
   color: String!
-  teachers: [String!]
-  students: [String!]
+  teachers: [String]
+  students: [String]
 }
 
 # 班级管理类型
@@ -200,7 +224,7 @@ input StudentGroupInput {
 #   name: String!
 #   description: String
 #   teacherId: String! @index
-#   accessibleTeachers: [String!]! # 可访问此班级的老师用户名列表
+#   accessibleTeachers: [String]! # 可访问此班级的老师用户名列表
 #   students: [Student] @hasMany
 #   createdAt: AWSDateTime!
 #   updatedAt: AWSDateTime!
@@ -209,12 +233,12 @@ input StudentGroupInput {
 # input CreateClassInput {
 #   name: String!
 #   description: String
-#   accessibleTeachers: [String!]
+#   accessibleTeachers: [String]
 # }
 
 # input UpdateClassPermissionsInput {
 #   classId: ID!
-#   accessibleTeachers: [String!]!
+#   accessibleTeachers: [String]!
 # }
 
 # input AddStudentToClassInput {
@@ -224,7 +248,7 @@ input StudentGroupInput {
 
 # input AddStudentsToClassInput {
 #   classId: ID!
-#   studentIdentifiers: [String!]!
+#   studentIdentifiers: [String]!
 # }
 
 type AssessTemplate {
@@ -265,27 +289,27 @@ input RubricInput {
 type FreeText {
   title: String!
   question: String!
-  rubric: [Rubric!]!
+  rubric: [Rubric]!
 }
 
 input FreeTextInput {
   title: String!
   question: String!
-  rubric: [RubricInput!]!
+  rubric: [RubricInput]!
 }
 
 type MultiChoice {
   title: String
   question: String
-  answerChoices: [String!]
-  correctAnswer: [Int!]
+  answerChoices: [String]
+  correctAnswer: [Int]
   explanation: String
 }
 
 type TrueFalse {
   title: String
   question: String
-  answerChoices: [String!]
+  answerChoices: [String]
   correctAnswer: String
   explanation: String
 }
@@ -293,7 +317,7 @@ type TrueFalse {
 type SingleAnswer {
   title: String
   question: String
-  answerChoices: [String!]
+  answerChoices: [String]
   correctAnswer: Int
   explanation: String
 }
@@ -302,8 +326,8 @@ input MultiChoiceInput {
   title: String!
   question: String!
   answerChoices: [String]
-  correctAnswer: [Int!]
-  explanation: String!
+  correctAnswer: [Int]
+  explanation: String
 }
 
 input TrueFalseInput {
@@ -311,7 +335,7 @@ input TrueFalseInput {
   question: String!
   answerChoices: [String]
   correctAnswer: String
-  explanation: String!
+  explanation: String
 }
 
 input SingleAnswerInput {
@@ -319,23 +343,23 @@ input SingleAnswerInput {
   question: String!
   answerChoices: [String]
   correctAnswer: Int
-  explanation: String!
+  explanation: String
 }
 
 type Assessment {
   id: ID!
   name: String!
   courseId: String!
-  lectureDate: AWSDateTime!
-  deadline: AWSDateTime!
-  updatedAt: AWSDateTime!
+  lectureDate: AWSDateTime
+  deadline: AWSDateTime
+  updatedAt: AWSDateTime
   assessType: AssessType!
-  multiChoiceAssessment: [MultiChoice!]
-  freeTextAssessment: [FreeText!]
-  trueFalseAssessment: [TrueFalse!]
-  singleAnswerAssessment: [SingleAnswer!]
-  published: Boolean!
-  status: AssessStatus!
+  multiChoiceAssessment: [MultiChoice]
+  freeTextAssessment: [FreeText]
+  trueFalseAssessment: [TrueFalse]
+  singleAnswerAssessment: [SingleAnswer]
+  published: Boolean
+  status: AssessStatus
   course: Course
   userId: String
   createdBy: String
@@ -343,31 +367,54 @@ type Assessment {
   timeLimited: Boolean  # 是否限制测试用时
   timeLimit: Int        # 测试限制用时(minutes)
   allowAnswerChange: Boolean  # 提交答案后是否允许修改
-  studentGroups: [String!]    # 发布给的学生分组
-  courses: [String!]          # 对应的课程列表
+  studentGroups: [String]    # 发布给的学生分组
+  courses: [String]          # 对应的课程列表
   attemptLimit: Int           # 测试次数限制(-1表示无限次数)
   scoreMethod: String         # 成绩取最高分/平均分/最低分
 }
 
 input AssessmentInput {
-  id: ID!
+  id: ID
   name: String!
   courseId: String!
-  lectureDate: AWSDateTime!
-  deadline: AWSDateTime!
+  lectureDate: AWSDateTime
+  deadline: AWSDateTime
   assessType: AssessType!
   multiChoiceAssessment: [MultiChoiceInput]
   freeTextAssessment: [FreeTextInput]
   trueFalseAssessment: [TrueFalseInput]
   singleAnswerAssessment: [SingleAnswerInput]
   published: Boolean
-  status: AssessStatus!
+  status: AssessStatus
   # 新增字段
   timeLimited: Boolean
   timeLimit: Int
   allowAnswerChange: Boolean
-  studentGroups: [String!]
-  courses: [String!]
+  studentGroups: [String]
+  courses: [String]
+  attemptLimit: Int
+  scoreMethod: String
+}
+
+input UpdateAssessmentInput {
+  id: ID!
+  name: String
+  courseId: String
+  lectureDate: AWSDateTime
+  deadline: AWSDateTime
+  assessType: AssessType
+  multiChoiceAssessment: [MultiChoiceInput]
+  freeTextAssessment: [FreeTextInput]
+  trueFalseAssessment: [TrueFalseInput]
+  singleAnswerAssessment: [SingleAnswerInput]
+  published: Boolean
+  status: AssessStatus
+  # 新增字段
+  timeLimited: Boolean
+  timeLimit: Int
+  allowAnswerChange: Boolean
+  studentGroups: [String]
+  courses: [String]
   attemptLimit: Int
   scoreMethod: String
 }
@@ -376,7 +423,7 @@ type StudentAssessment {
   userId: ID!
   parentAssessId: ID!
   assessment: Assessment
-  answers: AWSJSON!
+  answers: AWSJSON
   completed: Boolean
   score: Int
   report: AWSJSON
@@ -384,8 +431,17 @@ type StudentAssessment {
   # 新增字段
   attemptCount: Int       # 已测试次数
   duration: Int           # 测试用时(minutes)
-  scores: [Int!]          # 测试分数列表
+  scores: [Int]          # 测试分数列表
   remainingAttempts: Int  # 剩余测试次数(-1表示无限次数)
+  history: [StudentAssessmentAttempt] # 详细尝试历史
+}
+
+type StudentAssessmentAttempt {
+  attemptNumber: Int!
+  answers: AWSJSON!
+  score: Int
+  duration: Int          # 本次用时（分钟）
+  submittedAt: AWSDateTime!
 }
 
 input StudentAssessmentInput {
@@ -393,6 +449,11 @@ input StudentAssessmentInput {
   answers: AWSJSON!
   score: Int
   completed: Boolean
+  # 新增字段
+  duration: Int
+  startedAt: AWSDateTime
+  submittedAt: AWSDateTime
+  attemptCount: Int
 }
 
 input GenerateAssessmentInput {
@@ -448,6 +509,7 @@ type Mutation {
   createAssessTemplate(input: AssessTemplateInput): AssessTemplate
   deleteAssessTemplate(id: ID!, userId: ID!): Boolean
   upsertAssessment(input: AssessmentInput): Assessment
+  updateAssessment(input: UpdateAssessmentInput!): Assessment
   deleteAssessment(id: ID!): Boolean
   publishAssessment(assessmentId: ID!): Boolean
   unpublishAssessment(assessmentId: ID!): Boolean
@@ -457,10 +519,11 @@ type Mutation {
   deleteKnowledgeBase(courseId: ID!): KnowledgeBaseDeletionResult
   
   # 用户管理mutations
-  batchCreateUsers(users: [BatchUserInput!]!): BatchUserResult
+  batchCreateUsers(users: [BatchUserInput]!): BatchUserResult
   createSingleUser(user: BatchUserInput!): User
   deleteUser(username: String!): Boolean
   updateUser(username: String!, updates: BatchUserInput!): User
+  updateUserActivity(username: String!, role: String): UserActivityResult  # 更新用户活跃状态
   
   # 密码管理mutations  
   changePassword(input: ChangePasswordInput!): Boolean
@@ -476,6 +539,10 @@ type Mutation {
   createStudentGroup(input: StudentGroupInput!): StudentGroup
   updateStudentGroup(id: ID!, input: StudentGroupInput!): StudentGroup
   deleteStudentGroup(id: ID!): Boolean
+  
+  # 全局Logo管理mutations
+  createGlobalLogo(input: GlobalLogoInput!): GlobalLogo
+  updateGlobalLogo(input: GlobalLogoInput!): GlobalLogo
   
   # 班级管理mutations - 暂时注释
   # createClass(input: CreateClassInput!): Class
@@ -512,11 +579,14 @@ type Query {
   # 管理员权限查询
   checkAdminPermissions: AdminPermissionResult
   
+  # 全局Logo查询
+  getGlobalLogo: GlobalLogo
+  
   # 日志系统查询
   queryLogs(input: LogQueryInput): LogQueryResult
   
   # 用户管理查询
-  listUsers(role: UserRole): [User!]
+  listUsers(role: UserRole): [User]
   getUser(username: String!): User
   getCurrentUser: User
   
@@ -562,16 +632,16 @@ input LogFilters {
 union LogQueryResult = LogsResult | MetricsResult | LogGroupsResult | SystemHealthResult | ErrorDetailResult | ServiceStatsResult | RequestStatsResult
 
 type LogsResult {
-  logs: [LogEntry!]!
+  logs: [LogEntry]!
   nextToken: String
 }
 
 type MetricsResult {
-  metrics: [SystemMetric!]!
+  metrics: [SystemMetric]!
 }
 
 type LogGroupsResult {
-  logGroups: [LogGroup!]!
+  logGroups: [LogGroup]!
 }
 
 type SystemHealthResult {
@@ -579,8 +649,8 @@ type SystemHealthResult {
   errorRate: Float!
   averageResponseTime: Float!
   memoryUtilization: Float!
-  topErrors: [ErrorSummary!]!
-  serviceHealth: [ServiceHealth!]!
+  topErrors: [ErrorSummary]!
+  serviceHealth: [ServiceHealth]!
 }
 
 # 日志条目
@@ -651,12 +721,12 @@ type ErrorContext {
   duration: Int
   memoryUsed: Int
   billedDuration: Int
-  relatedRequests: [LogEntry!]
+  relatedRequests: [LogEntry]
 }
 
 # 服务统计结果
 type ServiceStatsResult {
-  serviceStats: [ServiceStats!]!
+  serviceStats: [ServiceStats]!
 }
 
 # 服务统计
@@ -674,13 +744,13 @@ type ServiceStats {
 
 # 请求统计结果
 type RequestStatsResult {
-  requestStats: [RequestStats!]!
+  requestStats: [RequestStats]!
 }
 
 # 请求统计
 type RequestStats {
   serviceName: String!
-  hourlyData: [HourlyStats!]!
+  hourlyData: [HourlyStats]!
 }
 
 # 小时统计
