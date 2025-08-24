@@ -12,7 +12,7 @@ const DYNAMODB_TABLES = {
     sortKey: 'id',
     gsi: [{ indexName: 'id-only', partitionKey: 'id' }],
     size: '40.8KB',
-    description: '存储教师创建的评估信息，包括名称、课程ID、上课时间、截止时间等'
+    description: '存储教师创建的测试信息，包括名称、课程ID、上课时间、截止时间等'
   },
   
   STUDENT_ASSESSMENTS: {
@@ -22,7 +22,7 @@ const DYNAMODB_TABLES = {
     sortKey: 'parentAssessId',
     gsi: [],
     size: '1.9KB',
-    description: '存储学生参与评估的记录，包括答案、分数、提交状态等'
+    description: '存储学生参与测试的记录，包括答案、分数、提交状态等'
   },
   
   USERS: {
@@ -53,7 +53,7 @@ const DYNAMODB_TABLES = {
     sortKey: 'id',
     gsi: [],
     size: '510 字节',
-    description: '存储评估测试模板配置，包括题目类型分布、难度设置等'
+    description: '存储测试测试模板配置，包括题目类型分布、难度设置等'
   },
   
   STUDENT_GROUPS: {

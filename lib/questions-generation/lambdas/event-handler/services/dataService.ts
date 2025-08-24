@@ -23,7 +23,7 @@ export class DataService {
   async updateAssessment(improvedQuestions: MultiChoice[] | FreeText[] | TrueFalse[] | SingleAnswer[], userId: string, assessmentId: string) {
     const currentAssessment = await this.getExistingAssessment(userId, assessmentId);
     
-    // 根据评估类型安全地分配问题数组
+    // 根据测试类型安全地分配问题数组
     switch (currentAssessment.assessType) {
       case 'multiChoiceAssessment':
         currentAssessment.multiChoiceAssessment = improvedQuestions as MultiChoice[];
@@ -134,7 +134,31 @@ export class DataService {
     let ddbResponse = await this.docClient.send(command);
 
     logger.info(ddbResponse as any);
-    return ddbResponse.Item;
+    if (ddbResponse.Item) {
+      return ddbResponse.Item;
+    }
+
+    // 兼容共享知识库：如果按用户查不到，按课程ID全表扫描一次
+    try {
+      logger.info('KB not found for user, scanning by courseId', { courseId });
+      const scan = new ScanCommand({
+        TableName: KB_TABLE,
+        FilterExpression: 'courseId = :courseId',
+        ExpressionAttributeValues: {
+          ':courseId': courseId,
+        },
+        Limit: 1,
+      });
+      const scanResp = await this.docClient.send(scan);
+      logger.info('KB scan result', { count: scanResp.Count });
+      if (scanResp.Items && scanResp.Items.length > 0) {
+        return scanResp.Items[0];
+      }
+    } catch (e) {
+      logger.error('Error scanning KB table by courseId', { error: (e as any).message });
+    }
+
+    return undefined;
   }
 
   async getExistingAssessmentTemplate(assessTemplateId: string, userId: string): Promise<AssessmentTemplate> {

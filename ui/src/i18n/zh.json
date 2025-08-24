@@ -144,7 +144,8 @@
       "doc_language": "文档语言",
       "default_assessment_type": "默认测试类型",
       "default_taxonomy": "默认分类法",
-      "language_required": "需要选择界面语言"
+      "language_required": "需要选择界面语言",
+      "update_success": "设置更新成功"
     }
   },
   "components": {
@@ -562,12 +563,12 @@
         "failed_to_load": "预览模式：无法加载测试数据",
         "time_up": "预览模式 - 时间到！模拟得分: {score}分 (注意：这只是预览，未保存任何数据)",
         "completed": "预览模式完成！模拟得分: {score}分 (注意：这只是预览，未保存任何数据)",
-        "start_assessment": "预览模式 - 开始评估",
+        "start_assessment": "预览模式 - 开始测试",
         "confirm_submit": "预览模式 - 确认提交",
         "simulated_result": "预览模式 - 模拟结果"
       },
       "start": {
-        "title": "开始评估",
+        "title": "开始测试",
         "waiting": "等待开始",
         "confirm": "确认开始",
         "time_limit_info": "本次测试限时 {timeLimit} 分钟",

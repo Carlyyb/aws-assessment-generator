@@ -191,7 +191,7 @@ export default () => {
 
           const assessment = data.getAssessment;
           if (!assessment) {
-            addLog(`❌ 找不到评估记录 ID: ${assessId}`);
+            addLog(`❌ 找不到测试记录 ID: ${assessId}`);
             setFailureCount(prev => prev + 1);
             checkStatus();
             return;
@@ -313,7 +313,7 @@ export default () => {
         header={
           <Header
             variant="h1"
-            description="创建个性化的课程测试评估，支持多种文档格式和自定义学习目标"
+            description="创建个性化的课程测试测试，支持多种文档格式和自定义学习目标"
           >
             {getText('common.nav.generate-assessments')}
           </Header>
@@ -590,7 +590,7 @@ export default () => {
 1. 理解大语言模型的“黑箱”现象
 2. 理解大语言模型的基本原理与架构
 3. 应用大语言模型进行文本生成与处理
-4. 分析和评估大语言模型的局限性与伦理问题"
+4. 分析和测试大语言模型的局限性与伦理问题"
                       rows={6}
                     />
                   </FormField>

@@ -17,7 +17,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { ExtendedAssessment, ExtendedStudentAssessment, addAssessmentDefaults, addStudentAssessmentDefaults } from '../types/ExtendedTypes';
-import { getAssessment, listStudentAssessments } from '../graphql/queries';
+import { getAssessment } from '../graphql/queries';
 
 const client = generateClient();
 
@@ -29,7 +29,7 @@ interface StudentResult extends ExtendedStudentAssessment {
   startedAt?: string;
 }
 
-export default () => {
+export default function AssessmentResults() {
   const params = useParams();
   const navigate = useNavigate();
   const dispatchAlert = useContext(DispatchAlertContext);
@@ -42,13 +42,14 @@ export default () => {
 
   useEffect(() => {
     loadAssessmentResults();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   const loadAssessmentResults = async () => {
     setLoading(true);
     try {
-      // 获取评估信息
-      const assessmentResponse = await client.graphql<any>({
+      // 获取测试信息
+  const assessmentResponse = await client.graphql<any>({
         query: getAssessment,
         variables: { id: params.id! }
       });
@@ -56,30 +57,37 @@ export default () => {
       const assessment = assessmentResponse.data.getAssessment;
       setAssessmentInfo(addAssessmentDefaults(assessment));
       
-      // 获取所有学生评估结果
-      const studentAssessmentsResponse = await client.graphql<any>({
-        query: listStudentAssessments
+      // 通过后端提供的按parentAssessId查询接口获取真实作答结果
+      const query = /* GraphQL */ `
+        query ListStudentAssessmentsByParentAssessId($parentAssessId: ID!) {
+          listStudentAssessmentsByParentAssessId(parentAssessId: $parentAssessId) {
+            userId
+            parentAssessId
+            completed
+            score
+            report
+            updatedAt
+            answers
+          }
+        }
+      `;
+
+  const studentAssessmentsResponse = await client.graphql<any>({
+        query,
+        variables: { parentAssessId: params.id! }
       });
-      
-      const allStudentAssessments = studentAssessmentsResponse.data.listStudentAssessments || [];
-      
-      // 筛选当前评估的结果
-      const currentAssessmentResults = allStudentAssessments
-        .filter((sa: any) => sa.parentAssessId === params.id)
-        .map((sa: any) => {
-          // 从评估数据中提取学生信息（如果有的话）
-          // 注意：这里可能需要根据实际的数据结构调整
-          const extendedSA = addStudentAssessmentDefaults(sa, assessment);
-          
-          return {
-            ...extendedSA,
-            userId: sa.userId || 'unknown',
-            userName: sa.userName || sa.userId || '未知用户',
-            userEmail: sa.userEmail || '',
-            submittedAt: sa.completed ? sa.updatedAt : undefined,
-            startedAt: sa.createdAt || sa.updatedAt
-          } as StudentResult;
-        });
+
+  const currentAssessmentResults = (studentAssessmentsResponse as any)?.data?.listStudentAssessmentsByParentAssessId?.map((sa: any) => {
+        const extendedSA = addStudentAssessmentDefaults(sa, assessment);
+        return {
+          ...extendedSA,
+          userId: sa.userId || 'unknown',
+          userName: sa.userName || sa.userId || '未知用户',
+          userEmail: sa.userEmail || '',
+          submittedAt: sa.completed ? sa.updatedAt : undefined,
+          startedAt: sa.createdAt || sa.updatedAt
+        } as StudentResult;
+      }) || [];
       
       setStudentResults(currentAssessmentResults);
       
@@ -87,7 +95,7 @@ export default () => {
       console.error('Failed to load assessment results:', error);
       dispatchAlert({ 
         type: AlertType.ERROR,
-        content: '加载评估结果失败，请稍后重试。'
+        content: '加载测试结果失败，请稍后重试。'
       });
       
       // 如果加载失败，显示空状态而不是模拟数据
@@ -372,4 +380,4 @@ export default () => {
       </Modal>
     </>
   );
-};
+}

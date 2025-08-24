@@ -19,7 +19,7 @@ export const handler: Handler = async (event) => {
   
   console.log('Publishing assessment requested:', { assessmentId, requestUserId });
 
-  // 1) 通过 assessments GSI(id-only) 查找原始评估，得到真正的 ownerUserId
+  // 1) 通过 assessments GSI(id-only) 查找原始测试，得到真正的 ownerUserId
   const assessQuery = await dynamoClient.send(new QueryCommand({
     TableName: assessmentsTable,
     IndexName: 'id-only',

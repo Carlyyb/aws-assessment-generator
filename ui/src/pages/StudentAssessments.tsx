@@ -23,18 +23,18 @@ export default function StudentAssessments() {
 
   const loadData = async () => {
     try {
-      // 加载已完成的评估
+      // 加载已完成的测试
       const completedResponse = await client.graphql({ query: listStudentAssessments });
       const completed = (completedResponse as any).data.listStudentAssessments || [];
-      // 过滤掉无效的评估记录（主评估已被删除的记录）
+      // 过滤掉无效的测试记录（主测试已被删除的记录）
       const validCompleted = completed.filter((item: StudentAssessment) => item.assessment != null);
       setCompletedAssessments(validCompleted);
 
-      // 加载可参加的评估
+      // 加载可参加的测试
       const availableResponse = await client.graphql({ query: listPublishedAssessments });
       const available = (availableResponse as any).data.listPublishedAssessments || [];
       
-      // 过滤掉已经参加过的评估
+      // 过滤掉已经参加过的测试
       const alreadyTaken = new Set(completed.map((item: StudentAssessment) => item.parentAssessId));
       const filteredAvailable = available.filter((assessment: Assessment) => !alreadyTaken.has(assessment.id));
       setAvailableAssessments(filteredAvailable);
@@ -45,7 +45,7 @@ export default function StudentAssessments() {
 
   const handleStartAssessment = async (assessment: Assessment) => {
     try {
-      // 创建学生评估记录
+      // 创建学生测试记录
       const studentAssessment = {
         parentAssessId: assessment.id,
         completed: false,
@@ -58,7 +58,7 @@ export default function StudentAssessments() {
         variables: { input: studentAssessment }
       });
 
-      // 导航到评估页面
+      // 导航到测试页面
       navigate('/assessment/' + assessment.id);
     } catch (error) {
       console.error('Error starting assessment:', error);
@@ -79,14 +79,14 @@ export default function StudentAssessments() {
           onChange={({ detail }) => setActiveTabId(detail.activeTabId)}
           tabs={[
             {
-              label: '可参加的评估',
+              label: '可参加的测试',
               id: 'available',
               content: (
                 <Table
                   columnDefinitions={[
                     {
                       id: 'name',
-                      header: '评估名称',
+                      header: '测试名称',
                       cell: (item: Assessment) => item.name || '-',
                       sortingField: 'name',
                     },
@@ -114,7 +114,7 @@ export default function StudentAssessments() {
                       header: '操作',
                       cell: (item: Assessment) => (
                         <Button onClick={() => handleStartAssessment(item)}>
-                          开始评估
+                          开始测试
                         </Button>
                       ),
                     },
@@ -130,7 +130,7 @@ export default function StudentAssessments() {
                   trackBy="id"
                   empty={
                     <Box margin={{ vertical: 'xs' }} textAlign="center" color="inherit">
-                      暂无可参加的评估
+                      暂无可参加的测试
                     </Box>
                   }
                   pagination={<Pagination currentPageIndex={1} pagesCount={1} />}
@@ -138,7 +138,7 @@ export default function StudentAssessments() {
               ),
             },
             {
-              label: '已参加的评估',
+              label: '已参加的测试',
               id: 'completed',
               content: (
                 <Table
@@ -179,7 +179,7 @@ export default function StudentAssessments() {
                             <Button onClick={() => navigate('/assessment/' + item.parentAssessId)}>{getText('students.assessments.list.actions.start')}</Button>
                           )
                         ) : (
-                          <Box color="text-status-inactive">无效的评估</Box>
+                          <Box color="text-status-inactive">无效的测试</Box>
                         ),
                     },
                     {

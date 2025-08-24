@@ -67,7 +67,7 @@ const AssessmentSettings = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // 加载评估数据
+      // 加载测试数据
       const assessmentResponse = await client.graphql({
         query: getAssessment,
         variables: { id: params.id! }
@@ -111,7 +111,7 @@ const AssessmentSettings = () => {
       console.error('Failed to load assessment data:', error);
       dispatchAlert({
         type: AlertType.ERROR,
-        content: '加载评估数据失败，请稍后重试'
+        content: '加载测试数据失败，请稍后重试'
       });
     } finally {
       setLoading(false);
@@ -201,7 +201,7 @@ const AssessmentSettings = () => {
       <ContentLayout>
         <Container>
           <Alert type="error">
-            未找到评估数据，请检查评估ID是否正确。
+            未找到测试数据，请检查测试ID是否正确。
           </Alert>
         </Container>
       </ContentLayout>

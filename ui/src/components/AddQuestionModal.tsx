@@ -48,7 +48,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
     { label: '简答题', value: AssessType.freeTextAssessment }
   ];
 
-  // 根据当前评估类型设置默认题型
+  // 根据当前测试类型设置默认题型
   useEffect(() => {
     const defaultOption = questionTypeOptions.find(option => option.value === assessmentType);
     if (defaultOption) {

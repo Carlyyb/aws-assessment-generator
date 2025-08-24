@@ -34,6 +34,20 @@ export function generateBreadcrumbs(pathname: string, getOverride?: (path: strin
     return breadcrumbs;
   }
 
+   if (pathname.startsWith('/assessment-results/')) {
+    // 添加查找测试页面到面包屑
+    breadcrumbs.push({
+      text: getText('common.nav.find-assessments'),
+      href: '/assessments/find-assessments'
+    });
+    const testName = getText('teachers.assessments.edit.current');
+    breadcrumbs.push({
+      text: testName,
+      href: pathname
+    });
+    return breadcrumbs;
+  }
+
   // 移除开头的斜杠并分割路径
   const pathSegments = pathname.replace(/^\/+/, '').split('/').filter(Boolean);
   
@@ -90,6 +104,9 @@ function getNavigationText(segment: string): string {
   // 处理特殊路径
   switch (segment) {
     case 'edit-assessment':
+      // 编辑测试页面应该显示为"查找测试"而不是"编辑测试"
+      return getText('common.nav.find-assessments');
+    case 'assessment-results':
       // 编辑测试页面应该显示为"查找测试"而不是"编辑测试"
       return getText('common.nav.find-assessments');
     case 'assessment':

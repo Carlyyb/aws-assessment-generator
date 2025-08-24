@@ -373,6 +373,7 @@ input AssessmentInput {
 }
 
 type StudentAssessment {
+  userId: ID!
   parentAssessId: ID!
   assessment: Assessment
   answers: AWSJSON!
@@ -498,6 +499,8 @@ type Query {
   getStudentAssessment(parentAssessId: ID!): StudentAssessment
   listStudentAssessments: [StudentAssessment]
   listMyStudentAssessments(studentId: ID!): [StudentAssessment]
+  # 按测试ID查询全部学生作答结果（使用GSI ParentAssessIdIndex）
+  listStudentAssessmentsByParentAssessId(parentAssessId: ID!): [StudentAssessment]
   listPublishedAssessments: [Assessment]
   generateAssessment(input: GenerateAssessmentInput): ID
   getKnowledgeBase(courseId: ID): KnowledgeBase

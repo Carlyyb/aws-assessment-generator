@@ -144,7 +144,7 @@ export default () => {
     }
   };
 
-  // 加载评估数据 - 只在组件挂载时执行一次
+  // 加载测试数据 - 只在组件挂载时执行一次
   useEffect(() => {
     if (!params.id) return;
     let cancelled = false; // 防止卸载后继续设置状态
@@ -224,7 +224,7 @@ export default () => {
     setPendingNavigation(null);
   };
 
-  // 保存评估
+  // 保存测试
   const handleSaveAssessment = async () => {
     try {
       const { course, ...inputAssessment } = assessment;
@@ -258,7 +258,7 @@ export default () => {
               disabled={!hasUnsavedChanges}
               fullWidth
             >
-              保存评估
+              保存测试
             </Button>
             <Button
               variant="normal"
@@ -266,17 +266,17 @@ export default () => {
               onClick={() => handleNavigation('/assessments/find-assessments')}
               fullWidth
             >
-              返回评估列表
+              返回测试列表
             </Button>
           </SpaceBetween>
         </Box>
         
         <Box>
-          <Header variant="h3">评估信息</Header>
+          <Header variant="h3">测试信息</Header>
           <SpaceBetween size="s">
             <Box>
-              <strong>评估名称：</strong>
-              <Box variant="span">{assessment.name || '未命名评估'}</Box>
+              <strong>测试名称：</strong>
+              <Box variant="span">{assessment.name || '未命名测试'}</Box>
             </Box>
             <Box>
               <strong>题目数量：</strong>

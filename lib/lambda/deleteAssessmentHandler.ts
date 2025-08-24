@@ -27,10 +27,10 @@ export const handler = async (event: any) => {
       throw new Error('Permission denied');
     }
     
-    // 首先查询所有相关的学生评估记录
+    // 首先查询所有相关的学生测试记录
     const studentAssessments = await queryStudentAssessmentsByParentId(assessmentId);
     
-    // 删除所有相关的学生评估记录
+    // 删除所有相关的学生测试记录
     const deleteStudentPromises = studentAssessments.map(item => 
       docClient.send(new DeleteCommand({
         TableName: STUDENT_ASSESSMENTS_TABLE,
@@ -41,7 +41,7 @@ export const handler = async (event: any) => {
       }))
     );
     
-    // 删除主评估记录
+    // 删除主测试记录
     const deleteAssessmentPromise = docClient.send(new DeleteCommand({
       TableName: ASSESSMENTS_TABLE,
       Key: {
@@ -66,7 +66,7 @@ export const handler = async (event: any) => {
   }
 };
 
-// 查询所有与指定评估ID相关的学生评估记录
+// 查询所有与指定测试ID相关的学生测试记录
 async function queryStudentAssessmentsByParentId(parentAssessId: string) {
   const results: any[] = [];
   let lastEvaluatedKey: any = undefined;

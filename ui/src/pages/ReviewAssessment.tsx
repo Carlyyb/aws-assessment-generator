@@ -11,7 +11,7 @@ const client = generateClient();
 
 type StudentAssessment = Omit<RawStudentAssessment, 'answers'> & { answers: [string | number] };
 
-export default () => {
+export default function ReviewAssessment() {
   const params = useParams();
   const navigate = useNavigate();
 
@@ -20,16 +20,22 @@ export default () => {
   const [toolsOpen, setToolsOpen] = useState(true); // 右侧工具栏开关状态
 
   useEffect(() => {
-    client
-      .graphql<any>({ query: getStudentAssessment, variables: { parentAssessId: params.id! } })
-      .then(({ data }) => {
-        const result: RawStudentAssessment = data.getStudentAssessment;
-        if (!result) throw new Error();
+    const run = async () => {
+      try {
+        const resp = await (client.graphql<{ getStudentAssessment: RawStudentAssessment | null }>({
+          query: getStudentAssessment,
+          variables: { parentAssessId: params.id! },
+        }) as Promise<{ data: { getStudentAssessment: RawStudentAssessment | null } }>);
+        const result = resp.data.getStudentAssessment;
+        if (!result) throw new Error('Not found');
         const parsedResult: StudentAssessment = { ...result, answers: JSON.parse(result.answers) };
         setStudentAssessment(parsedResult);
-      })
-      .catch(() => {});
-  }, []);
+      } catch {
+        // ignore
+      }
+    };
+    if (params.id) run();
+  }, [params.id]);
 
   if (!studentAssessment?.assessment) return null;
 
@@ -52,31 +58,98 @@ export default () => {
     }
   };
 
+  // 辅助：格式化答案文本
+  type MultiChoiceMaybeMulti = Omit<MultiChoice, 'correctAnswer'> & { correctAnswer: number | number[] };
+  type AnswerValue = string | number | Array<string | number>;
+
+  const toNumberArray = (v: AnswerValue): number[] => (Array.isArray(v) ? v : [v]).map((x) => Number(x));
+
+  const formatAnswerText = (q: MultiChoice | SingleAnswer | TrueFalse, ans: AnswerValue): string => {
+    if (assessType === AssessType.multiChoiceAssessment) {
+      const mc = q as MultiChoice;
+      const indices: number[] = toNumberArray(ans);
+      const texts = indices
+        .filter((i) => !isNaN(i) && i > 0 && (mc.answerChoices?.[i - 1] ?? undefined) !== undefined)
+        .map((i) => mc.answerChoices![i - 1]);
+      return texts.join(', ');
+    }
+    if (assessType === AssessType.singleAnswerAssessment) {
+      const sa = q as SingleAnswer;
+      const i = Number(ans);
+      return i > 0 && sa.answerChoices?.[i - 1] ? sa.answerChoices[i - 1] : String(ans ?? '');
+    }
+    if (assessType === AssessType.trueFalseAssessment) {
+      const tf = q as TrueFalse;
+      const v = Array.isArray(ans) ? ans[0] : ans;
+      if (typeof v === 'number') {
+        const idx = v - 1;
+        return tf.answerChoices?.[idx] ?? '';
+      }
+      return String(v ?? '');
+    }
+    // freeText 直接显示内容
+    return String(ans ?? '');
+  };
+
+  const getCorrectAnswerText = (q: MultiChoice | SingleAnswer | TrueFalse): string => {
+    if (assessType === AssessType.multiChoiceAssessment) {
+      const mc = q as unknown as MultiChoiceMaybeMulti;
+      const indices: number[] = Array.isArray(mc.correctAnswer) ? mc.correctAnswer.map((v) => +v) : [Number(mc.correctAnswer)];
+      const texts = indices
+        .filter((i) => !isNaN(i) && i > 0 && (mc.answerChoices?.[i - 1] ?? undefined) !== undefined)
+        .map((i) => mc.answerChoices![i - 1]);
+      return texts.join(', ');
+    }
+    if (assessType === AssessType.singleAnswerAssessment) {
+      const sa = q as SingleAnswer;
+      const i = Number(sa.correctAnswer);
+      return i > 0 && sa.answerChoices?.[i - 1] ? sa.answerChoices[i - 1] : String(sa.correctAnswer ?? '');
+    }
+    if (assessType === AssessType.trueFalseAssessment) {
+      const tf = q as TrueFalse;
+      return String(tf.correctAnswer ?? '');
+    }
+    return '';
+  };
+
   // 检查指定题目的答题是否正确
   const isQuestionCorrect = (questionIndex: number) => {
     if (!studentAssessment?.answers) return false;
-    
+
     const questions = getQuestions();
     if (questionIndex >= questions.length) return false;
-    
-    const question = questions[questionIndex];
-    const userAnswer = studentAssessment.answers[questionIndex];
-    
+
+  const q = questions[questionIndex];
+  const ua = studentAssessment.answers[questionIndex] as AnswerValue;
+
     switch (assessType) {
-      case AssessType.multiChoiceAssessment:
-      case AssessType.singleAnswerAssessment:
-        return userAnswer === (question as MultiChoice | SingleAnswer).correctAnswer;
-      case AssessType.trueFalseAssessment:
-        return userAnswer === (question as TrueFalse).correctAnswer;
-      case AssessType.freeTextAssessment:
-        // 对于自由文本题，从报告中获取评分信息
+      case AssessType.multiChoiceAssessment: {
+        const mc = q as unknown as MultiChoiceMaybeMulti;
+        const correct: number[] = Array.isArray(mc.correctAnswer)
+          ? mc.correctAnswer.map((v) => +v)
+          : [Number(mc.correctAnswer)];
+        const student: number[] = toNumberArray(ua);
+        if (student.some((v) => !correct.includes(v))) return false; // 选了错误选项
+        // 必须选全且不多不少
+        return correct.length === student.length && correct.every((v) => student.includes(v));
+      }
+      case AssessType.singleAnswerAssessment: {
+        const sa = q as SingleAnswer;
+        return Number(ua) === Number(sa.correctAnswer);
+      }
+      case AssessType.trueFalseAssessment: {
+        const tf = q as TrueFalse;
+        const studentValue = typeof ua === 'number' ? tf.answerChoices?.[ua - 1] : String(ua);
+        return studentValue === tf.correctAnswer;
+      }
+      case AssessType.freeTextAssessment: {
         const report = studentAssessment.report ? JSON.parse(studentAssessment.report) : {};
         const questionReport = report[questionIndex];
-        // 如果有评分报告，根据评分判断（这里假设评分超过一定阈值算正确）
         if (questionReport && questionReport.rate !== undefined) {
-          return questionReport.rate >= 0.7; // 70%以上算正确
+          return questionReport.rate >= 0.7;
         }
-        return false; // 没有评分信息时默认为错误
+        return false;
+      }
       default:
         return false;
     }
@@ -355,7 +428,37 @@ export default () => {
                     </>
                   ) : (
                     <Container header={<Header variant="h2">{getText('students.assessments.review.explanation')}</Header>}>
-                      <Box variant="p">{(assessment as MultiChoice | SingleAnswer | TrueFalse).explanation}</Box>
+                      <SpaceBetween size="s">
+                        {/* 判题符号 */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {isQuestionCorrect(activeStepIndex) ? (
+                            <span style={{ color: '#28a745', fontSize: 20 }}>√</span>
+                          ) : (
+                            <span style={{ color: '#dc3545', fontSize: 20 }}>×</span>
+                          )}
+                          <span style={{ color: '#666', fontSize: 12 }}>
+                            {isQuestionCorrect(activeStepIndex) ? '回答正确' : '回答错误'}
+                          </span>
+                        </div>
+                        {/* 你的答案 / 正确答案 */}
+                        {assessType !== AssessType.freeTextAssessment && (
+                          <>
+                            <Box variant="p">
+                              <strong>你的答案：</strong>{' '}
+                              {formatAnswerText(
+                                assessment as MultiChoice | SingleAnswer | TrueFalse,
+                                studentAssessment.answers[activeStepIndex] as AnswerValue
+                              )}
+                            </Box>
+                            <Box variant="p">
+                              <strong>正确答案：</strong>{' '}
+                              {getCorrectAnswerText(assessment as MultiChoice | SingleAnswer | TrueFalse)}
+                            </Box>
+                          </>
+                        )}
+                        {/* 题目解析 */}
+                        <Box variant="p">{(assessment as MultiChoice | SingleAnswer | TrueFalse).explanation}</Box>
+                      </SpaceBetween>
                     </Container>
                   )}
                 </SpaceBetween>
@@ -366,4 +469,4 @@ export default () => {
       navigationHide
     />
   );
-};
+}

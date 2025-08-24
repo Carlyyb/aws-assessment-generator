@@ -1,23 +1,17 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useEffect, useState, useContext } from 'react';
-import { Container, Header, SpaceBetween, Button, Form, FormField, Box, Select, SelectProps, Tabs, Input, Alert } from '@cloudscape-design/components';
+import { useState, useContext } from 'react';
+import { Container, Header, SpaceBetween, Button, Form, FormField, Tabs, Input, Alert } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
-import { Lang } from '../graphql/API';
-import { getSettings } from '../graphql/queries';
-import { upsertSettings, changePasswordMutation } from '../graphql/mutations';
-import { optionise } from '../helpers';
+import { changePasswordMutation } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
-import { setCurrentLang, getText } from '../i18n/lang';
+import { getText } from '../i18n/lang';
 import { ThemeSettings } from '../components/ThemeSettings';
 
 const client = generateClient();
-const langs = Object.values(Lang).map(optionise);
 
 export default () => {
   const dispatchAlert = useContext(DispatchAlertContext);
-  const [activeTabId, setActiveTabId] = useState('general');
-  const [uiLang, setUiLang] = useState<SelectProps.Option | null>(null);
-  const [currentSettings, setCurrentSettings] = useState<any>(null);
+  const [activeTabId, setActiveTabId] = useState('theme');
   
   // 密码修改相关状态
   const [passwordForm, setPasswordForm] = useState({
@@ -28,60 +22,9 @@ export default () => {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    client.graphql<any>({ query: getSettings }).then(({ data }) => {
-      const settings = data.getSettings;
-      if (!settings) return;
-      setCurrentSettings(settings);
-      setUiLang(optionise(settings.uiLang!));
-      // 设置初始语言
-      if (settings.uiLang) {
-        setCurrentLang(settings.uiLang as Lang);
-      }
-    });
-  }, []);
+  // 语言固定为中文，无需从设置中加载语言或读取用户设置。
 
-  interface GraphQLError {
-    message: string;
-  }
-
-  const handleLanguageSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // 检查语言选择是否有效
-    if (!uiLang?.value || !currentSettings) {
-      dispatchAlert({ 
-        type: AlertType.ERROR, 
-        content: getText('common.settings.language_required') 
-      });
-      return;
-    }
-
-    client
-      .graphql<any>({
-        query: upsertSettings,
-        variables: { 
-          input: { 
-            uiLang: uiLang.value as Lang
-          } 
-        },
-      })
-      .then(() => {
-        dispatchAlert({ 
-          type: AlertType.SUCCESS, 
-          content: getText('common.settings.update_success') 
-        });
-      })
-      .catch((error: GraphQLError) => {
-        console.error('Settings update error:', error);
-        // 显示更具体的错误信息
-        const errorMessage = error.message || getText('common.status.error');
-        dispatchAlert({ 
-          type: AlertType.ERROR, 
-          content: errorMessage 
-        });
-      });
-  };
+  // 不再提供语言设置，语言固定为中文。
 
   // 验证密码表单
   const validatePasswordForm = () => {
@@ -144,11 +87,16 @@ export default () => {
       });
       setPasswordErrors({});
 
-    } catch (error: any) {
-      console.error('密码修改失败:', error);
+    } catch (err: unknown) {
+      console.error('密码修改失败:', err);
+      let message: string | undefined;
+      if (typeof err === 'object' && err !== null) {
+        const e = err as { errors?: Array<{ message?: string }> };
+        message = e.errors?.[0]?.message;
+      }
       dispatchAlert({
         type: AlertType.ERROR,
-        content: error.errors?.[0]?.message || '密码修改失败，请检查当前密码是否正确'
+        content: message || '密码修改失败，请检查当前密码是否正确'
       });
     } finally {
       setPasswordLoading(false);
@@ -163,54 +111,6 @@ export default () => {
         activeTabId={activeTabId}
         onChange={({ detail }) => setActiveTabId(detail.activeTabId)}
         tabs={[
-          {
-            id: 'general',
-            label: getText('common.settings.title'),
-            content: (
-              <form onSubmit={handleLanguageSubmit}>
-                <Form
-                  actions={
-                    <SpaceBetween direction="horizontal" size="xs">
-                      <Button 
-                        formAction="none" 
-                        variant="link" 
-                        ariaLabel={getText('common.actions.cancel')}
-                        onClick={() => setActiveTabId('general')}  // 添加取消按钮的行为
-                      >
-                        {getText('common.actions.cancel')}
-                      </Button>
-                      <Button 
-                        variant="primary" 
-                        ariaLabel={getText('common.actions.submit')}
-                      >
-                        {getText('common.actions.submit')}
-                      </Button>
-                    </SpaceBetween>
-                  }
-                >
-                  <Container>
-                    <Box padding="xxxl">
-                      <SpaceBetween direction="horizontal" size="l">
-                        <FormField label={getText('common.settings.ui_language')}>
-                          <Select 
-                            options={langs} 
-                            selectedOption={uiLang} 
-                            onChange={({ detail }) => {
-                              setUiLang(detail.selectedOption);
-                              // 设置新的语言
-                              if (detail.selectedOption?.value) {
-                                setCurrentLang(detail.selectedOption.value as Lang);
-                              }
-                            }} 
-                          />
-                        </FormField>
-                      </SpaceBetween>
-                    </Box>
-                  </Container>
-                </Form>
-              </form>
-            )
-          },
           {
             id: 'theme',
             label: getText('theme.title'),

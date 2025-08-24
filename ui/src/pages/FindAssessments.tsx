@@ -33,7 +33,7 @@ const client = generateClient();
 const FindAssessmentsPage = () => {
   const navigate = useNavigate();
   const dispatchAlert = useContext(DispatchAlertContext);
-  const { adminInfo } = useAdminPermissions();
+  const { adminInfo, loading: adminLoading } = useAdminPermissions();
   
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [filteredAssessments, setFilteredAssessments] = useState<Assessment[]>([]);
@@ -50,6 +50,8 @@ const FindAssessmentsPage = () => {
   const [showBatchDeleteModal, setShowBatchDeleteModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  // 加载控制：防止循环加载
+  const [loaded, setLoaded] = useState(false);
 
   // 检查数据异常的辅助函数
   const checkDataIntegrity = (assessment: any): string | null => {
@@ -110,7 +112,7 @@ const FindAssessmentsPage = () => {
     const queryName = adminInfo?.isAdmin ? 'listAllAssessments' : 'listAssessments';
     
     client
-      .graphql<any>({ query })
+      .graphql<any>({ query, authMode: 'userPool' as any })
       .then(({ data }) => {
         const list = data?.[queryName] || [];
         const errors = new Map<string, string>();
@@ -139,6 +141,10 @@ const FindAssessmentsPage = () => {
           type: AlertType.ERROR, 
           content: '获取测试列表时发生错误，请稍后重试' 
         });
+      })
+      .finally(() => {
+        // 一次加载完成，标记为已加载，防止循环触发
+        setLoaded(true);
       });
   }, [adminInfo?.isAdmin, dispatchAlert]);
 
@@ -165,14 +171,14 @@ const FindAssessmentsPage = () => {
       if (successCount > 0) {
         dispatchAlert({
           type: AlertType.SUCCESS,
-          content: `成功删除 ${successCount} 个评估${errorCount > 0 ? `，${errorCount} 个删除失败` : ''}`
+          content: `成功删除 ${successCount} 个测试${errorCount > 0 ? `，${errorCount} 个删除失败` : ''}`
         });
       }
 
       if (errorCount > 0 && successCount === 0) {
         dispatchAlert({
           type: AlertType.ERROR,
-          content: `批量删除失败，共 ${errorCount} 个评估删除失败`
+          content: `批量删除失败，共 ${errorCount} 个测试删除失败`
         });
       }
 
@@ -198,7 +204,7 @@ const FindAssessmentsPage = () => {
       
       dispatchAlert({
         type: AlertType.SUCCESS,
-        content: `成功导出 ${selectedAssessments.length} 个评估`
+        content: `成功导出 ${selectedAssessments.length} 个测试`
       });
     } catch (error: any) {
       console.error('导出错误:', error);
@@ -263,7 +269,7 @@ const FindAssessmentsPage = () => {
 
       dispatchAlert({
         type: AlertType.SUCCESS,
-        content: '评估已成功删除'
+        content: '测试已成功删除'
       });
 
       getAssessments();
@@ -289,7 +295,7 @@ const FindAssessmentsPage = () => {
 
       dispatchAlert({
         type: AlertType.SUCCESS,
-        content: '评估已取消发布'
+        content: '测试已取消发布'
       });
 
       getAssessments();
@@ -323,9 +329,19 @@ const FindAssessmentsPage = () => {
     return hasDataError || adminInfo?.isAdmin || item.status === AssessStatus.FAILED;
   };
 
+  // 等待管理员权限加载完成后再加载数据，避免“ No current user ”或权限闪烁
   useEffect(() => {
-    getAssessments();
-  }, [getAssessments]);
+    if (!adminLoading && !loaded) {
+      getAssessments();
+    }
+  }, [adminLoading, loaded, getAssessments]);
+
+  // 当管理员权限状态变化（例如从普通到管理员）时，触发一次刷新
+  useEffect(() => {
+    if (!adminLoading && loaded) {
+      setLoaded(false);
+    }
+  }, [adminLoading, adminInfo?.isAdmin, loaded]);
 
   return (
     <>
@@ -337,7 +353,7 @@ const FindAssessmentsPage = () => {
                 {getText('teachers.assessments.find.title')}
                 {adminInfo?.isAdmin && (
                   <Box variant="small" color="text-status-info" display="inline" margin={{ left: 's' }}>
-                    (管理员视图 - 显示所有用户的评估)
+                    (管理员视图 - 显示所有用户的测试)
                   </Box>
                 )}
               </Header>
@@ -365,6 +381,13 @@ const FindAssessmentsPage = () => {
                   filteringPlaceholder="搜索名称或课程"
                   onChange={({ detail }) => setNameFilter(detail.filteringText)}
                 />
+                <Button
+                  iconName="refresh"
+                  onClick={() => setLoaded(false)}
+                  disabled={!loaded}
+                >
+                  刷新
+                </Button>
               </SpaceBetween>
             </Box>
 
@@ -475,8 +498,17 @@ const FindAssessmentsPage = () => {
                     const isCompletelyCorrupted = errorMessage.includes('所有题目内容为空，数据完全异常');
                     
                     return (
-                      <SpaceBetween size="xs" direction="horizontal" alignItems="center">
-                        {/* 对于失败状态的评估，只显示删除按钮和失败信息 */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          flexWrap: 'nowrap',
+                          overflowX: 'auto',
+                          maxWidth: '100%'
+                        }}
+                      >
+                        {/* 对于失败状态的测试，只显示删除按钮和失败信息 */}
                         {item.status === AssessStatus.FAILED ? (
                           <>
                             <Box variant="small" color="text-status-error">
@@ -603,7 +635,7 @@ const FindAssessmentsPage = () => {
                             )}
                           </>
                         )}
-                      </SpaceBetween>
+                      </div>
                     );
                   },
                 },

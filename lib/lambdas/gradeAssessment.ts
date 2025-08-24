@@ -22,7 +22,7 @@ import { AppSyncResolverEvent, Context } from 'aws-lambda';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { Tracer } from '@aws-lambda-powertools/tracer';
 import { BedrockRuntime } from '@aws-sdk/client-bedrock-runtime';
-import { FreeText, MultiChoice } from '../../ui/src/graphql/API';
+import { FreeText, MultiChoice, TrueFalse, SingleAnswer } from '../../ui/src/graphql/API';
 import { XMLParser } from 'fast-xml-parser';
 
 const tracer = new Tracer();
@@ -45,12 +45,37 @@ class Lambda implements LambdaInterface {
   async handler(event: AppSyncResolverEvent<any>, context: Context): Promise<any> {
     logger.info('Received event:', event as any);
 
-    const multiChoiceAssessment = event.prev?.result.multiChoiceAssessment;
-    const freeTextAssessment = event.prev?.result.freeTextAssessment;
+    const multiChoiceAssessment = event.prev?.result.multiChoiceAssessment as MultiChoice[] | null | undefined;
+    const freeTextAssessment = event.prev?.result.freeTextAssessment as FreeText[] | null | undefined;
+    const trueFalseAssessment = event.prev?.result.trueFalseAssessment as TrueFalse[] | null | undefined;
+    const singleAnswerAssessment = event.prev?.result.singleAnswerAssessment as SingleAnswer[] | null | undefined;
     const answers = event.arguments.input.answers;
 
-    if (multiChoiceAssessment) return gradeMultiChoice(multiChoiceAssessment, answers);
-    if (freeTextAssessment) return gradeFreeText(freeTextAssessment, answers);
+    let result: any | undefined;
+    if (multiChoiceAssessment && multiChoiceAssessment.length) {
+      result = gradeMultiChoice(multiChoiceAssessment, answers);
+    } else if (freeTextAssessment && freeTextAssessment.length) {
+      result = await gradeFreeText(freeTextAssessment, answers);
+    } else if (trueFalseAssessment && trueFalseAssessment.length) {
+      result = gradeTrueFalse(trueFalseAssessment, answers);
+    } else if (singleAnswerAssessment && singleAnswerAssessment.length) {
+      result = gradeSingleAnswer(singleAnswerAssessment, answers);
+    }
+
+    // Record grading summary log for easy search: username+timestamp+examName+score%
+    try {
+      const username = (event as any)?.identity?.username || (event as any)?.identity?.claims?.username || 'unknown-user';
+      const examName = event.prev?.result?.name || 'unknown-exam';
+      const timestamp = new Date().toISOString();
+      const scoreText = result?.score !== undefined ? `${result.score}%` : 'N/A';
+      const composite = `${username}+${timestamp}+${examName}+${scoreText}`;
+      // Log exactly the composite string for easy searching
+      logger.info(composite);
+    } catch (e) {
+      logger.warn('Failed to emit grading summary log', (e as any)?.message || e as any);
+    }
+
+    return result;
   }
 }
 
@@ -113,6 +138,82 @@ function gradeMultiChoice(mulichoiceAssessment: MultiChoice[], answers: any) {
   logger.info(`Total score: ${totalScore}/${mulichoiceAssessment.length} = ${finalScore}%`);
   
   return { score: finalScore };
+}
+
+function gradeTrueFalse(trueFalseAssessment: TrueFalse[], answers: any) {
+  let totalScore = 0;
+  for (let i = 0; i < trueFalseAssessment.length; i++) {
+    const assessment = trueFalseAssessment[i];
+    const answer = Array.isArray(answers) ? answers[i] : answers?.[i];
+
+    // 归一化正确答案到布尔值
+    const correctBool = normalizeToBool(assessment.correctAnswer, assessment.answerChoices);
+    // 归一化学生答案到布尔值
+    const studentBool = normalizeToBool(answer, assessment.answerChoices);
+
+    const isCorrect = studentBool !== undefined && correctBool !== undefined && studentBool === correctBool;
+    totalScore += isCorrect ? 1 : 0;
+    logger.info(`TF Q${i + 1}: student=${String(studentBool)} correct=${String(correctBool)} score=${isCorrect ? 1 : 0}`);
+  }
+  const finalScore = Math.round((totalScore / trueFalseAssessment.length) * 100);
+  logger.info(`TF Total score: ${totalScore}/${trueFalseAssessment.length} = ${finalScore}%`);
+  return { score: finalScore };
+}
+
+function gradeSingleAnswer(singleAnswerAssessment: SingleAnswer[], answers: any) {
+  let totalScore = 0;
+  for (let i = 0; i < singleAnswerAssessment.length; i++) {
+    const assessment = singleAnswerAssessment[i];
+    const rawAns = Array.isArray(answers) ? answers[i] : answers?.[i];
+    // 兼容 string/number/数组等输入；期望为 1-based 索引
+    const studentIndex = normalizeToOneBasedIndex(rawAns);
+    const correctIndex = normalizeToOneBasedIndex(assessment.correctAnswer);
+    const isCorrect = studentIndex !== undefined && correctIndex !== undefined && studentIndex === correctIndex;
+    totalScore += isCorrect ? 1 : 0;
+    logger.info(`SA Q${i + 1}: student=${String(studentIndex)} correct=${String(correctIndex)} score=${isCorrect ? 1 : 0}`);
+  }
+  const finalScore = Math.round((totalScore / singleAnswerAssessment.length) * 100);
+  logger.info(`SA Total score: ${totalScore}/${singleAnswerAssessment.length} = ${finalScore}%`);
+  return { score: finalScore };
+}
+
+// 将各种输入（number/string/boolean/本地化文案）归一化为布尔值
+function normalizeToBool(value: any, answerChoices?: string[]): boolean | undefined {
+  // 数字索引（1-based）映射
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const idx = Math.trunc(value) - 1; // 1-based -> 0-based
+    const choice = answerChoices?.[idx];
+    return choice ? normalizeToBool(choice) : undefined;
+  }
+
+  // 直接布尔
+  if (typeof value === 'boolean') return value;
+
+  // 字符串归一化
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase();
+    // 常见英语/缩写
+    if (['true', 't', 'yes', 'y', '1'].includes(v)) return true;
+    if (['false', 'f', 'no', 'n', '0'].includes(v)) return false;
+
+    // 本地化（中/日/常见同义）
+    if (['正确', '对', '是', '真', '對', 'はい'].includes(value)) return true;
+    if (['错误', '错', '否', '假', '不对', 'いいえ'].includes(value)) return false;
+  }
+
+  return undefined;
+}
+
+// 归一化到 1-based 索引（单选题）
+function normalizeToOneBasedIndex(value: any): number | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (Array.isArray(value) && value.length > 0) return normalizeToOneBasedIndex(value[0]);
+  const n = Number(value);
+  if (!Number.isFinite(n)) return undefined;
+  const int = Math.trunc(n);
+  // 兼容 0-based/1-based：如果给了 0 视为 1；其他负值忽略
+  if (int <= 0) return int === 0 ? 1 : undefined;
+  return int;
 }
 
 async function freeTextMarking(assessment: FreeText, answer: any) {

@@ -20,7 +20,7 @@ export const handler: Handler = async (event) => {
   const userGroups = event.ctx.identity?.claims?.['cognito:groups'] || [];
   const isAdmin = adminGroups.some(group => userGroups.includes(group));
 
-  // 取消发布评估
+  // 取消发布测试
   const updateParams: any = {
     TableName: assessmentsTable,
     Key: { id: { S: assessmentId }, userId: { S: userId } },

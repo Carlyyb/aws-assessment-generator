@@ -56,19 +56,15 @@ export function getCurrentLang(): Lang {
 }
 
 import zhJson from './zh.json';
-import enJson from './en.json';
+//import enJson from './en.json';
 
-const langResources = {
-  [Lang.zh]: zhJson,
-  [Lang.en]: enJson,
-};
-
-export function getLangResource(lang: Lang){
-  return langResources[lang];
-}
+//const langResources = {
+//  [Lang.zh]: zhJson,
+//  [Lang.en]: enJson,
+//};
 
 export function getText(key: string): string {
-  const resource = langResources[currentLang];
+  const resource = zhJson;
   if (!resource) {
     console.warn(`Language resource not found for: ${currentLang}`);
     return key; // 返回key作为fallback

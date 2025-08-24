@@ -61,11 +61,11 @@ export const handler = async (
     
     switch (operation) {
       case 'transformAssessmentData':
-        // 单个评估数据转换
+        // 单个测试数据转换
         return transform(data);
         
       case 'transformStudentAssessmentData':
-        // 学生评估数据转换，特别处理 assessment 属性
+        // 学生测试数据转换，特别处理 assessment 属性
         const transformedResult = transform(data);
         if (transformedResult && transformedResult.assessment) {
           transformedResult.assessment = transform(transformedResult.assessment);
@@ -73,7 +73,7 @@ export const handler = async (
         return transformedResult;
         
       case 'transformAssessmentListData':
-        // 评估列表数据转换
+        // 测试列表数据转换
         if (!data.items) return data;
         const transformedItems = data.items.map((item: any) => transform(item));
         return { items: transformedItems };

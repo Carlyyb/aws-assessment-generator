@@ -8,6 +8,28 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ## 最新更新记录
 
+### 2025-08-23: 评分分数返回修复、日志记录与评审界面增强
+
+- 功能名称：成绩评分修复与审阅增强
+- 功能描述：
+  - 修复 gradeStudentAssessment 在判断题/单选题时返回分数为 null 的问题，确保始终返回百分制 `score`。
+  - 新增 CloudWatch 打分日志，单条日志内容为“学生姓名+时间戳+考试名+分数%”，便于检索。
+  - 审阅页新增解析区域展示：对错符号（√/×）、“你的答案”与“正确答案”。
+- 输入/输出：
+  - 输入：`StudentAssessmentInput`（不变）。
+  - 输出：`StudentAssessment`，其中 `score` 保障非空（按题型计算的百分比）。
+- 使用示例：
+  - 后端：`lib/lambdas/gradeAssessment.ts` 增加 `gradeTrueFalse`、`gradeSingleAnswer` 并统一返回 `{ score }`；日志示例：`student1003+2025-08-23T10:10:34.506Z+期末测试+80%`。
+  - 前端：`ui/src/pages/ReviewAssessment.tsx` 在解析区显示判题符号与答案对比；多选题判定逻辑与后端一致（只要选错则 0 分，必须全对才判正确）。
+- 依赖关系：前端 GraphQL 类型 `ui/src/graphql/API.ts`（已存在）；不涉及 schema 变更。
+- 已知问题与限制：
+  - 自由文本题“正确/错误”以阈值 0.7 判定，仅用于 UI 提示，不影响后端分数算法。
+  - CloudWatch 日志搜索可以直接用完整复合字符串或其中任意片段。
+- 版本控制：v1.10.0
+- 未来扩展：
+  - 在日志中追加 `parentAssessId` 与 `userId`，支持更精细化检索；
+  - 审阅页支持查看每题得分与多选题部分得分细节。
+
 ### 2025-08-23: EditAssessments 无限刷新与 i18n 日志刷屏修复
 
 - 功能名称：编辑试卷页面无限刷新修复

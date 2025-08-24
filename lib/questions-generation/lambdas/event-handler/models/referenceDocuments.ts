@@ -26,7 +26,12 @@ export class ReferenceDocuments {
   static async fromRequest(generateAssessmentInput: GenerateAssessmentInput, userId: string) {
     const documents = generateAssessmentInput.locations || [];
     const assessmentTemplateId = generateAssessmentInput.assessTemplateId || undefined;
-    const {knowledgeBaseId} = await dataService.getExistingKnowledgeBase(generateAssessmentInput.courseId, userId);
+    const kbRecord = await dataService.getExistingKnowledgeBase(generateAssessmentInput.courseId, userId);
+    if (!kbRecord || !kbRecord.knowledgeBaseId) {
+      // 提前给出明确错误，而不是在解构时抛出类型错误
+      throw new Error('No knowledge base found for this course. Please create the course knowledge base before generating assessments.');
+    }
+    const { knowledgeBaseId } = kbRecord as { knowledgeBaseId: string };
     logger.info(`Using knowledgeBaseId: ${knowledgeBaseId}`);
 
     let documentsContent: string[] = [];

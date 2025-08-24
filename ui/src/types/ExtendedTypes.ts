@@ -21,35 +21,45 @@ export interface ExtendedStudentAssessment extends BaseStudentAssessment {
 }
 
 // 工具函数：为Assessment添加默认值
-export const addAssessmentDefaults = (assessment: BaseAssessment): ExtendedAssessment => {
-  const extended = assessment as any; // 临时解决方案，直到GraphQL类型重新生成
-  
+type AssessmentExtra = Partial<Pick<ExtendedAssessment,
+  'timeLimited' | 'timeLimit' | 'allowAnswerChange' | 'studentGroups' | 'courses' | 'attemptLimit' | 'scoreMethod'
+>>;
+
+export const addAssessmentDefaults = (
+  assessment?: BaseAssessment | null
+): ExtendedAssessment => {
+  // 允许 assessment 为空，返回带有安全默认值的扩展对象
+  const base = (assessment ?? ({} as BaseAssessment)) as BaseAssessment;
+  const extended = (assessment as unknown as (BaseAssessment & AssessmentExtra)) ?? ({} as AssessmentExtra);
+
   return {
-    ...assessment,
-    timeLimited: extended.timeLimited ?? false,
-    timeLimit: extended.timeLimit ?? 120,
-    allowAnswerChange: extended.allowAnswerChange ?? true,
-    studentGroups: extended.studentGroups ?? ['ALL'],
-    courses: extended.courses ?? [assessment.courseId],
-    attemptLimit: extended.attemptLimit ?? 1,
-    scoreMethod: extended.scoreMethod ?? 'highest'
-  };
+    ...(assessment ? base : ({} as BaseAssessment)),
+    timeLimited: extended?.timeLimited ?? false,
+    timeLimit: extended?.timeLimit ?? 120,
+    allowAnswerChange: extended?.allowAnswerChange ?? true,
+    studentGroups: extended?.studentGroups ?? ['ALL'],
+    courses: extended?.courses ?? (base?.courseId ? [base.courseId] : []),
+    attemptLimit: extended?.attemptLimit ?? 1,
+    scoreMethod: extended?.scoreMethod ?? 'highest'
+  } as ExtendedAssessment;
 };
 
 // 工具函数：为StudentAssessment添加默认值
+type StudentAssessmentExtra = Partial<{ attemptCount: number; duration: number; scores: number[] }>;
+
 export const addStudentAssessmentDefaults = (
-  studentAssessment: BaseStudentAssessment, 
-  assessment: ExtendedAssessment
+  studentAssessment: BaseStudentAssessment,
+  assessment?: ExtendedAssessment | null
 ): ExtendedStudentAssessment => {
-  const extended = studentAssessment as any; // 临时解决方案
-  const attemptCount = extended.attemptCount ?? 0;
-  const attemptLimit = assessment.attemptLimit ?? 1;
-  
+  const extended = (studentAssessment as unknown as (BaseStudentAssessment & StudentAssessmentExtra)) || {};
+  const attemptCount = extended?.attemptCount ?? 0;
+  const attemptLimit = assessment?.attemptLimit ?? 1;
+
   return {
     ...studentAssessment,
     attemptCount,
-    duration: extended.duration,
-    scores: extended.scores ?? [],
+    duration: extended?.duration,
+    scores: extended?.scores ?? [],
     remainingAttempts: attemptLimit === -1 ? -1 : Math.max(0, attemptLimit - attemptCount)
-  };
+  } as ExtendedStudentAssessment;
 };

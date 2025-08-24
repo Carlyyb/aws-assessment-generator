@@ -14,6 +14,7 @@ import {
   AppLayout,
   Alert,
   ProgressBar,
+  Checkbox,
 } from '@cloudscape-design/components';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
@@ -57,7 +58,7 @@ export default function StudentAssessment() {
 
   useEffect(() => {
     if (isPreviewMode) {
-      // 预览模式：直接获取评估数据
+      // 预览模式：直接获取测试数据
       const loadAssessmentData = async () => {
         try {
           const response = await client.graphql({ query: getAssessment, variables: { id: params.id! } });
@@ -74,7 +75,7 @@ export default function StudentAssessment() {
           //   setShowStartDialog(true); // 显示开始确认对话框
           // }
           
-          // 根据评估类型获取正确的问题数组
+          // 根据测试类型获取正确的问题数组
           let questionArray: (MultiChoice | FreeText | TrueFalse | SingleAnswer)[] = [];
           if (assessment?.assessType === AssessType.multiChoiceAssessment && assessment.multiChoiceAssessment) {
             questionArray = assessment.multiChoiceAssessment;
@@ -119,7 +120,7 @@ export default function StudentAssessment() {
           //   setShowStartDialog(true); // 显示开始确认对话框
           // }
           
-          // 根据评估类型获取正确的问题数组
+          // 根据测试类型获取正确的问题数组
           let questionArray: (MultiChoice | FreeText | TrueFalse | SingleAnswer)[] = [];
           if (studentAssessment.assessment?.assessType === AssessType.multiChoiceAssessment && studentAssessment.assessment.multiChoiceAssessment) {
             questionArray = studentAssessment.assessment.multiChoiceAssessment;
@@ -632,12 +633,12 @@ export default function StudentAssessment() {
               <div>您正在以教师身份预览学生测试体验。这是一个模拟环境，不会保存任何答题数据。</div>
             </Alert>
           ) : (
-            <div>请确认您已准备好开始评估。</div>
+            <div>请确认您已准备好开始测试。</div>
           )}
           
           {isTimeLimited && (
             <Alert type="info">
-              <strong>注意：</strong>此评估有时间限制，总时长为 {timeLimit} 分钟。一旦开始，计时器将开始倒计时，时间到期时会自动提交。
+              <strong>注意：</strong>此测试有时间限制，总时长为 {timeLimit} 分钟。一旦开始，计时器将开始倒计时，时间到期时会自动提交。
               {isPreviewMode && <div><em>（预览模式下，计时器正常工作但不保存数据）</em></div>}
             </Alert>
           )}
@@ -783,29 +784,30 @@ export default function StudentAssessment() {
                     <FormField label={getText('students.assessments.detail.choose_multiple_answers')}>
                       <SpaceBetween size="s">
                         {((questions[activeStepIndex] as MultiChoice).answerChoices || []).map((answerChoice, i) => {
-                          const currentAnswers = answers[activeStepIndex] ? answers[activeStepIndex].split(',') : [];
-                          const isSelected = currentAnswers.includes(i.toString());
-                          
+                          const currentAnswers = answers[activeStepIndex]
+                            ? answers[activeStepIndex].split(',').filter(a => a !== '')
+                            : [];
+                          const isChecked = currentAnswers.includes(i.toString());
+
                           return (
-                            <Tiles
+                            <Checkbox
                               key={`answer-${i}`}
-                              columns={1}
-                              value={isSelected ? "selected" : "unselected"}
-                              items={[
-                                { label: `${String.fromCharCode(65 + i)}: ${answerChoice}`, value: "selected" }
-                              ]}
-                              onChange={() => {
-                                const newAnswers = currentAnswers.filter(ans => ans !== i.toString());
-                                if (!isSelected) {
-                                  newAnswers.push(i.toString());
+                              checked={isChecked}
+                              onChange={({ detail }) => {
+                                const set = new Set(currentAnswers);
+                                if (detail.checked) {
+                                  set.add(i.toString());
+                                } else {
+                                  set.delete(i.toString());
                                 }
-                                newAnswers.sort();
-                                
+                                const updated = Array.from(set).sort().join(',');
                                 const newAnswersArray = [...answers];
-                                newAnswersArray[activeStepIndex] = newAnswers.join(',');
+                                newAnswersArray[activeStepIndex] = updated;
                                 setAnswers(newAnswersArray);
                               }}
-                            />
+                            >
+                              {`${String.fromCharCode(65 + i)}: ${answerChoice}`}
+                            </Checkbox>
                           );
                         })}
                       </SpaceBetween>
@@ -813,19 +815,33 @@ export default function StudentAssessment() {
                   ) : (
                     // 单选题和判断题处理
                     <FormField label={getText('students.assessments.detail.choose_answer')}>
-                      <Tiles
-                        columns={1}
-                        value={answers[activeStepIndex] || ''}
-                        items={((questions[activeStepIndex] as SingleAnswer | TrueFalse).answerChoices || []).map((answerChoice, i) => ({ 
-                          label: answerChoice, 
-                          value: i.toString() 
-                        }))}
-                        onChange={({ detail }) => {
-                          const newAnswers = [...answers];
-                          newAnswers[activeStepIndex] = detail.value;
-                          setAnswers(newAnswers);
-                        }}
-                      />
+                      <SpaceBetween size="xs">
+                        <Tiles
+                          columns={1}
+                          value={answers[activeStepIndex] || ''}
+                          items={((questions[activeStepIndex] as SingleAnswer | TrueFalse).answerChoices || []).map((answerChoice, i) => ({ 
+                            label: answerChoice, 
+                            value: i.toString() 
+                          }))}
+                          onChange={({ detail }) => {
+                            const newAnswers = [...answers];
+                            newAnswers[activeStepIndex] = detail.value;
+                            setAnswers(newAnswers);
+                          }}
+                        />
+                        <div>
+                          <Button
+                            variant="link"
+                            onClick={() => {
+                              const newAnswers = [...answers];
+                              newAnswers[activeStepIndex] = '';
+                              setAnswers(newAnswers);
+                            }}
+                          >
+                            清除选择
+                          </Button>
+                        </div>
+                      </SpaceBetween>
                     </FormField>
                   )}
                 </Container>

@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useContext } from 'react';
 import { Container, SpaceBetween, Button, Form, FormField, Box, Input, Select, SelectProps } from '@cloudscape-design/components';
 import { generateClient } from 'aws-amplify/api';
@@ -11,7 +13,10 @@ import { getText } from '../i18n/lang';
 const client = generateClient();
 
 const langs = Object.values(Lang).map(optionise);
-const assessTypes = getAssessTypeOptions();
+// 仅在模板创建页中展示允许的题型，移除 freeText 与 multiChoice
+const assessTypes = getAssessTypeOptions().filter(
+  (opt) => opt.value !== AssessType.freeTextAssessment && opt.value !== AssessType.multiChoiceAssessment
+);
 const taxonomies = getTaxonomyOptions();
 
 type CreateTemplateProps = {

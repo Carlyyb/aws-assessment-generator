@@ -614,7 +614,7 @@ export class DataStack extends NestedStack {
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
-    // 创建 listAllAssessments 解析器 - 管理员查看所有评估
+    // 创建 listAllAssessments 解析器 - 管理员查看所有测试
     assessmentsDs.createResolver('QueryListAllAssessmentsResolver', {
       typeName: 'Query',
       fieldName: 'listAllAssessments',
@@ -664,6 +664,14 @@ export class DataStack extends NestedStack {
       typeName: 'Query',
       fieldName: 'listStudentAssessments',
       code: aws_appsync.Code.fromAsset('lib/resolvers/listStudentAssessments.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
+    });
+
+    // 按 parentAssessId 查询所有学生作答结果（基于 GSI）
+    studentAssessmentsDs.createResolver('QueryListStudentAssessmentsByParentAssessIdResolver', {
+      typeName: 'Query',
+      fieldName: 'listStudentAssessmentsByParentAssessId',
+      code: aws_appsync.Code.fromAsset('lib/resolvers/listStudentAssessmentsByParentAssessId.ts'),
       runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
@@ -849,7 +857,7 @@ export class DataStack extends NestedStack {
 
     /////////// Delete Assessment Lambda Function
 
-    // 创建删除评估的 Lambda 函数
+    // 创建删除测试的 Lambda 函数
     const deleteAssessmentLambda = new NodejsFunction(this, 'DeleteAssessmentLambda', {
       entry: path.join(__dirname, 'lambda', 'deleteAssessmentHandler.ts'),
       handler: 'handler',

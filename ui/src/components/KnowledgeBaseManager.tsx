@@ -79,7 +79,7 @@ export default function KnowledgeBaseManager({
   const [uploadedFiles, setUploadedFiles] = useState<FileItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [ingestionJobs, setIngestionJobs] = useState<IngestionJob[]>([]);
+  const [ingestionJobs] = useState<IngestionJob[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<string>('');
   
@@ -115,7 +115,10 @@ export default function KnowledgeBaseManager({
       try {
         addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.checking_status').replace('{attempt}', (attempts + 1).toString()));
         
-        const response = await client.graphql<any>({
+        const response = await client.graphql<{
+          data?: { getIngestionJob?: { ingestionJobId: string; knowledgeBaseId: string; dataSourceId: string; status: string } };
+          errors?: Array<{ message: string }>;
+        }>({
           query: getIngestionJob,
           variables: { 
             input: { 
@@ -127,12 +130,12 @@ export default function KnowledgeBaseManager({
         });
         
         // 检查响应是否有错误
-        if (response.errors) {
+        if ('errors' in response && response.errors && response.errors.length) {
           console.error('GraphQL errors:', response.errors);
           throw new Error(response.errors[0]?.message || 'Unknown GraphQL error');
         }
         
-        const job = response.data?.getIngestionJob;
+        const job = ('data' in response) ? response.data?.getIngestionJob : undefined;
         if (!job) {
           throw new Error('无法获取知识库处理任务状态');
         }
@@ -226,7 +229,10 @@ export default function KnowledgeBaseManager({
       addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.calling_api'));
       addCreateLog(`调用参数: courseId=${courseId}, locations=${fileData.map(({ key }) => key).join(', ')}`);
 
-      const response = await client.graphql<any>({
+      const response = await client.graphql<{
+        data?: { createKnowledgeBase?: { ingestionJobId?: string; knowledgeBaseId?: string; dataSourceId?: string } };
+        errors?: Array<{ message: string }>;
+      }>({
         query: createKnowledgeBase,
         variables: {
           courseId: courseId,
@@ -235,12 +241,12 @@ export default function KnowledgeBaseManager({
       });
 
       // 检查响应是否有错误
-      if ((response as any).errors) {
-        console.error('GraphQL errors:', (response as any).errors);
-        throw new Error((response as any).errors[0]?.message || 'Unknown GraphQL error');
+      if ('errors' in response && response.errors && response.errors.length) {
+        console.error('GraphQL errors:', response.errors);
+        throw new Error(response.errors[0]?.message || 'Unknown GraphQL error');
       }
 
-      const result = response.data?.createKnowledgeBase;
+      const result = ('data' in response) ? response.data?.createKnowledgeBase : undefined;
       
       // 检查结果是否为空或缺少必要字段
       if (!result) {
@@ -286,8 +292,8 @@ export default function KnowledgeBaseManager({
         setIsCreating(false);
       }, 2000);
 
-    } catch (error: any) {
-      const errorMessage = error.message || getText('common.status.error');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : getText('common.status.error');
       addCreateLog(getText('teachers.settings.knowledge_base_manager.creation_process.creation_failed_error').replace('{error}', errorMessage));
       updateCreateStep(getText('teachers.settings.knowledge_base_manager.creation_process.kb_failed'), 0);
       
@@ -336,26 +342,18 @@ export default function KnowledgeBaseManager({
         setUploadedFiles([]);
       }
 
-      // 只有当知识库存在时才加载处理任务 - 内联实现
-      if (kb?.knowledgeBaseId) {
-        try {
-          const jobResponse = await client.graphql<{ data?: { getIngestionJob?: { status?: string; id?: string } } }>({
-            query: getIngestionJob,
-            variables: {
-              input: {
-                knowledgeBaseId: kb.knowledgeBaseId,
-                dataSourceId: kb.kbDataSourceId
-              }
-            }
-          });
-          
-          const job = ('data' in jobResponse) ? jobResponse.data?.getIngestionJob : null;
-          if (job) {
-            setIngestionJobs([job]);
-          }
-        } catch (error) {
-          console.error('Error loading ingestion jobs:', error);
-        }
+      // 只有当知识库存在且持有 ingestionJobId 时才加载处理任务
+      // 注意：getIngestionJob 需要 ingestionJobId、knowledgeBaseId、dataSourceId 三个必填字段
+      // 当前后端未保存最近一次的 ingestionJobId，因此此处跳过以避免 GraphQL 传入空 ID 导致报错
+      if (kb?.knowledgeBaseId && kb?.kbDataSourceId) {
+        console.log('Knowledge base loaded, skipping getIngestionJob because ingestionJobId is unknown');
+        // 如果未来在 KB 记录里增加了最近一次 ingestionJobId 字段，可在此恢复查询：
+        // const jobResponse = await client.graphql({
+        //   query: getIngestionJob,
+        //   variables: { input: { knowledgeBaseId: kb.knowledgeBaseId, dataSourceId: kb.kbDataSourceId, ingestionJobId: kb.latestIngestionJobId } }
+        // });
+        // const job = ('data' in jobResponse) ? jobResponse.data?.getIngestionJob : null;
+        // if (job) setIngestionJobs([job]);
       }
     } catch (error) {
       console.error('Error loading knowledge base:', error);

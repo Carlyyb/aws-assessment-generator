@@ -48,7 +48,7 @@ export default function CourseDashboard({
       });
       const courses = coursesResponse.data?.listCourses || [];
 
-      // 加载所有评估
+      // 加载所有测试
       const assessmentsResponse = await client.graphql<any>({
         query: listAssessments
       });
@@ -77,7 +77,7 @@ export default function CourseDashboard({
           knowledgeBaseStatus = 'missing';
         }
 
-        // 计算评估数量
+        // 计算测试数量
         const courseAssessments = assessments.filter((assessment: any) => 
           assessment.courseId === course.id
         );

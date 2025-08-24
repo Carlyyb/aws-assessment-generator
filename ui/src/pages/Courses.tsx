@@ -295,7 +295,7 @@ const CoursesPage = () => {
             <ul>
               <li>删除课程及其所有相关数据</li>
               <li>删除关联的知识库（如果存在）</li>
-              <li>删除所有相关的测试和评估</li>
+              <li>删除所有相关的测试和测试</li>
             </ul>
             <br />
             <strong>此操作不可撤销！</strong>

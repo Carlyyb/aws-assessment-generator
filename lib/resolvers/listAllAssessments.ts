@@ -4,11 +4,26 @@
 import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
+  // 读取用户组（兼容两种位置）
+  const groups = Array.isArray(ctx.identity?.groups)
+    ? ctx.identity.groups
+    : (Array.isArray(ctx.identity?.claims?.['cognito:groups']) ? ctx.identity.claims['cognito:groups'] : []);
 
-  // 管理员可以查看所有评估，不需要用户过滤
+  const isAdmin = groups.includes('admin') || groups.includes('super_admin');
+
+  // 管理员可以查看所有测试；非管理员仅能查看自己的测试（兜底安全）
+  if (isAdmin) {
+    return {
+      operation: 'Scan',
+    };
+  }
+
   return {
     operation: 'Scan',
-    // 不添加任何过滤器，扫描所有记录
+    filter: {
+      expression: 'userId = :userId',
+      expressionValues: util.dynamodb.toMapValues({ ':userId': ctx.identity?.sub }),
+    },
   };
 }
 
