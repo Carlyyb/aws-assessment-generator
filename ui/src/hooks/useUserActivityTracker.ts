@@ -1,8 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { generateClient } from 'aws-amplify/api';
 import { updateUserActivityMutation } from '../graphql/mutations';
-import { useAuthenticator } from '@aws-amplify/ui-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
+import { AuthUser } from 'aws-amplify/auth';
 
 const client = generateClient();
 
@@ -10,8 +10,7 @@ const client = generateClient();
  * 用户活跃度跟踪 Hook
  * 每5分钟更新一次用户的最后活跃时间
  */
-export const useUserActivityTracker = () => {
-  const { user } = useAuthenticator();
+export const useUserActivityTracker = (user?: AuthUser) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isActiveRef = useRef(true);
 

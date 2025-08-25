@@ -12,15 +12,15 @@ import '@cloudscape-design/global-styles/index.css';
 import './styles/high-contrast.css';
 import './styles/cross-browser.css';
 import './styles/theme.css';
+import './styles/top-navigation.css';
 import { I18nProvider } from '@cloudscape-design/components/i18n';
 import messages from '@cloudscape-design/components/i18n/messages/all.en';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import type { WithAuthenticatorProps } from '@aws-amplify/ui-react';
-import { withAuthenticator } from '@aws-amplify/ui-react';
+import { AuthUser } from 'aws-amplify/auth';
 import { routes as routesList } from './routes';
 import PasswordReset from './pages/PasswordReset';
 import { getText } from './i18n/lang';
-import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { ThemeButton } from './components/ThemeButton';
 import { AlertType, DispatchAlertContext } from './contexts/alerts';
 import { UserProfile, UserProfileContext } from './contexts/userProfile';
@@ -36,15 +36,17 @@ import { getAdminLevelDisplayName } from './utils/adminDisplayUtils';
 import { AuthMonitor } from './components/AuthMonitor';
 import PasswordChangeMonitor from './components/PasswordChangeMonitor';
 import { useUserActivityTracker } from './hooks/useUserActivityTracker';
+import AppWithAuth from './AppWithAuth';
 
 const LOCALE = 'zh';
 
 interface AppContentProps {
   userProfile: UserProfile;
+  user?: AuthUser; // 修复类型
   signOut?: () => void;
 }
 
-function AppContent({ userProfile, signOut }: AppContentProps) {
+function AppContent({ userProfile, user, signOut }: AppContentProps) {
   const [alerts, setAlerts] = useState<FlashbarProps.MessageDefinition[]>([]);
   const [activeHref, setActiveHref] = useState(window.location.pathname);
   const { currentTheme, globalLogo } = useTheme();
@@ -52,7 +54,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
   const { getOverride } = useBreadcrumb();
   
   // 启用用户活跃度跟踪
-  useUserActivityTracker();
+  useUserActivityTracker(user);
 
   // 检查路由是否有效
   const isValidRoute = (pathname: string): boolean => {
@@ -186,7 +188,12 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
                 data-theme={currentTheme.id}
                 className="cloudscape-modern-theme"
               >
-                <div id="h" style={{ position: 'relative' }}>
+                <div id="h" style={{ 
+                  position: 'relative',
+                  zIndex: 1000,
+                  backgroundColor: 'var(--color-background-top-navigation, #232f3e)',
+                  borderBottom: '1px solid var(--color-border-divider-default, #e9ebed)'
+                }} className="top-navigation-black-text">
                   <TopNavigation
                     identity={{
                       href: '#',
@@ -361,62 +368,11 @@ export function App({ signOut, user }: WithAuthenticatorProps) {
     <ThemeProvider userProfile={userProfile}>
       <BreadcrumbProvider>
         <ErrorBoundary>
-          <AppContent userProfile={userProfile} signOut={signOut} />
+          <AppContent userProfile={userProfile} user={user} signOut={signOut} />
         </ErrorBoundary>
       </BreadcrumbProvider>
     </ThemeProvider>
   );
 }
 
-const AuthenticatedApp = withAuthenticator(App, {
-  // 移除自注册功能
-  hideSignUp: true,
-  // 移除自注册属性配置
-  formFields: {
-    signIn: {
-      username: {
-        placeholder: '用户名或邮箱',
-        label: '用户名:',
-        isRequired: true
-      },
-      password: {
-        placeholder: '密码',
-        label: '密码:',
-        isRequired: true
-      }
-    }
-  },
-  components: {
-    Header: function AuthHeader() {
-      return (
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-          <h1 style={{ color: '#0833b3ff', margin: 0 }}>Gen Assess</h1>
-          <p style={{ color: '#024cd7e6', margin: '10px 0 0 0' }}>智能测试系统 / Intelligent Assessment System</p>
-          <LanguageSwitcher />
-        </div>
-      );
-    },
-    SignIn: {
-      Footer: function SignInFooter() {
-        return (
-          <div style={{ textAlign: 'center', marginTop: '20px', color: '#666' }}>
-            <p>请使用管理员分配的账号登录</p>
-            <p>如需账号请联系系统管理员</p>
-            <p>
-              <a 
-                href="/reset-password" 
-                style={{ color: '#0972d3', textDecoration: 'none' }}
-                onMouseOver={(e) => (e.target as HTMLElement).style.textDecoration = 'underline'}
-                onMouseOut={(e) => (e.target as HTMLElement).style.textDecoration = 'none'}
-              >
-                忘记密码？
-              </a>
-            </p>
-          </div>
-        );
-      }
-    }
-  }
-});
-
-export default AuthenticatedApp;
+export default AppWithAuth;

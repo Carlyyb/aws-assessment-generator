@@ -1,0 +1,256 @@
+/* 自定义登录界面样式 */
+.custom-login-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); /* 改为深蓝色渐变 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 全局覆盖，确保登录页面时整个页面背景为深蓝色 */
+body:has(.custom-login-container),
+html:has(.custom-login-container) {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
+}
+
+/* 覆盖AWS UI的黑色背景为深蓝色 */
+.awsui_background_5gtk3_zqqpf_159.awsui_has-default-background_5gtk3_zqqpf_204.awsui-context-content-header,
+.awsui_background_5gtk3_zqqpf_159,
+.awsui_has-default-background_5gtk3_zqqpf_204,
+.awsui-context-content-header,
+[class*="awsui_background"],
+[class*="awsui_has-default-background"] {
+  background-color: #1e3a8a !important; /* 深蓝色 */
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
+}
+
+/* 确保内容区域也使用深蓝色背景 */
+.custom-login-container * {
+  --color-background-layout-main: #1e3a8a;
+  --color-background-container-content: transparent;
+}
+
+.custom-login-container::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: 
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translatey(0px);
+  }
+  50% {
+    transform: translatey(-20px);
+  }
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  max-width: 450px; /* 稍微减小宽度使其更好居中 */
+  width: 100%;
+  z-index: 1;
+  margin: 0 auto; /* 确保水平居中 */
+}
+
+.login-title {
+  background: linear-gradient(45deg, #0972d3, #3575c9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.login-subtitle {
+  color: #5f6368;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 14px;
+}
+
+.login-form-field {
+  margin-bottom: 1rem;
+}
+
+.login-button {
+  width: 100%;
+  margin-top: 1rem;
+  background: linear-gradient(45deg, #0972d3, #3575c9);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-button:hover {
+  background: linear-gradient(45deg, #085bb3, #2f5fa9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(9, 114, 211, 0.3);
+}
+
+.login-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.system-features {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: rgba(9, 114, 211, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(9, 114, 211, 0.1);
+}
+
+.feature-item {
+  text-align: center;
+  padding: 8px;
+  transition: transform 0.2s ease;
+}
+
+.feature-item:hover {
+  transform: scale(1.05);
+}
+
+.feature-icon {
+  color: #0972d3;
+  margin-bottom: 4px;
+}
+
+.feature-text {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #5f6368;
+  font-weight: 500;
+}
+
+.language-switcher-container {
+  text-align: center;
+  margin-top: 1rem;
+  z-index: 2;
+  position: relative;
+}
+
+.forgot-password-link {
+  color: #0972d3;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+
+.forgot-password-link:hover {
+  color: #085bb3;
+  text-decoration: underline;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: #5f6368;
+  font-size: 14px;
+}
+
+.login-footer p {
+  margin: 8px 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .custom-login-container {
+    padding: 10px;
+  }
+  
+  .login-card {
+    padding: 1.5rem;
+    margin: 10px;
+  }
+  
+  .login-title {
+    font-size: 1.8rem;
+  }
+}
+
+/* 加载动画 */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 错误提示样式增强 */
+.error-alert {
+  margin-bottom: 1rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Logo 区域样式 */
+.logo-container {
+  text-align: center;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.logo-icon {
+  color: white;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.app-title {
+  color: white;
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.app-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  margin: 0.5rem 0 0 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}

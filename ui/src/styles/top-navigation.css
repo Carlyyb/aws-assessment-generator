@@ -1,0 +1,91 @@
+/* TopNavigation 用户菜单文本样式 */
+.top-navigation-black-text {
+  /* 使用CSS变量覆盖TopNavigation中的文本颜色 */
+  --color-text-button-normal-default: #000000;
+  --color-text-body-default: #000000;
+  --color-text-body-secondary: #000000;
+  
+  /* 修复TopNavigation和AppLayout重叠问题 */
+  position: relative;
+  z-index: 1000;
+  width: 100%;
+  background-color: var(--color-background-top-navigation, #232f3e);
+}
+
+/* 确保TopNavigation内容不会被覆盖 */
+.top-navigation-black-text > [data-testid="top-navigation"] {
+  position: relative;
+  z-index: 1001;
+}
+
+/* 为整个应用布局添加更好的层次结构 */
+.awsui-app-layout {
+  position: relative;
+  z-index: 1;
+}
+
+/* 确保内容区域正确显示 */
+.awsui-app-layout__content {
+  position: relative;
+  z-index: 1;
+  margin-top: 0 !important;
+}
+
+/* 防止侧边栏与顶部导航重叠 */
+.awsui-app-layout__navigation {
+  z-index: 999;
+}
+
+/* 修复可能的内容重叠 */
+.awsui-app-layout__content {
+  margin-top: 0 !important;
+}
+
+/* 特别处理无滚动条的页面，确保内容不被TopNavigation遮挡 */
+html:not([style*="overflow"]) body {
+  padding-top: 0;
+}
+
+/* 确保主体内容区域有正确的布局 */
+.awsui-app-layout__main {
+  position: relative;
+  z-index: 1;
+}
+
+/* 防止内容区域与顶部导航重叠 */
+.awsui-app-layout__content-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+/* 最强制性的覆盖 - 针对所有可能的文本元素 */
+.top-navigation-black-text * {
+  color: #000000 !important;
+}
+
+/* 但是保留图标的颜色 */
+.top-navigation-black-text [class*="icon"],
+.top-navigation-black-text svg {
+  color: inherit !important;
+  fill: currentColor !important;
+}
+
+/* 更具体的选择器来确保覆盖用户菜单的文本和描述 */
+.top-navigation-black-text [data-testid="top-navigation"] [class*="awsui_button-dropdown"] [class*="awsui_description"],
+.top-navigation-black-text [data-testid="top-navigation"] [class*="awsui_button-dropdown"] [class*="awsui_text"],
+.top-navigation-black-text [class*="awsui_button-dropdown"] [class*="awsui_description"],
+.top-navigation-black-text [class*="awsui_button-dropdown"] [class*="awsui_text"] {
+  color: #000000 !important;
+}
+
+/* 针对特定的TopNavigation组件内的按钮 */
+.top-navigation-black-text .awsui-top-navigation [class*="awsui_button-dropdown__description"],
+.top-navigation-black-text .awsui-top-navigation [class*="awsui_button__text"] {
+  color: #000000 !important;
+}
+
+/* 使用属性选择器进行更精确的匹配 */
+.top-navigation-black-text [role="button"] [class*="description"],
+.top-navigation-black-text [role="button"] span {
+  color: #000000 !important;
+}
