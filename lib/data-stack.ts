@@ -561,9 +561,9 @@ export class DataStack extends NestedStack {
     // DynamoDB权限
     kbTable.grantReadWriteData(deleteKnowledgeBaseFn);
 
-    const deleteKnowledgeBaseDs = api.addLambdaDataSource('DeleteKnowledgeBaseDs', deleteKnowledgeBaseFn);
+    const deleteKnowledgeBaseDs = api.addLambdaDataSource('DeleteNewKnowledgeBaseDs', deleteKnowledgeBaseFn);
 
-    deleteKnowledgeBaseDs.createResolver('DeleteKnowledgeBaseResolver', {
+    deleteKnowledgeBaseDs.createResolver('DeleteNewKnowledgeBaseResolver', {
       typeName: 'Mutation',
       fieldName: 'deleteKnowledgeBase',
       code: aws_appsync.Code.fromAsset('lib/resolvers/deleteKnowledgeBase.ts'),
@@ -1071,9 +1071,9 @@ export class DataStack extends NestedStack {
     });
 
     /////////// Create KnowledgeBase
-    const createKnowledgeBaseDs = api.addLambdaDataSource('CreateKnowledgeBaseDs', documentProcessorLambda);
+    const createKnowledgeBaseDs = api.addLambdaDataSource('CreateNewKnowledgeBaseDs', documentProcessorLambda);
 
-    createKnowledgeBaseDs.createResolver('CreateKnowledgeBaseResolver', {
+    createKnowledgeBaseDs.createResolver('CreateNewKnowledgeBaseResolver', {
       typeName: 'Mutation',
       fieldName: 'createKnowledgeBase',
       code: aws_appsync.Code.fromAsset('lib/resolvers/invokeLambda.ts'),

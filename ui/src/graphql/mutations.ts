@@ -276,9 +276,35 @@ export const createKnowledgeBase = /* GraphQL */ `
   }
 `;
 
+export const createNewKnowledgeBase = /* GraphQL */ `
+  mutation CreateNewKnowledgeBase($courseId: ID, $locations: [String]) {
+    createNewKnowledgeBase(courseId: $courseId, locations: $locations) {
+      ingestionJobId
+      knowledgeBaseId
+      dataSourceId
+      status
+    }
+  }
+`;
+
 export const deleteKnowledgeBase = /* GraphQL */ `
   mutation DeleteKnowledgeBase($courseId: ID!) {
     deleteKnowledgeBase(courseId: $courseId) {
+      success
+      message
+      details {
+        knowledgeBaseId
+        dataSourceId
+        s3prefix
+        courseId
+      }
+    }
+  }
+`;
+
+export const deleteNewKnowledgeBase = /* GraphQL */ `
+  mutation DeleteNewKnowledgeBase($courseId: ID!) {
+    deleteNewKnowledgeBase(courseId: $courseId) {
       success
       message
       details {
