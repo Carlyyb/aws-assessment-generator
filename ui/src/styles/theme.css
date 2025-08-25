@@ -284,23 +284,46 @@ button:not([class*="variant"]):not([class*="primary"]):not([class*="normal"]):no
   color: var(--primary-color) !important;
 }
 
-/* 主要按钮样式 */
+/* 主要按钮样式 - 默认状态为白底主题色文字 */
 .awsui-button-variant-primary,
 button[class*="awsui"][class*="primary"],
-[class*="awsui-button-variant-primary"] {
-  background-color: var(--primary-color) !important;
-  border-color: var(--primary-color) !important;
+[class*="awsui-button-variant-primary"],
+.awsui-button[data-variant="primary"],
+button[data-variant="primary"] {
+  background-color: #ffffff !important;
+  border: 2px solid var(--primary-color) !important;
   box-shadow: var(--shadow-small);
-  color: #ffffff !important;
+  color: var(--primary-color) !important;
+  font-weight: 500 !important;
 }
 
 .awsui-button-variant-primary:hover,
 button[class*="awsui"][class*="primary"]:hover,
-[class*="awsui-button-variant-primary"]:hover {
+[class*="awsui-button-variant-primary"]:hover,
+.awsui-button[data-variant="primary"]:hover,
+button[data-variant="primary"]:hover {
   background-color: var(--primary-hover) !important;
   border-color: var(--primary-hover) !important;
   transform: translateY(-1px);
   box-shadow: var(--shadow-medium);
+  color: #ffffff !important;
+}
+
+.awsui-button-variant-primary:active,
+.awsui-button-variant-primary:focus,
+button[class*="awsui"][class*="primary"]:active,
+button[class*="awsui"][class*="primary"]:focus,
+[class*="awsui-button-variant-primary"]:active,
+[class*="awsui-button-variant-primary"]:focus,
+.awsui-button[data-variant="primary"]:active,
+.awsui-button[data-variant="primary"]:focus,
+button[data-variant="primary"]:active,
+button[data-variant="primary"]:focus {
+  background-color: var(--primary-active) !important;
+  border-color: var(--primary-active) !important;
+  color: #ffffff !important;
+  transform: translateY(0);
+  box-shadow: var(--shadow-small);
 }
 
 /* 次要按钮样式 */
@@ -316,10 +339,10 @@ button[class*="secondary"] {
   color: var(--secondary-color) !important;
 }
 
-/* 强制所有按钮都有可见的文字颜色 */
-.awsui-button,
-button[class*="awsui"],
-[class*="awsui-button"] {
+/* 仅对非primary按钮强制可见的文字颜色 */
+.awsui-button:not([class*="primary"]):not([data-variant="primary"]),
+button[class*="awsui"]:not([class*="primary"]):not([data-variant="primary"]),
+[class*="awsui-button"]:not([class*="primary"]):not([data-variant="primary"]) {
   color: var(--text-primary) !important;
 }
 
@@ -527,13 +550,15 @@ input[class*="awsui"]:focus,
 }
 
 .awsui-button.awsui-button-variant-primary {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
+  background-color: #ffffff !important;
+  border: 2px solid var(--primary-color) !important;
+  color: var(--primary-color) !important;
 }
 
 .awsui-button.awsui-button-variant-primary:hover {
-  background-color: var(--secondary-color);
-  border-color: var(--secondary-color);
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  color: #ffffff !important;
 }
 
 /* 主题按钮样式 */
@@ -1366,18 +1391,54 @@ button,
 }
 
 /* 特殊修复：确保没有白色文字在白色背景上 */
-button:not([class*="primary"]):not([style*="background"]),
-.awsui-button:not([class*="primary"]):not([style*="background"]) {
+button:not([class*="primary"]):not([style*="background"]):not([data-variant="primary"]),
+.awsui-button:not([class*="primary"]):not([style*="background"]):not([data-variant="primary"]) {
   color: var(--text-primary) !important;
   background-color: var(--elevated-surface) !important;
   border: 1px solid var(--border-color) !important;
 }
 
-button:not([class*="primary"]):hover,
-.awsui-button:not([class*="primary"]):hover {
+button:not([class*="primary"]):hover:not([data-variant="primary"]),
+.awsui-button:not([class*="primary"]):hover:not([data-variant="primary"]) {
   background-color: var(--surface-color) !important;
   border-color: var(--primary-color) !important;
   color: var(--primary-color) !important;
+}
+
+/* === PRIMARY按钮专用强制样式 - 最高优先级 === */
+/* 这些规则使用最高特异性来确保primary按钮始终正确显示 */
+button.awsui-button[data-variant="primary"],
+.awsui-button.awsui-button-variant-primary,
+button[class*="awsui"][class*="primary"].awsui-button,
+[class*="awsui-button-variant-primary"].awsui-button,
+.awsui-button[data-variant="primary"].awsui-button {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+button.awsui-button[data-variant="primary"]:hover,
+.awsui-button.awsui-button-variant-primary:hover,
+button[class*="awsui"][class*="primary"].awsui-button:hover,
+[class*="awsui-button-variant-primary"].awsui-button:hover,
+.awsui-button[data-variant="primary"].awsui-button:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  color: #ffffff !important;
+}
+
+button.awsui-button[data-variant="primary"]:active,
+button.awsui-button[data-variant="primary"]:focus,
+.awsui-button.awsui-button-variant-primary:active,
+.awsui-button.awsui-button-variant-primary:focus,
+button[class*="awsui"][class*="primary"].awsui-button:active,
+button[class*="awsui"][class*="primary"].awsui-button:focus,
+[class*="awsui-button-variant-primary"].awsui-button:active,
+[class*="awsui-button-variant-primary"].awsui-button:focus {
+  background-color: var(--primary-active) !important;
+  border-color: var(--primary-active) !important;
+  color: #ffffff !important;
 }
 
 /* 确保主题色RGB变量可用 */
@@ -1571,4 +1632,134 @@ button:not([class*="primary"]):hover,
   [class*="awsui-side-navigation-header"] {
     padding: 12px !important;
   }
+}
+
+/* === 终极PRIMARY按钮修复 - 最高优先级 === */
+/* 使用极高特异性来确保primary按钮默认为白底主题色文字，hover时变为蓝底白字 */
+html body .awsui-app-layout .awsui-button[data-variant="primary"],
+html body .awsui-app-layout button[data-variant="primary"],
+html body .awsui-app-layout .awsui-button-variant-primary,
+html body .awsui-app-layout button[class*="primary"],
+html body [class*="awsui"] .awsui-button[data-variant="primary"],
+html body [class*="awsui"] button[data-variant="primary"],
+html body [class*="awsui"] .awsui-button-variant-primary,
+html body [class*="awsui"] button[class*="primary"] {
+  background-color: #ffffff !important;
+  border: 2px solid var(--primary-color) !important;
+  color: var(--primary-color) !important;
+  font-weight: 500 !important;
+}
+
+html body .awsui-app-layout .awsui-button[data-variant="primary"]:hover,
+html body .awsui-app-layout button[data-variant="primary"]:hover,
+html body .awsui-app-layout .awsui-button-variant-primary:hover,
+html body .awsui-app-layout button[class*="primary"]:hover,
+html body [class*="awsui"] .awsui-button[data-variant="primary"]:hover,
+html body [class*="awsui"] button[data-variant="primary"]:hover,
+html body [class*="awsui"] .awsui-button-variant-primary:hover,
+html body [class*="awsui"] button[class*="primary"]:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+html body .awsui-app-layout .awsui-button[data-variant="primary"]:active,
+html body .awsui-app-layout .awsui-button[data-variant="primary"]:focus,
+html body .awsui-app-layout button[data-variant="primary"]:active,
+html body .awsui-app-layout button[data-variant="primary"]:focus,
+html body .awsui-app-layout .awsui-button-variant-primary:active,
+html body .awsui-app-layout .awsui-button-variant-primary:focus,
+html body .awsui-app-layout button[class*="primary"]:active,
+html body .awsui-app-layout button[class*="primary"]:focus,
+html body [class*="awsui"] .awsui-button[data-variant="primary"]:active,
+html body [class*="awsui"] .awsui-button[data-variant="primary"]:focus,
+html body [class*="awsui"] button[data-variant="primary"]:active,
+html body [class*="awsui"] button[data-variant="primary"]:focus,
+html body [class*="awsui"] .awsui-button-variant-primary:active,
+html body [class*="awsui"] .awsui-button-variant-primary:focus,
+html body [class*="awsui"] button[class*="primary"]:active,
+html body [class*="awsui"] button[class*="primary"]:focus {
+  background-color: var(--primary-active) !important;
+  border-color: var(--primary-active) !important;
+  color: #ffffff !important;
+  transform: translateY(0);
+  box-shadow: var(--shadow-small);
+}
+
+/* 确保自定义主题的primary按钮也正确显示 - 默认状态为白底主题色文字 */
+[data-theme] .awsui-button[data-variant="primary"],
+[data-theme] button[data-variant="primary"],
+[data-theme] .awsui-button-variant-primary,
+[data-theme] button[class*="primary"],
+[style*="--primary-color"] .awsui-button[data-variant="primary"],
+[style*="--primary-color"] button[data-variant="primary"],
+[style*="--primary-color"] .awsui-button-variant-primary,
+[style*="--primary-color"] button[class*="primary"] {
+  background-color: #ffffff !important;
+  border: 2px solid var(--primary-color) !important;
+  color: var(--primary-color) !important;
+  font-weight: 500 !important;
+}
+
+[data-theme] .awsui-button[data-variant="primary"]:hover,
+[data-theme] button[data-variant="primary"]:hover,
+[data-theme] .awsui-button-variant-primary:hover,
+[data-theme] button[class*="primary"]:hover,
+[style*="--primary-color"] .awsui-button[data-variant="primary"]:hover,
+[style*="--primary-color"] button[data-variant="primary"]:hover,
+[style*="--primary-color"] .awsui-button-variant-primary:hover,
+[style*="--primary-color"] button[class*="primary"]:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  color: #ffffff !important;
+}
+
+/* 表格操作按钮区域优化 - 确保按钮水平排列 */
+.awsui-table [class*="cell"] div[style*="display: flex"] {
+  min-width: max-content !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  flex-wrap: nowrap !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+/* 表格操作按钮水平滚动条样式 */
+.awsui-table [class*="cell"] div[style*="display: flex"]::-webkit-scrollbar {
+  height: 4px;
+}
+
+.awsui-table [class*="cell"] div[style*="display: flex"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.awsui-table [class*="cell"] div[style*="display: flex"]::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.awsui-table [class*="cell"] div[style*="display: flex"]::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* 表格操作按钮容器最小宽度 */
+.awsui-table [class*="cell"]:last-child {
+  min-width: 280px;
+  width: auto;
+}
+
+/* 表格操作按钮尺寸优化 */
+.awsui-table .awsui-button {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  min-width: auto !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+/* 表格操作按钮图标间距优化 */
+.awsui-table .awsui-button [class*="icon"] {
+  margin-right: 4px !important;
 }

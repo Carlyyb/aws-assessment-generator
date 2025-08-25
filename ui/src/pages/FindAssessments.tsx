@@ -504,10 +504,12 @@ const FindAssessmentsPage = () => {
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '8px',
+                          gap: '6px',
                           flexWrap: 'nowrap',
                           overflowX: 'auto',
-                          maxWidth: '100%'
+                          minWidth: 'max-content',
+                          whiteSpace: 'nowrap',
+                          paddingRight: '4px'
                         }}
                       >
                         {/* 对于失败状态的测试，只显示删除按钮和失败信息 */}
