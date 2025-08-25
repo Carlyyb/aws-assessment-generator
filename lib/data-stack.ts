@@ -171,7 +171,7 @@ export class DataStack extends NestedStack {
     // 创建用户管理 Lambda 函数
     const userManagementFunction = new NodejsFunction(this, 'UserManagementFunction', {
       entry: path.join(__dirname, 'lambdas', 'userManagement.ts'),
-      runtime: aws_lambda.Runtime.NODEJS_18_X,
+  runtime: aws_lambda.Runtime.NODEJS_20_X,
       timeout: Duration.seconds(30),
       memorySize: 512,
       environment: {
@@ -190,7 +190,7 @@ export class DataStack extends NestedStack {
     // 创建密码修改 Lambda 函数
     const changePasswordFunction = new NodejsFunction(this, 'ChangePasswordFunction', {
       entry: path.join(__dirname, 'resolvers', 'changePassword.ts'),
-      runtime: aws_lambda.Runtime.NODEJS_18_X,
+  runtime: aws_lambda.Runtime.NODEJS_20_X,
       timeout: Duration.seconds(30),
       memorySize: 256,
       environment: {
@@ -348,7 +348,7 @@ export class DataStack extends NestedStack {
     // 创建 getCurrentUser Lambda 函数
     const getCurrentUserFunction = new NodejsFunction(this, 'GetCurrentUserFunction', {
       entry: path.join(__dirname, 'lambdas', 'getCurrentUser.ts'),
-      runtime: aws_lambda.Runtime.NODEJS_18_X,
+  runtime: aws_lambda.Runtime.NODEJS_20_X,
       timeout: Duration.seconds(30),
       memorySize: 256,
       environment: {
@@ -390,7 +390,7 @@ export class DataStack extends NestedStack {
     // // 创建班级管理 Lambda 函数
     // const classManagementFunction = new NodejsFunction(this, 'ClassManagementFunction', {
     //   entry: path.join(__dirname, 'lambdas', 'classManagement.ts'),
-    //   runtime: aws_lambda.Runtime.NODEJS_18_X,
+    //   runtime: aws_lambda.Runtime.NODEJS_20_X,
     //   timeout: Duration.seconds(30),
     //   memorySize: 512,
     //   environment: {
@@ -790,7 +790,7 @@ export class DataStack extends NestedStack {
     // 创建新的提交学生测试Lambda函数，支持多次尝试
     const submitStudentAssessmentFunction = new NodejsFunction(this, 'SubmitStudentAssessmentFunction', {
       entry: path.join(__dirname, 'lambdas', 'submitStudentAssessment.ts'),
-      runtime: aws_lambda.Runtime.NODEJS_18_X,
+  runtime: aws_lambda.Runtime.NODEJS_20_X,
       timeout: Duration.seconds(30),
       memorySize: 512,
       environment: {
