@@ -53,6 +53,44 @@ const FindAssessmentsPage = () => {
   // 加载控制：防止循环加载
   const [loaded, setLoaded] = useState(false);
 
+  // 复制学生端测试URL的函数
+  const copyStudentAssessmentUrl = async (assessmentId: string, assessmentName: string) => {
+    try {
+      const baseUrl = window.location.origin;
+      const studentUrl = `${baseUrl}/assessments/${assessmentId}`;
+      
+      // 使用现代浏览器的 Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(studentUrl);
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: `已复制测试"${assessmentName}"的学生端访问链接到剪贴板`
+        });
+      } else {
+        // 降级到传统方法
+        const textArea = document.createElement('textarea');
+        textArea.value = studentUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        dispatchAlert({
+          type: AlertType.SUCCESS,
+          content: `已复制测试"${assessmentName}"的学生端访问链接到剪贴板`
+        });
+      }
+    } catch (error) {
+      console.error('复制URL失败:', error);
+      dispatchAlert({
+        type: AlertType.ERROR,
+        content: '复制链接失败，请手动复制浏览器地址栏中的链接'
+      });
+    }
+  };
+
   // 检查数据异常的辅助函数
   const checkDataIntegrity = (assessment: any): string | null => {
     try {
@@ -141,6 +179,7 @@ const FindAssessmentsPage = () => {
           type: AlertType.ERROR, 
           content: '获取测试列表时发生错误，请稍后重试' 
         });
+        setLoaded(true);
       })
       .finally(() => {
         // 一次加载完成，标记为已加载，防止循环触发
@@ -335,13 +374,6 @@ const FindAssessmentsPage = () => {
       getAssessments();
     }
   }, [adminLoading, loaded, getAssessments]);
-
-  // 当管理员权限状态变化（例如从普通到管理员）时，触发一次刷新
-  useEffect(() => {
-    if (!adminLoading && loaded) {
-      setLoaded(false);
-    }
-  }, [adminLoading, adminInfo?.isAdmin, loaded]);
 
   return (
     <>
@@ -570,6 +602,17 @@ const FindAssessmentsPage = () => {
                                     onClick={() => navigate(`/assessments/${item.id}?preview=true`)}
                                   >
                                     模拟测试
+                                  </Button>
+                                )}
+                                
+                                {/* 复制学生端URL按钮 - 对于已发布的测试 */}
+                                {!hasDataError && item.published && (
+                                  <Button
+                                    variant="normal"
+                                    iconName="copy"
+                                    onClick={() => copyStudentAssessmentUrl(item.id, item.name)}
+                                  >
+                                    复制链接
                                   </Button>
                                 )}
                                 

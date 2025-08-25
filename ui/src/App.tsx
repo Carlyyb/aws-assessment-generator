@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
   AppLayout,
+  Box,
   BreadcrumbGroup,
+  Button,
   Flashbar,
   FlashbarProps,
   HelpPanel,
   SideNavigation,
-  TopNavigation,
+  SpaceBetween,
 } from '@cloudscape-design/components';
 import '@cloudscape-design/global-styles/index.css';
 import './styles/high-contrast.css';
@@ -53,6 +55,7 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
   
   // 启用用户活跃度跟踪
   useUserActivityTracker();
+
 
   // 检查路由是否有效
   const isValidRoute = (pathname: string): boolean => {
@@ -154,19 +157,6 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
     return roleText + adminLevelText;
   };
 
-  // 构建用户描述文本
-  const getUserDescription = () => {
-    const baseDescription = `${getText('common.profile')}: ${getText(`common.role.${userProfile?.group}`)}`;
-    
-    // 只使用后端权限信息
-    if (adminInfo?.isAdmin) {
-      const adminLevel = getAdminLevelDisplayName(adminInfo.highestRole);
-      return `${baseDescription} | ${getText('common.admin.permission_level')}: ${adminLevel}`;
-    }
-    
-    return baseDescription;
-  };
-
   return (
     <DispatchAlertContext.Provider value={dispatchAlert}>
       <AuthMonitor>
@@ -187,29 +177,55 @@ function AppContent({ userProfile, signOut }: AppContentProps) {
                 className="cloudscape-modern-theme"
               >
                 <div id="h" style={{ position: 'relative' }}>
-                  <TopNavigation
-                    identity={{
-                      href: '#',
-                      title: getText('common.brand'),
-                      // 使用Cloudscape推荐的logo属性
-                      logo: globalLogo ? { 
-                        src: globalLogo, 
-                        alt: getText('common.brand') 
-                      } : undefined,
-                    }}
-                    utilities={[
-                      {
-                        type: 'menu-dropdown',
-                        text: getUserDisplayText(),
-                        description: getUserDescription(),
-                        iconName: 'user-profile',
-                        items: [{ id: 'signout', text: getText('common.action.sign_out') }],
-                        onItemClick: ({ detail }) => {
-                          if (detail.id === 'signout') signOut && signOut();
-                        },
-                      },
-                    ]}
-                  />
+                  {/* 自定义 Box h4 样式的顶部导航栏 */}
+                  <div style={{
+                    backgroundColor: 'var(--color-background-top-navigation)',
+                    color: 'var(--color-text-top-navigation-title)',
+                    padding: '12px 16px',
+                    borderRadius: '0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    minHeight: '48px'
+                  }}>
+                    <SpaceBetween direction="horizontal" size="m" alignItems="center">
+                      {/* Logo 和标题区域 */}
+                      {globalLogo ? (
+                        <img 
+                          src={globalLogo} 
+                          alt={getText('common.brand')} 
+                          style={{ 
+                            maxHeight: '32px', 
+                            maxWidth: '120px',
+                            objectFit: 'contain'
+                          }} 
+                        />
+                      ) : (
+                        <Box variant="h4" color="inherit">
+                          {getText('common.brand')}
+                        </Box>
+                      )}
+                    </SpaceBetween>
+                    
+                    {/* 用户菜单区域 */}
+                    <SpaceBetween direction="horizontal" size="s" alignItems="center">
+                      <div style={{ 
+                        color: 'var(--color-text-top-navigation-title)',
+                        fontSize: '14px'
+                      }}>
+                        {getUserDisplayText()}
+                      </div>
+                      <Button 
+                        variant="primary"
+                        iconName="external"
+                        ariaLabel="退出登录"
+                        onClick={() => signOut && signOut()}
+                        formAction="none"
+                      >
+                        退出
+                      </Button>
+                    </SpaceBetween>
+                  </div>
                 </div>
                 <AppLayout
                 headerSelector="#h"

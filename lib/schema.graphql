@@ -66,12 +66,14 @@ type Course {
   description: String
   createdBy: String
   createdAt: AWSDateTime
+  isPublic: Boolean
 }
 
 input CourseInput {
   id: ID
   name: String!
   description: String!
+  isPublic: Boolean
 }
 
 type Student {

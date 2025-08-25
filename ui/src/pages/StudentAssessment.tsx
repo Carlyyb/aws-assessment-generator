@@ -21,7 +21,7 @@ import { useParams } from 'react-router-dom';
 import { generateClient } from 'aws-amplify/api';
 import { MultiChoice, FreeText, TrueFalse, SingleAnswer, AssessType, type StudentAssessment } from '../graphql/API';
 import { getStudentAssessment, getAssessment } from '../graphql/queries';
-import { upsertStudentAssessment } from '../graphql/mutations';
+import { gradeStudentAssessment } from '../graphql/mutations';
 import { DispatchAlertContext, AlertType } from '../contexts/alerts';
 import { getText, getTextWithParams } from '../i18n/lang';
 import { addAssessmentDefaults, addStudentAssessmentDefaults } from '../types/ExtendedTypes';
@@ -65,6 +65,17 @@ export default function StudentAssessment() {
           const response = await client.graphql({ query: getAssessment, variables: { id: params.id! } });
           const data = (response as { data: { getAssessment: any } }).data;
           const assessment = data.getAssessment;
+          
+          // 添加空值检查
+          if (!assessment) {
+            throw new Error('测试不存在或已被删除');
+          }
+          
+          // 确保数据结构完整性
+          if (!assessment.assessType) {
+            throw new Error('测试数据不完整');
+          }
+          
           setAssessmentId(assessment.id);
           setAssessType(assessment.assessType);
           
@@ -84,7 +95,11 @@ export default function StudentAssessment() {
           } else if (assessment?.assessType === AssessType.freeTextAssessment && assessment.freeTextAssessment) {
             questionArray = assessment.freeTextAssessment;
           } else if (assessment?.assessType === AssessType.trueFalseAssessment && assessment.trueFalseAssessment) {
-            questionArray = assessment.trueFalseAssessment;
+            // 为 trueFalseAssessment 添加防护性检查
+            questionArray = assessment.trueFalseAssessment.map((q: TrueFalse) => ({
+              ...q,
+              answerChoices: q.answerChoices || ['True', 'False'] // 添加默认值
+            }));
           } else if (assessment?.assessType === AssessType.singleAnswerAssessment && assessment.singleAnswerAssessment) {
             questionArray = assessment.singleAnswerAssessment;
           }
@@ -108,8 +123,24 @@ export default function StudentAssessment() {
           const result = await client
             .graphql<{ getStudentAssessment: StudentAssessment }>({ query: getStudentAssessment, variables: { parentAssessId: params.id! } });
           
-          const data = (result as { data: any }).data;
-          const studentAssessment: StudentAssessment = data.getStudentAssessment;
+          const data = (result as { data: { getStudentAssessment: StudentAssessment | null } }).data;
+          const studentAssessment: StudentAssessment | null = data.getStudentAssessment;
+          
+          // 添加空值检查
+          if (!studentAssessment) {
+            throw new Error('无法加载测试数据，请稍后重试');
+          }
+          
+          // 检查assessment是否存在
+          if (!studentAssessment.assessment) {
+            throw new Error('测试信息不完整，请联系管理员检查测试配置');
+          }
+          
+          // 检查assessment的基本字段
+          if (!studentAssessment.assessment.assessType) {
+            throw new Error('测试类型未定义，请联系管理员');
+          }
+          
           const extendedStudentAssessment = addStudentAssessmentDefaults(studentAssessment);
           
           setAssessmentId(studentAssessment.parentAssessId);
@@ -139,21 +170,31 @@ export default function StudentAssessment() {
           } else if (studentAssessment.assessment?.assessType === AssessType.freeTextAssessment && studentAssessment.assessment.freeTextAssessment) {
             questionArray = studentAssessment.assessment.freeTextAssessment;
           } else if (studentAssessment.assessment?.assessType === AssessType.trueFalseAssessment && studentAssessment.assessment.trueFalseAssessment) {
-            questionArray = studentAssessment.assessment.trueFalseAssessment;
+            // 为 trueFalseAssessment 添加防护性检查
+            questionArray = studentAssessment.assessment.trueFalseAssessment.map((q: any) => ({
+              ...q,
+              answerChoices: q.answerChoices || ['True', 'False'] // 添加默认值
+            }));
           } else if (studentAssessment.assessment?.assessType === AssessType.singleAnswerAssessment && studentAssessment.assessment.singleAnswerAssessment) {
             questionArray = studentAssessment.assessment.singleAnswerAssessment;
           }
           
           setQuestions(questionArray);
           setAnswers(new Array(questionArray.length).fill(''));
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Error loading assessment:', error);
+          dispatchAlert({ 
+            type: AlertType.ERROR, 
+            content: `加载测试失败: ${error instanceof Error ? error.message : '未知错误'}` 
+          });
+          // 导航回测试列表页面
+          navigate('/assessments');
         }
       };
       
       loadStudentAssessment();
     }
-  }, [isPreviewMode, params.id, dispatchAlert]);
+  }, [isPreviewMode, params.id, dispatchAlert, navigate]);
 
   // 自动提交（时间到期）
   const handleAutoSubmit = useCallback(async () => {
@@ -188,8 +229,8 @@ export default function StudentAssessment() {
         const durationInMinutes = startTime ? Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)) : 0;
         
         const result = await client
-          .graphql<{ upsertStudentAssessment: StudentAssessment }>({
-            query: upsertStudentAssessment,
+          .graphql<{ gradeStudentAssessment: StudentAssessment }>({
+            query: gradeStudentAssessment,
             variables: {
               input: {
                 parentAssessId: params.id!,
@@ -202,7 +243,7 @@ export default function StudentAssessment() {
           });
           
         const data = (result as any).data;
-        const { score } = data.upsertStudentAssessment;
+        const { score } = data.gradeStudentAssessment;
         setScore(score);
         
         dispatchAlert({
@@ -320,8 +361,8 @@ export default function StudentAssessment() {
         const durationInMinutes = startTime ? Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)) : 0;
         
         const result = await client
-          .graphql<{ upsertStudentAssessment: StudentAssessment }>({
-            query: upsertStudentAssessment,
+          .graphql<{ gradeStudentAssessment: StudentAssessment }>({
+            query: gradeStudentAssessment,
             variables: {
               input: {
                 parentAssessId: params.id!,
@@ -334,7 +375,7 @@ export default function StudentAssessment() {
           });
           
         const data = (result as any).data;
-        const { score } = data.upsertStudentAssessment;
+        const { score } = data.gradeStudentAssessment;
         setScore(score);
         
         dispatchAlert({

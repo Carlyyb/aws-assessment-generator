@@ -8,6 +8,27 @@ AWS Assessment Generator 是一个基于 AWS 云服务的智能评估生成系�
 
 ## 最新更新记录
 
+### 2025-08-25: TopNavigation Utilities组件主题色适配
+
+- **功能名称**：修复TopNavigation utilities组件背景色适配问题
+- **问题描述**：TopNavigation的utilities组件（用户菜单区域）没有应用主题预览中导航栏的背景色
+- **解决方案**：
+  - 为utilities相关的CSS选择器添加 `background-color: var(--color-background-top-navigation)` 样式
+  - 修改以下CSS选择器确保完整覆盖：
+    - `[data-awsui-context="top-navigation"] [class*="utilities"]`
+    - `.awsui-top-navigation-utilities`，`[class*="awsui-top-navigation-utilities"]`
+    - `.awsui-top-navigation-utility`，`[class*="awsui-top-navigation-utility"]`
+    - `.awsui-top-navigation [class*="utility"]`等
+- **技术实现**：
+  - 使用主题变量 `var(--color-background-top-navigation)` 确保与主题预览一致
+  - 保持现有的文字颜色 `#ffffff` 确保对比度
+  - 通过 `!important` 确保样式优先级
+- **影响范围**：TopNavigation用户菜单区域的视觉效果
+- **文件变更**：
+  - 修改：`ui/src/styles/theme.css`
+- **构建状态**：✅ 样式修改无需重新编译
+- **版本控制**：2025-08-25 utilities主题色适配完成
+
 ### 2025-08-25: S3-based全局Logo管理系统
 
 - **功能名称**：实现基于AWS S3的全局Logo管理系统，解决多个logo同时加载的跳动问题

@@ -7,13 +7,19 @@
 
 import { AppSyncResolverEvent } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
 import { createTimestamp } from '../utils/timeUtils';
 
-// 客户端初始化
+// 客户端初始化 - 配置DynamoDB Document Client来处理undefined值
 const ddbClient = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(ddbClient);
+const docClient = DynamoDBDocumentClient.from(ddbClient, {
+  marshallOptions: {
+    removeUndefinedValues: true,  // 自动移除undefined值
+    convertEmptyValues: false,
+    convertClassInstanceToMap: false,
+  },
+});
 const ssmClient = new SSMClient({});
 
 /**
@@ -29,6 +35,33 @@ async function getSystemParameter(paramName: string): Promise<string> {
   } catch (error) {
     console.error(`获取系统参数 ${paramName} 失败:`, error);
     throw new Error(`无法获取系统参数: ${paramName}`);
+  }
+}
+
+/**
+ * 根据ID获取Assessment
+ */
+async function getAssessmentById(assessmentsTableName: string, assessmentId: string) {
+  try {
+    // 首先尝试使用GSI查询
+    const queryResult = await docClient.send(new QueryCommand({
+      TableName: assessmentsTableName,
+      IndexName: 'id-only',
+      KeyConditionExpression: 'id = :id',
+      ExpressionAttributeValues: {
+        ':id': assessmentId
+      },
+      Limit: 1
+    }));
+    
+    if (queryResult.Items && queryResult.Items.length > 0) {
+      return queryResult.Items[0];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('查询assessment失败:', error);
+    throw new Error(`无法获取测试信息: ${assessmentId}`);
   }
 }
 
@@ -74,19 +107,29 @@ export const handler = async (event: AppSyncResolverEvent<{
 
     const { parentAssessId, answers, score, completed, duration } = event.arguments.input;
 
+    // 输入验证
+    if (!parentAssessId) {
+      throw new Error('parentAssessId 不能为空');
+    }
+
+    if (!answers) {
+      throw new Error('answers 不能为空');
+    }
+
     // 获取表名
     const assessmentsTableName = await getSystemParameter('/assessment-app/table-names/assessments');
     const studentAssessmentsTableName = await getSystemParameter('/assessment-app/table-names/student-assessments');
 
-    // 获取测试配置
-    const assessmentResult = await docClient.send(new GetCommand({
-      TableName: assessmentsTableName,
-      Key: { id: parentAssessId }
-    }));
-
-    const assessment = assessmentResult.Item;
+    // 获取测试配置 - 使用新的查询函数
+    const assessment = await getAssessmentById(assessmentsTableName, parentAssessId);
+    
     if (!assessment) {
-      throw new Error('测试不存在');
+      throw new Error(`测试不存在: ${parentAssessId}`);
+    }
+
+    // 确保assessment有必要的字段
+    if (!assessment.assessType) {
+      throw new Error('测试类型不正确');
     }
 
     // 获取现有的学生测试记录
@@ -166,20 +209,27 @@ export const handler = async (event: AppSyncResolverEvent<{
     // 计算剩余次数
     const remainingAttempts = attemptLimit === -1 ? -1 : Math.max(0, attemptLimit - newAttemptCount);
 
-    // 构建更新的学生测试记录
-    const updatedStudentAssessment = {
+    // 构建更新的学生测试记录 - 确保所有字段都有有效值
+    const updatedStudentAssessment: any = {
       userId,
       parentAssessId,
-      answers, // 当前答案
-      completed: completed ?? true,
-      score: finalScore,
+      answers: answers || {}, // 确保answers不为undefined
+      completed: Boolean(completed ?? true), // 确保是布尔值
       updatedAt: now,
       attemptCount: newAttemptCount,
-      duration, // 最后一次的用时
-      scores: newScores,
-      remainingAttempts,
-      history: newHistory
+      scores: newScores || [], // 确保是数组
+      remainingAttempts: remainingAttempts,
+      history: newHistory || [] // 确保是数组
     };
+
+    // 只添加非undefined/null的可选字段
+    if (finalScore !== undefined && finalScore !== null) {
+      updatedStudentAssessment.score = finalScore;
+    }
+    
+    if (duration !== undefined && duration !== null) {
+      updatedStudentAssessment.duration = duration;
+    }
 
     // 保存到数据库
     await docClient.send(new PutCommand({

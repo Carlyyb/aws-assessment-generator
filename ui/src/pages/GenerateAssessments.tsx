@@ -205,7 +205,7 @@ export default () => {
             updateStep('✅ 测试生成完成！正在跳转到编辑页面...', 100);
             setIsGenerating(false);
             setFailureCount(0); // 重置失败计数
-            dispatchAlert({ type: AlertType.SUCCESS, content: getText('pages.generate_assessments.generate_success') });
+            dispatchAlert({ type: AlertType.SUCCESS, content: getText('teachers.assessments.generate.generate_success') });
             // 立即关闭模态窗口并跳转到编辑页面
             setAssessId('');
             setLogs([]);
@@ -227,9 +227,7 @@ export default () => {
             // 提供详细的错误信息和建议 - 改进错误消息
             const errorMessage = '测试生成失败。可能的原因包括：\n\n' +
               '1. 📄 文档处理问题：\n' +
-              '   • 上传的文件格式不支持或损坏\n' +
               '   • 文档内容无法提取或过于简短\n' +
-              '   • 文档语言与系统设置不匹配\n\n' +
               '2. 🧠 知识库问题：\n' +
               '   • 知识库中缺少足够的内容\n' +
               '   • 文档索引尚未完成处理\n' +

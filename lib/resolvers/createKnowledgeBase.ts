@@ -4,12 +4,7 @@
 import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
-  const { courseId } = ctx.args;
   const userGroups = ctx.identity.groups || [];
-  
-  if (!courseId) {
-    util.error('CourseId is required', 'BadRequest');
-  }
   
   // 权限检查：确保用户是教师或管理员
   const hasPermission = userGroups.includes('teachers') || 
@@ -17,16 +12,12 @@ export function request(ctx) {
                        userGroups.includes('super_admin');
   
   if (!hasPermission) {
-    util.error('You do not have permission to delete knowledge bases', 'Unauthorized');
+    util.error('You do not have permission to create knowledge bases', 'Unauthorized');
   }
   
   return {
     operation: 'Invoke',
-    payload: {
-      arguments: {
-        courseId
-      }
-    }
+    payload: ctx,
   };
 }
 

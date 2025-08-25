@@ -211,6 +211,7 @@
 [class*="awsui_utilities"],
 .awsui-top-navigation [class*="utilities"] {
   color: #ffffff !important;
+  background-color: var(--color-background-top-navigation) !important;
 }
 
 /* 顶部导航栏utilities内的按钮和文本 */
@@ -247,6 +248,7 @@
 .awsui-top-navigation [class*="menu-trigger"],
 .awsui-top-navigation [class*="utility"] {
   color: #ffffff !important;
+  background-color: var(--color-background-top-navigation) !important;
 }
 
 .awsui-top-navigation [class*="dropdown-trigger"] *,
@@ -681,10 +683,6 @@ input[class*="awsui"]:focus,
   height: 56px; /* 明确设置TopNavigation高度 */
 }
 
-.awsui-app-layout {
-  padding-top: 72px; /* 增加padding-top，为TopNavigation和面包屑导航留出足够空间 */
-}
-
 /* 确保SideNavigation也固定 */
 .awsui-app-layout .awsui-app-layout-navigation {
   position: fixed !important;
@@ -716,6 +714,25 @@ input[class*="awsui"]:focus,
   padding-top: 16px !important; /* 为主内容添加顶部间距 */
 }
 
+/* === 强制修复TopNavigation覆盖问题 === */
+/* 确保AppLayout始终有足够的顶部间距，无论是否有滚动条 */
+html body .awsui-app-layout,
+body .awsui-app-layout,
+.awsui-app-layout {
+  padding-top: 72px !important; /* 为固定TopNavigation留出空间 */
+  min-height: 100vh !important; /* 确保页面有足够高度 */
+}
+
+/* 确保所有页面都有基础的最小高度 */
+html, body {
+  min-height: 100vh !important;
+}
+
+/* 强制确保主内容区域不被TopNavigation遮挡 */
+[class*="awsui-app-layout"] > *:first-child {
+  margin-top: 0 !important;
+}
+
 /* === 整个AWS UI Layout背景色应用 === */
 
 /* 应用到整个应用容器 */
@@ -741,8 +758,11 @@ input[class*="awsui"]:focus,
 
 /* 面包屑区域 */
 .awsui-app-layout__breadcrumbs,
-[class*="awsui_breadcrumbs"] {
-  background-color: var(--background-color) !important;
+[class*="awsui_breadcrumbs"],
+html body .awsui-app-layout .awsui-breadcrumb-group,
+html body [class*="awsui-breadcrumb-group"] {
+  background-color: var(--surface-color) !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
 /* === 主题色应用增强 - 让primary-color在更多地方显示 === */
@@ -877,7 +897,7 @@ a[class*="awsui"]:hover,
 
 /* Alert组件中的info类型 */
 [class*="awsui-alert"][class*="info"] [class*="icon"] {
-  color: var(--primary-color) !important;
+  color: var(--background-color) !important;
 }
 
 /* 面包屑导航 */
@@ -1513,11 +1533,13 @@ button[class*="awsui"][class*="primary"].awsui-button:focus,
 .awsui-top-navigation-utilities,
 [class*="awsui-top-navigation-utilities"] {
   color: #ffffff !important;
+  background-color: var(--color-background-top-navigation) !important;
 }
 
 .awsui-top-navigation-utility,
 [class*="awsui-top-navigation-utility"] {
   color: #ffffff !important;
+  background-color: var(--color-background-top-navigation) !important;
 }
 
 .awsui-top-navigation-utility:hover,

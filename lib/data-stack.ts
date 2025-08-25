@@ -489,6 +489,13 @@ export class DataStack extends NestedStack {
     const coursesTable = new aws_dynamodb.TableV2(this, 'CoursesTable', {
       partitionKey: { name: 'id', type: aws_dynamodb.AttributeType.STRING },
       removalPolicy: RemovalPolicy.DESTROY,
+      // 添加 GSI 以支持按创建者查询公开课程
+      globalSecondaryIndexes: [
+        {
+          indexName: 'createdBy-index',
+          partitionKey: { name: 'createdBy', type: aws_dynamodb.AttributeType.STRING },
+        }
+      ]
     });
 
     const coursesDs = api.addDynamoDbDataSource('CoursesDataSource', coursesTable);
@@ -496,10 +503,11 @@ export class DataStack extends NestedStack {
     coursesDs.createResolver('QueryListCoursesResolver', {
       typeName: 'Query',
       fieldName: 'listCourses',
-      requestMappingTemplate: aws_appsync.MappingTemplate.dynamoDbScanTable(),
-      responseMappingTemplate: aws_appsync.MappingTemplate.dynamoDbResultList(),
+      code: aws_appsync.Code.fromAsset('lib/resolvers/listCourses.ts'),
+      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
     });
 
+    // 恢复原来的简单 upsertCourse resolver
     coursesDs.createResolver('MutationUpsertCourseResolver', {
       typeName: 'Mutation',
       fieldName: 'upsertCourse',
@@ -562,13 +570,6 @@ export class DataStack extends NestedStack {
     kbTable.grantReadWriteData(deleteKnowledgeBaseFn);
 
     const deleteKnowledgeBaseDs = api.addLambdaDataSource('DeleteKnowledgeBaseDs', deleteKnowledgeBaseFn);
-
-    deleteKnowledgeBaseDs.createResolver('DeleteKnowledgeBaseResolver', {
-      typeName: 'Mutation',
-      fieldName: 'deleteKnowledgeBase',
-      code: aws_appsync.Code.fromAsset('lib/resolvers/deleteKnowledgeBase.ts'),
-      runtime: aws_appsync.FunctionRuntime.JS_1_0_0,
-    });
 
     // 删除课程的Pipeline Resolver - 先删除课程，然后清理知识库
     const deleteCourseFunction = new aws_appsync.AppsyncFunction(this, 'DeleteCourseFunction', {
@@ -817,7 +818,7 @@ export class DataStack extends NestedStack {
     // 创建新的Lambda数据源
     const submitStudentAssessmentDs = api.addLambdaDataSource('SubmitStudentAssessmentDataSource', submitStudentAssessmentFunction);
 
-    // 使用新的Lambda函数替换原有的resolver
+    // 恢复upsertStudentAssessment resolver的创建
     submitStudentAssessmentDs.createResolver('MutationUpsertStudentAssessmentResolver', {
       typeName: 'Mutation',
       fieldName: 'upsertStudentAssessment',
@@ -1071,9 +1072,11 @@ export class DataStack extends NestedStack {
     });
 
     /////////// Create KnowledgeBase
+    // 暂时注释 - 检查是否原来已存在 createKnowledgeBase resolver
     const createKnowledgeBaseDs = api.addLambdaDataSource('CreateKnowledgeBaseDs', documentProcessorLambda);
-
-    createKnowledgeBaseDs.createResolver('CreateKnowledgeBaseResolver', {
+    
+    // 使用原来的简单 createKnowledgeBase resolver
+    createKnowledgeBaseDs.createResolver('MutationCreateKnowledgeBaseResolver', {
       typeName: 'Mutation',
       fieldName: 'createKnowledgeBase',
       code: aws_appsync.Code.fromAsset('lib/resolvers/invokeLambda.ts'),
@@ -1167,6 +1170,8 @@ export class DataStack extends NestedStack {
         }),
       ],
     });
+
+    ///////// Bedrock
 
     ///////// Bedrock
 

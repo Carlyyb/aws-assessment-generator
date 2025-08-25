@@ -505,6 +505,7 @@ export const exportAssessments = async (
     // 根据选项生成不同版本
     const versions = [];
     
+    // 题目only
     if (options.includeQuestions && !options.includeExplanations && !options.includeExplanationsOnly) {
       versions.push({ 
         name: '试卷', 
@@ -512,13 +513,15 @@ export const exportAssessments = async (
       });
     }
     
-    if (options.includeQuestions && options.includeExplanations && !options.includeExplanationsOnly) {
+    // 题目+解析
+    if (options.includeExplanations && !options.includeExplanationsOnly) {
       versions.push({ 
         name: '试卷+解析', 
         opts: { ...options, includeQuestions: true, includeExplanations: true, includeExplanationsOnly: false } 
       });
     }
     
+    // 解析only
     if (options.includeExplanationsOnly) {
       versions.push({ 
         name: '解析', 

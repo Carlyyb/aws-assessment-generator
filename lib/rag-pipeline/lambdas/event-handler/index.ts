@@ -44,6 +44,18 @@ class Lambda implements LambdaInterface {
     try {
       logger.info('Handler started', { event: event.arguments });
       
+      // 权限检查：确保用户是教师或管理员
+      const identity = event.identity as AppSyncIdentityCognito;
+      const userGroups = (identity as any).groups || [];
+      const hasPermission = userGroups.includes('teachers') || 
+                           userGroups.includes('admin') || 
+                           userGroups.includes('super_admin');
+      
+      if (!hasPermission) {
+        logger.error('Unauthorized access attempt', { userId: identity.sub, groups: userGroups });
+        throw new Error('Unauthorized: Only teachers and administrators can create knowledge bases');
+      }
+      
       let kbCreationRequest = event.arguments;
       if (!(kbCreationRequest && kbCreationRequest.courseId && kbCreationRequest.locations && kbCreationRequest.locations.length > 0)) {
         logger.error('Invalid inputs', { kbCreationRequest });
@@ -51,7 +63,6 @@ class Lambda implements LambdaInterface {
       }
 
       logger.info('Copying objects to KB bucket');
-      const identity = event.identity as AppSyncIdentityCognito;
       const userId = identity.sub;
       const courseId = kbCreationRequest.courseId;
       
