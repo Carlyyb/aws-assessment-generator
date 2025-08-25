@@ -179,6 +179,7 @@
   background-color: var(--background-color);
   color: var(--text-primary);
   font-family: 'Amazon Ember', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  padding-top: 72px !important; /* 确保为固定的TopNavigation留出足够空间 */
 }
 
 .awsui-top-navigation {
